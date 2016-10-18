@@ -4,12 +4,10 @@ let registers = Array.make 10 0
 
 let rec eval = function 
     | Lit(x) -> x
-    | Seq(e1, e2) ->
-        let _ = eval e1 in eval e2
     | Asn(x, e) ->
         let result = eval e in 
         let _ = registers.(x) <- result in result
-    | Var(x) -> 
+    | Id(x) ->
         registers.(x)
     | Binop(e1, op, e2) ->
         let v1 = eval e1 and v2 = eval e2 in
