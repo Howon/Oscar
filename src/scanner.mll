@@ -17,7 +17,7 @@ rule token = parse
     | '-'                   { MINUS }
     | '*'                   { TIMES }
     | '/'                   { DIVIDE }
-    | '='                   { ASIGN }
+    | '='                   { ASSIGN }
     | '%'                   { MOD }
 
     (* comma, dot, semi *)
@@ -71,7 +71,7 @@ rule token = parse
     (* primitive types *)
     | "int"                 { INT }
     | "double"              { DOUBLE }
-    | "char"		    { CHAR }
+    | "char"		        { CHAR }
     | "bool"                { BOOL }
     | "unit"                { UNIT }
 
@@ -88,6 +88,7 @@ rule token = parse
     | "actor"               { ACTOR }
     | "pool"                { POOL }
     | "def"                 { DEF }
+    | "let"                 { LET }
 
     (* literals *)
     | ['0'-'9']+ as lxm { LITERAL(int_of_string lit) }
