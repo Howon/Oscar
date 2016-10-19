@@ -15,6 +15,7 @@ rule token = parse
     | '/'                   { DIVIDE }
     | ','                   { COMMA }
     | '='                   { ASIGN }
+	| '%'					{ MODULO }
     | "=="                  { EQ }
     | "!="                  { NEQ }
     | '<'                   { LT }
@@ -24,6 +25,11 @@ rule token = parse
     | "&&"                  { AND }
     | "||"                  { OR }
     | '!'                   { NOT }
+	| '&'					{ BITWISE_AND }
+	| '|'					{ BITWISE_OR }
+	| '~'					{ BITWISE_NOT }
+	| '.'					{ APPLY_METHOD }
+	| ':'					{ FUNCTION_TYPE }
     | "->"                  { ARROW }
     | "=>"                  { FUNCTION }
     | "|>"                  { SEND }
@@ -50,7 +56,15 @@ rule token = parse
     | "bool"                { BOOL }
     | "string"              { STR }
     | "list"                { LIST }
+	| "mut"					{ MUTABLE }
+	| "char"				{ CHAR }
+	| "def"					{ DEF }
+	| "tup"					{ TUPLE }
+	| "map"					{ MAP }
     | ['0'-'9']+ as lxm { LITERAL(int_of_string lit) }
+	| double as lxm { DOUBLE_LITERAL(float_of_string lxm)}
+	| '\"' ([^'\"']* as lxm) '\"' { STRING_LITERAL(lxm) }
+	| '\'' ([' '-'&' '('-'[' ']'-'~'] as lxm) '\'' { CHAR_LITERAL(lxm) }
     | ['a' - 'z' 'A' - 'Z']['a' - 'z' 'A' - 'Z' '0' - '9' '_']* as lxm { ID(lxm) }
     | eof { EOF }
 
