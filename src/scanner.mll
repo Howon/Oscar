@@ -40,6 +40,7 @@ rule token = parse
     (* bit math *)
     | '&'                   { BITWISE_AND }
     | '|'                   { BITWISE_OR }
+    | '^'                   { BITWISE_XOR }
     | '~'                   { BITWISE_NOT }
     | ">>"                  { BITSHIFT_RIGHT }
     | "<<"                  { BITSHIFT_LEFT }
