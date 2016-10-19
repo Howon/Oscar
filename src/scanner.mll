@@ -42,10 +42,14 @@ rule token = parse
     | "pool"                { POOL }
     | "die"                 { DIE }
     | "spawn"               { SPAWN }
-    | "list"                { LIST }
     | "MAYBE"               { OPTION_MAYBE }
     | "NONE"                { OPTION_NONE }
     | "SOME"                { OPTION_SOME }
+    | "int"                 { INT }
+    | "double"              { DOUBLE }
+    | "bool"                { BOOL }
+    | "string"              { STR }
+    | "list"                { LIST }
     | ['0'-'9']+ as lxm { LITERAL(int_of_string lit) }
     | ['a' - 'z' 'A' - 'Z']['a' - 'z' 'A' - 'Z' '0' - '9' '_']* as lxm { ID(lxm) }
     | eof { EOF }
