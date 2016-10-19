@@ -77,9 +77,9 @@ rule token = parse
 
     (* non-primitive types *)
     | "string"              { STR }
-    | "MAYBE"               { OPTION_MAYBE }
-    | "NONE"                { OPTION_NONE }
-    | "SOME"                { OPTION_SOME }
+    | "maybe"               { OPTION_MAYBE }
+    | "none"                { OPTION_NONE }
+    | "some"                { OPTION_SOME }
     | "list"                { LIST }
     | "set"                 { SET }
     | "map"                 { MAP }
@@ -93,7 +93,7 @@ rule token = parse
     | ['0'-'9']+ as lxm { LITERAL(int_of_string lit) }
     | ['0'-'9']+'.'['0'-'9']* as lxm { DOUBLE_LIT(float_of_string lxm)}
     | '\"' ([^'\"']* as lxm) '\"' { STRING_LIT(lxm) }
-    | '\'' (('a'-'z'|'A'-'Z')|'\\'['\\' '*' 'n' 'r' 't' '"' '''] as lxm) '\'' { CHAR_LIT(lxm_ }
+    | '\'' (('a'-'z'|'A'-'Z')|'\\'['\\' '*' 'n' 'r' 't' '"' '''] as lxm) '\'' { CHAR_LIT(lxm) }
 
     (* identifiers *)
     | ['a' - 'z' 'A' - 'Z']['a' - 'z' 'A' - 'Z' '0' - '9' '_']* as lxm { ID(lxm) }
