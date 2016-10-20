@@ -24,6 +24,7 @@ rule token = parse
     | '.'                   { DOT }
     | ','                   { COMMA }
     | ';'                   { SEMI }
+    | ':'                   { COLON }
 
     (* logic *)
     | "=="                  { EQ }
