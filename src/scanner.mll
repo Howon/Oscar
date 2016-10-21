@@ -1,5 +1,7 @@
 { open Parser }
 
+let digit = ['0' - '9'];
+
 rule token = parse
     | [' ' '\t' '\r' '\n']  { token lexbuf }
     | "/*"                  { comment lexbuf }
@@ -12,30 +14,31 @@ rule token = parse
     | '['                   { LBRACKET }
     | ']'                   { RBRACKET }
 
-    (* math *)
-    | '+'                   { PLUS }
-    | '-'                   { MINUS }
-    | '*'                   { TIMES }
-    | '/'                   { DIVIDE }
     | '='                   { ASSIGN }
-    | '%'                   { MOD }
+
+    (* math *)
+    | '+'                   { ARITH_PLUS }
+    | '-'                   { ARITH_MINUS }
+    | '*'                   { ARITH_TIMES }
+    | '/'                   { ARITH_DIVIDE }
+    | '%'                   { ARITH_MOD }
 
     (* comma, dot, semi *)
-    | '.'                   { DOT }
-    | ','                   { COMMA }
-    | ';'                   { SEMI }
+    | '.'                   { PUNC_DOT }
+    | ','                   { PUNC_COMMA }
+    | ';'                   { PUNC_SEMI }
 
     (* logic *)
-    | "=="                  { EQ }
-    | "!="                  { NEQ }
-    | '<'                   { LT }
-    | "<="                  { LEQ }
-    | '>'                   { GT }
-    | ">="                  { GEQ }
-    | "&&"                  { AND }
-    | "||"                  { OR }
-    | "true"                { TRUE }
-    | "false"               { FALSE }
+    | "=="                  { LOGIC_EQ }
+    | "!="                  { LOGIC_NEQ }
+    | '<'                   { LOGIC_LT }
+    | "<="                  { LOGIC_LEQ }
+    | '>'                   { LOGIC_GT }
+    | ">="                  { LOGIC_GEQ }
+    | "&&"                  { LOGIC_AND }
+    | "||"                  { LOGIC_OR }
+    | "true"                { LOGIC_TRUE }
+    | "false"               { LOGIC_FALSE }
 
     (* bit math *)
     | '&'                   { BITWISE_AND }
@@ -46,54 +49,53 @@ rule token = parse
     | "<<"                  { BITSHIFT_LEFT }
 
     (* functions *)
-    | ':'                   { FUNCTION_TYPE }
-    | "->"                  { ARROW }
-    | "=>"                  { FUNCTION }
-    | "return"              { RETURN }
+    | ':'                   { FUNC_ARG_TYPE}
+    | "=>"                  { FUNC_RET_TYPE }
+    | "return"              { FUNC_RETURN }
 
     (* flow control *)
-    | "if"                  { IF }
-    | "else"                { ELSE }
-    | "for"                 { FOR }
-    | "to"                  { LOOP_TO }
-    | "by"                  { LOOP_INC }
+    | "if"                  { FLOW_IF }
+    | "else"                { FLOW_ELSE }
+    | "for"                 { FLOW_FOR }
+    | "to"                  { FLOW_LOOP_TO }
+    | "by"                  { FLOW_LOOP_INC }
 
     (* actors *)
-    | "sender"              { SENDER }
-    | "die"                 { DIE }
-    | "spawn"               { SPAWN }
-    | "receive"             { RECEIVE }
-    | "|>"                  { SEND }
-    | "|>>"                 { BROADCAST }
+    | "sender"              { ACTOR_SENDER }
+    | "die"                 { ACTOR_DIE }
+    | "spawn"               { ACTOR_SPAWN }
+    | "receive"             { ACTOR_RECEIVE }
+    | "|>"                  { ACTOR_SEND }
+    | "|>>"                 { ACTOR_BROADCAST }
 
     (* mutability for actors *)
     | "mut"                 { MUTABLE }
 
     (* primitive types *)
-    | "int"                 { INT }
-    | "double"              { DOUBLE }
-    | "char"		        { CHAR }
-    | "bool"                { BOOL }
-    | "unit"                { UNIT }
+    | "int"                 { TYPE_INT }
+    | "double"              { TYPE_DOUBLE }
+    | "char"		        { TYPE_CHAR }
+    | "bool"                { TYPE_BOOL }
+    | "unit"                { TYPE_UNIT }
 
     (* non-primitive types *)
-    | "string"              { STR }
-    | "maybe"               { OPTION_MAYBE }
-    | "none"                { OPTION_NONE }
-    | "some"                { OPTION_SOME }
-    | "list"                { LIST }
-    | "set"                 { SET }
-    | "map"                 { MAP }
-    | "tup"                 { TUPLE }
-    | "message"             { MESSAGE }
-    | "actor"               { ACTOR }
-    | "pool"                { POOL }
-    | "def"                 { DEF }
-    | "let"                 { LET }
+    | "string"              { TYPE_STR }
+    | "maybe"               { TYPE_OPTION_MAYBE }
+    | "none"                { TYPE_OPTION_NONE }
+    | "some"                { TYPE_OPTION_SOME }
+    | "list"                { TYPE_LIST }
+    | "set"                 { TYPE_SET }
+    | "map"                 { TYPE_MAP }
+    | "tup"                 { TYPE_TUPLE }
+    | "message"             { TYPE_MESSAGE }
+    | "actor"               { TYPE_ACTOR }
+    | "pool"                { TYPE_POOL }
+    | "def"                 { TYPE_DEF }
+    | "let"                 { TYPE_LET }
 
     (* literals *)
-    | ['0'-'9']+ as lxm { LITERAL(int_of_string lit) }
-    | ['0'-'9']+'.'['0'-'9']* as lxm { DOUBLE_LIT(float_of_string lxm)}
+    | digit+ as lxm { LITERAL(int_of_string lit) }
+    | ('-'?)((digit+'.'digit*) | ('.'digit+)) as lxm { DOUBLE_LIT(float_of_string lxm)}
     | '\"' ([^'\"']* as lxm) '\"' { STRING_LIT(lxm) }
     | '\'' (('a'-'z'|'A'-'Z')|'\\'['\\' '*' 'n' 'r' 't' '"' '''] as lxm) '\'' { CHAR_LIT(lxm) }
 
