@@ -62,6 +62,7 @@ rule token = parse
     | "sender"              { SENDER }
     | "die"                 { DIE }
     | "spawn"               { SPAWN }
+    | "receive"             { RECEIVE }
     | "|>"                  { SEND }
     | "|>>"                 { BROADCAST }
 
