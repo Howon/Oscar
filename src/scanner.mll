@@ -3,18 +3,29 @@
 rule token = parse
     | [' ' '\t' '\r' '\n']  { token lexbuf }
     | "/*"                  { comment lexbuf }
+
+    (* braces/parens/brackets *)
     | '('                   { LPAREN }
     | ')'                   { RPAREN }
     | '{'                   { LBRACE }
     | '}'                   { RBRACE }
     | '['                   { LBRACKET }
     | ']'                   { RBRACKET }
+
+    (* math *)
     | '+'                   { PLUS }
     | '-'                   { MINUS }
     | '*'                   { TIMES }
     | '/'                   { DIVIDE }
+    | '='                   { ASSIGN }
+    | '%'                   { MOD }
+
+    (* comma, dot, semi *)
+    | '.'                   { DOT }
     | ','                   { COMMA }
-    | '='                   { ASIGN }
+    | ';'                   { SEMI }
+
+    (* logic *)
     | "=="                  { EQ }
     | "!="                  { NEQ }
     | '<'                   { LT }
@@ -23,30 +34,70 @@ rule token = parse
     | ">="                  { GEQ }
     | "&&"                  { AND }
     | "||"                  { OR }
-    | '!'                   { NOT }
-    | "->"                  { ARROW }
-    | "=>"                  { FUNCTION }
-    | "|>"                  { SEND }
-    | "|>>"                 { BROADCAST }
     | "true"                { TRUE }
     | "false"               { FALSE }
+
+    (* bit math *)
+    | '&'                   { BITWISE_AND }
+    | '|'                   { BITWISE_OR }
+    | '^'                   { BITWISE_XOR }
+    | '~'                   { BITWISE_NOT }
+    | ">>"                  { BITSHIFT_RIGHT }
+    | "<<"                  { BITSHIFT_LEFT }
+
+    (* functions *)
+    | ':'                   { FUNCTION_TYPE }
+    | "->"                  { ARROW }
+    | "=>"                  { FUNCTION }
+    | "return"              { RETURN }
+
+    (* flow control *)
     | "if"                  { IF }
     | "else"                { ELSE }
     | "for"                 { FOR }
     | "to"                  { LOOP_TO }
     | "by"                  { LOOP_INC }
-    | "return"              { RETURN }
-    | "message"             { MESSAGE }
-    | "actor"               { ACTOR }
+
+    (* actors *)
     | "sender"              { SENDER }
-    | "pool"                { POOL }
     | "die"                 { DIE }
     | "spawn"               { SPAWN }
+    | "receive"             { RECEIVE }
+    | "|>"                  { SEND }
+    | "|>>"                 { BROADCAST }
+
+    (* mutability for actors *)
+    | "mut"                 { MUTABLE }
+
+    (* primitive types *)
+    | "int"                 { INT }
+    | "double"              { DOUBLE }
+    | "char"		        { CHAR }
+    | "bool"                { BOOL }
+    | "unit"                { UNIT }
+
+    (* non-primitive types *)
+    | "string"              { STR }
+    | "maybe"               { OPTION_MAYBE }
+    | "none"                { OPTION_NONE }
+    | "some"                { OPTION_SOME }
     | "list"                { LIST }
-    | "MAYBE"               { OPTION_MAYBE }
-    | "NONE"                { OPTION_NONE }
-    | "SOME"                { OPTION_SOME }
+    | "set"                 { SET }
+    | "map"                 { MAP }
+    | "tup"                 { TUPLE }
+    | "message"             { MESSAGE }
+    | "actor"               { ACTOR }
+    | "pool"                { POOL }
+    | "def"                 { DEF }
+    | "let"                 { LET }
+
+    (* literals *)
     | ['0'-'9']+ as lxm { LITERAL(int_of_string lit) }
+    | ['0'-'9']+'.'['0'-'9']* as lxm { DOUBLE_LIT(float_of_string lxm)}
+    | '\"' ([^'\"']* as lxm) '\"' { STRING_LIT(lxm) }
+    | '\'' (('a'-'z'|'A'-'Z')|'\\'['\\' '*' 'n' 'r' 't' '"' '''] as lxm) '\'' { CHAR_LIT(lxm) }
+
+    (* identifiers *)
     | ['a' - 'z' 'A' - 'Z']['a' - 'z' 'A' - 'Z' '0' - '9' '_']* as lxm { ID(lxm) }
     | eof { EOF }
 
