@@ -13,7 +13,6 @@ rule token = parse
     | '}'                   { RBRACE }
     | '['                   { LBRACKET }
     | ']'                   { RBRACKET }
-<<<<<<< HEAD
 
     | '='                   { ASSIGN }
 
@@ -101,50 +100,6 @@ rule token = parse
     | '\'' (('a'-'z'|'A'-'Z')|'\\'['\\' '*' 'n' 'r' 't' '"' '''] as lxm) '\'' { CHAR_LIT(lxm) }
 
     (* identifiers *)
-=======
-    | '+'                   { PLUS }
-    | '-'                   { MINUS }
-    | '*'                   { TIMES }
-    | '/'                   { DIVIDE }
-    | ','                   { COMMA }
-    | '='                   { ASIGN }
-    | "=="                  { EQ }
-    | "!="                  { NEQ }
-    | '<'                   { LT }
-    | "<="                  { LEQ }
-    | '>'                   { GT }
-    | ">="                  { GEQ }
-    | "&&"                  { AND }
-    | "||"                  { OR }
-    | '!'                   { NOT }
-    | "->"                  { ARROW }
-    | "=>"                  { FUNCTION }
-    | "|>"                  { SEND }
-    | "|>>"                 { BROADCAST }
-    | "true"                { TRUE }
-    | "false"               { FALSE }
-    | "if"                  { IF }
-    | "else"                { ELSE }
-    | "for"                 { FOR }
-    | "to"                  { LOOP_TO }
-    | "by"                  { LOOP_INC }
-    | "return"              { RETURN }
-    | "message"             { MESSAGE }
-    | "actor"               { ACTOR }
-    | "sender"              { SENDER }
-    | "pool"                { POOL }
-    | "die"                 { DIE }
-    | "spawn"               { SPAWN }
-    | "MAYBE"               { OPTION_MAYBE }
-    | "NONE"                { OPTION_NONE }
-    | "SOME"                { OPTION_SOME }
-    | "int"                 { INT }
-    | "double"              { DOUBLE }
-    | "bool"                { BOOL }
-    | "string"              { STR }
-    | "list"                { LIST }
-    | ['0'-'9']+ as lxm { LITERAL(int_of_string lit) }
->>>>>>> edbb13c... added a few new tokens
     | ['a' - 'z' 'A' - 'Z']['a' - 'z' 'A' - 'Z' '0' - '9' '_']* as lxm { ID(lxm) }
     | eof { EOF }
 
