@@ -1,3 +1,5 @@
+type program = None
+
 type bin_op =
     | Add    | Minus | Multiply | Divide
     | Modulo | Equal | Neq      | Lt
@@ -79,5 +81,3 @@ type stmt =
     | While of expr * stmt
     | Break
     | Continue
-
-
