@@ -77,7 +77,7 @@ rule token = parse
   (* primitive types *)
   | "int"                 { TYPE_INT }
   | "double"              { TYPE_DOUBLE }
-  | "char"		        { TYPE_CHAR }
+  | "char"		            { TYPE_CHAR }
   | "bool"                { TYPE_BOOL }
   | "unit"                { TYPE_UNIT }
 
