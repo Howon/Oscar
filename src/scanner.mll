@@ -33,9 +33,9 @@ rule token = parse
   (* logic *)
   | "=="                  { LOGIC_EQ }
   | "!="                  { LOGIC_NEQ }
-  | '<'                   { LOGIC_LT }
+  | '<'                   { LCARET }
   | "<="                  { LOGIC_LEQ }
-  | '>'                   { LOGIC_GT }
+  | '>'                   { RCARET }
   | ">="                  { LOGIC_GEQ }
   | "&&"                  { LOGIC_AND }
   | "||"                  { LOGIC_OR }
@@ -60,8 +60,9 @@ rule token = parse
   | "else"                { FLOW_ELSE }
   | "for"                 { FLOW_FOR }
   | "while"               { FLOW_WHILE }
-  | "to"                  { FLOW_LOOP_TO }
-  | "by"                  { FLOW_LOOP_INC }
+  | "to"                  { LOOP_TO }
+  | "by"                  { LOOP_BY }
+  | "<-"                  { LOOP_FROM }
 
   (* actors *)
   | "sender"              { ACT_SENDER }
@@ -83,8 +84,8 @@ rule token = parse
 
   (* non-primitive types *)
   | "string"              { TYPE_STR }
-  | "maybe"               { TYPE_OPTION_MAYBE }
-  | "none"                { TYPE_OPTION_NONE }
+  | "maybe"               { TYPE_MAYBE }
+  | "none"                { TYPE_NONE }
   | "some"                { TYPE_OPTION_SOME }
   | "list"                { TYPE_LIST }
   | "set"                 { TYPE_SET }
@@ -94,7 +95,6 @@ rule token = parse
   | "actor"               { TYPE_ACTOR }
   | "pool"                { TYPE_POOL }
   | "def"                 { TYPE_DEF }
-  | "let"                 { TYPE_LET }
 
   (* literals *)
   | digit+ as lxm { LITERAL(int_of_string lit) }
