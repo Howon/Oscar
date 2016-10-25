@@ -4,16 +4,16 @@
 %token ARITH_PLUS ARITH_MINUS ARITH_TIMES ARITH_DIVIDE ARITH_MOD
 %token ASSIGN
 %token PUNC_DOT PUNC_COMMA PUNC_SEMI
-%token LOGIC_EQ LOGIC_NEQ LOGIC_LT LOGIC_LEQ LOGIC_GT LOGIC_GEQ
+%token LOGIC_EQ LOGIC_NEQ LCARET LOGIC_LEQ RCARET LOGIC_GEQ
 %token LOGIC_AND LOGIC_OR LOGIC_TRUE LOGIC_FALSE
 %token BITWISE_AND BITWISE_OR BITWISE_XOR BITWISE_NOT BITWISE_RIGHT BITWISE_LEFT
 %token FUNCTION_ARG_TYPE ARROW FUNC_RET_TYPE FUNC_RETURN
-%token FLOW_IF FLOW_ELSE FOR LOOP_TO LOOP_INC
+%token FLOW_IF FLOW_ELSE FOR LOOP_TO LOOP_BY LOOP_FROM
 %token ACT_SENDER ACT_DIE ACT_SPAWN ACT_RECEIVE ACT_SEND ACT_BROADCAST
 %token MUTABLE
 %token TYPE_INT TYPE_DOUBLE TYPE_CHAR TYPE_BOOL TYPE_UNIT
-%token TYPE_STR TYPE_OPTION_MAYBE TYPE_OPTION_SOME TYPE_LIST TYPE_SET TYPE_MAP
-%token TYPE_TUPLE TYPE_MESSAGE TYPE_ACTOR TYPE_POOL TYPE_DEF TYPE_LET
+%token TYPE_STR TYPE_MAYBE TYPE_SOME TYPE_NONE TYPE_LIST TYPE_SET TYPE_MAP
+%token TYPE_TUPLE TYPE_MESSAGE TYPE_ACTOR TYPE_POOL TYPE_DEF
 %token <int> LITERAL
 %token <float> DOUBLE_LIT
 %token <string> STRING_LIT
@@ -27,7 +27,7 @@
 %left FUNCTION_ARG_TYPE ARROW FUNCTION_RET_TYPE
 %left LOGIC_AND LOGIC_OR
 %left LOGIC_EQ LOGIC_NEQ
-%left LOGIC_LT LOGIC_GT LOGIC_LEQ LOGIC_GEQ
+%left LCARET RCARET LOGIC_LEQ LOGIC_GEQ
 %left BITWISE_AND BITWISE_XOR BITWISE_OR
 %right BITWISE_LEFT BITWISE_RIGHT
 %left ARITH_PLUS ARITH_MINUS
@@ -64,7 +64,7 @@ actor_decl:
 
 fdecl_list:
   /* nothing */     { [] }
-  | fdecl_list fdecl   { List.rev $1 }
+  | fdecl_list fdecl   { List.rev $1 } TYPE_LET
 
 /* Q: do functions need to FUNC_RETURN explictly? */
 /* TODO: right now functions need to have variables declared before statements */
@@ -78,7 +78,6 @@ fdecl:
       { { func_name = $2; function_return_t = $7;
       function_formals = $4; function_body = $9 }  }
 
-
 formals_opt:
   /* nothing */   { [] }
   | formal_list   { List.rev $1 }
@@ -87,8 +86,6 @@ formal_list:
   ID FUNCTION_ARG_TYPE typ                            { [($1, $3)] }
   | formal_list PUNC_COMMA ID FUNCTION_ARG_TYPE typ   { ($3, $5) :: $1 }
 
-
-
 typ_list:
    /* nothing */
   | typ                       { None }
@@ -96,6 +93,7 @@ typ_list:
 
 
 /* primative types */
+/* TODO: handle MAYBE/SOME/NONE */
 typ:
   TYPE_INT        { Int_t }
   | TYPE_BOOL     { Bool_t }
@@ -103,18 +101,21 @@ typ:
   | TYPE_CHAR     { Char_t }
   | TYPE_UNIT     { Unit_t }
 
-
-
 vdecl_list:
   /* nothing */       { [] }
   | vdecl_list vdecl  { $2 :: $1 }
 
 vdecl:
-  TYPE_LET typ ID PUNC_SEMI   { $2, $3 }
+  typ ID ASSIGN exp PUNC_SEMI   { $1, $2, $4 }
   /* Q: do pools count as variable declarations? */
 
+vassign:
+  typ ID ASSIGN expr  { $1, $2, $4 }
+  | ID ASSIGN expr {$1, $3}
 
 /* allows for mutables or immutables */
+/* TODO: WE GOTTA MAKE MUTABLE MORE GENERALIZED */
+/*       AKA mut map<str,int> NEEDS TO BE ACCEPTED */
 mut_vdecl_list:
   /* nothing */               { [] }
   | mut_vdecl_list mut_decl   { $2 :: $1 }
@@ -123,26 +124,25 @@ mut_vdecl_list:
 mut_decl:
   MUTABLE typ ID PUNC_SEMI    { $2, $3 }
 
-
-/* for set and list */
-/* NOTE: only for declarations, not declarations and assignments */
+/* TODO: make assignments more generalized, or at least make for all types */
+/* TODO: try to reduce the number of patterns for these different types */
 set_list_decl:
-  TYPE_LIST LOGIC_LT typ LOGIC_GT ID ASSIGN TYPE_LIST LOGIC_LT typ
-      LOGIC_GT LBRACKET RBRACKET PUNC_SEMI                            { None }
-  | TYPE_SET LOGIC_LT typ LOGIC_GT ID ASSIGN TYPE_SET LOGIC_LT typ
-      LOGIC_GT LBRACKET RBRACKET PUNC_SEMI                            { None }
+  TYPE_LIST LCARET   typ RCARET   ID ASSIGN TYPE_LIST LCARET   typ
+      RCARET   LBRACKET RBRACKET PUNC_SEMI                            { None }
+  | TYPE_SET LCARET   typ RCARET   ID ASSIGN TYPE_SET LCARET   typ
+      RCARET   LBRACKET RBRACKET PUNC_SEMI                            { None }
 
 /* NOTE: there isn't a type check for these types matching up, but i think that's ok */
 map_decl:
-  TYPE_MAP LOGIC_LT typ PUNC_COMMA typ LOGIC_GT ID ASSIGN TYPE_MAP
-      LOGIC_LT typ LOGIC_GT LBRACKET RBRACKET PUNC_SEMI               { None }
+  TYPE_MAP LCARET   typ PUNC_COMMA typ RCARET   ID ASSIGN TYPE_MAP
+      LCARET   typ RCARET   LBRACKET RBRACKET PUNC_SEMI               { None }
 
 tuple_decl:
-  TYPE_TUPLE LOGIC_LT typ_list LOGIC_GT ID ASSIGN TYPE_TUPLE LOGIC_LT
-      typ_list LOGIC_GT LBRACKET RBRACKET PUNC_SEMI                   { None }
-
+  TYPE_TUPLE LCARET   typ_list RCARET   ID ASSIGN TYPE_TUPLE LCARET  
+      typ_list RCARET   LBRACKET RBRACKET PUNC_SEMI                   { None }
 
 /* for pattern matching with receive */
+/* TODO: cleanup pattern matching */
 receive:
   ACT_RECEIVE LBRACE pattern_opt RBRACE { None }
 
@@ -157,9 +157,6 @@ pattern_list:
   | pattern_list BITWISE_OR ID LPAREN formals_opt RPAREN FUNC_RET_TYPE
       stmt_list                     { [($3, $5, $8)] :: $1 }
 
-
-
-
 stmt_list:
   /* nothing */       { [] }
   | stmt_list stmt    { $2 :: $1 }
@@ -173,19 +170,28 @@ stmt:
   | FUNC_RETURN PUNC_SEMI                             { FUNC_RETURN Noexpr }
   | FUNC_RETURN expr PUNC_SEMI                        { FUNC_RETURN $2 }
   | LBRACE stmt_list RBRACE                           { Block(List.rev $2) }
-  | FLOW_IF LPAREN expr RPAREN stmt %prec NOELSE
-        { FLOW_IF($3, $5, Block([])) }
+  | stmt_cond                                         { $1 }
+  | stmt_iter                                         { $1 }
+  | flow
   | FLOW_IF LPAREN expr RPAREN stmt FLOW_ELSE stmt    { FLOW_IF($3, $5, $7) }
- /*  | FOR LPAREN expr_opt SEMI expr SEMI expr_opt RPAREN stmt */
-  /* TODO: define for */
   /* NOTE: FLOW_IF, FLOW_ELSE, for are not defined in our LRM */
+
+stmt_iter:
+  FLOW_FOR LPAREN vdecl LOOP_FROM LITERAL LOOP_TO
+      LITERAL LOOP_BY LITERAL RPAREN stmt   { For($3, $5, $7, $9, $11) }
+  | FLOW_WHILE LPAREN expr RPAREN stmt      { While($3, $5) }
+
+stmt_cond:
+  FLOW_IF LPAREN expr RPAREN stmt %prec NOELSE
+        { FLOW_IF($3, $5, Block([])) }
+  | FLOW_IF LPAREN expr RPAREN stmt FLOW_ELSE stmt { FLOW_IF($3, $5, $7) }
 
 expr_opt:
   /* nothing */   { Noexpr }
   | expr          { $1 }
 
 expr:
-    ID                                              { Id($1) }
+  ID                                                { Id($1) }
   | LITERAL                                         { Lit($1) }
   | LOGIC_TRUE                                      { BoolLit(true) }
   | LOGIC_FALSE                                     { BoolLit(false) }
@@ -196,9 +202,9 @@ expr:
   | expr ARITH_MOD    expr                          { bin_op($1, Mod, $3) }
   | expr LOGIC_EQ     expr                          { bin_op($1, Equal, $3) }
   | expr LOGIC_NEQ    expr                          { bin_op($1, Neq, $3) }
-  | expr LOGIC_LT     expr                          { bin_op($1, Less, $3) }
+  | expr LCARET       expr                          { bin_op($1, Less, $3) }
   | expr LOGIC_LEQ    expr                          { bin_op($1, Leq, $3) }
-  | expr LOGIC_GT     expr                          { bin_op($1, Greater,$3) }
+  | expr RCARET       expr                          { bin_op($1, Greater,$3) }
   | expr LOGIC_GEQ    expr                          { bin_op($1, Geq, $3) }
   | expr LOGIC_AND    expr                          { bin_op($1, And, $3) }
   | expr LOGIC_OR     expr                          { bin_op($1, Or, $3) }
