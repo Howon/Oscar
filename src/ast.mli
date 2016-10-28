@@ -1,7 +1,7 @@
 type program = None
 
 type bin_op =
-  | Add    | Minus | Multiply | Divide
+  Add    | Minus | Multiply | Divide
   | Modulo | Equal | Neq      | Lt
   | Leq    | Gt    | Geq      | And
   | Or
@@ -12,34 +12,37 @@ type p_type = Int_t | Bool_t | Double_t | Char_t | Unit_t
 
 type cont_type = String_t | List_t | Set_t | Map_t | Tuple_t
 
+type actor_op =
+  | Actor_send
+  | Actor_broadcast
+  | Actor_receive
+
+type types =
+  | Primitive of p_type
+  | Container of cont_type
+  | Actor_t of actor_op
+
 type opt_type = Maybe_t of types | Some_t of types | None_t
+
+(* todo: not sure if works *)
+type opt_nested_type =
+  Optional of opt_type
+  | Type of types
 
 type message_type = Message_t
 
 type field = Field of types * string
 
-type func = {
-  func_name : string;
-  function_return_t : types;
-  function_formals : formal list;
-  function_body : stmt list;
-}
-
 type actor = {
   actor_fields : field list;
   actor_name : string;
-  acator_receive: receive;
+  (* todo: needs defining *)
+  actor_receive: receive;
 }
 
 type actor_type = Actor_t of string
 
 type pool_type = Pool_t of actor_type list
-
-type types =
-  | Primitive of p_type
-  | Container of cont_type
-  | Optional of opt_type
-  | Actor_t of actor_op
 
 type bind_type = types * string
 
@@ -51,17 +54,13 @@ type bit_op =
   | Bit_Xor
   | Bit_Not
 
-type actor_op =
-  | Actor_send
-  | Actor_broadcast
-  | Actor_receive
-
 type expr =
   | Binop of expr * bin_op * expr
   | Bitop of int * bit_op * int
   | Uop of u_op * expr
   | Id of string
-  | Assign of expr * expr
+  (* todo: test assign *)
+  | Assign of string * expr
   | Int_lit of int
   | Bool_lit of bool
   | Double_lit of float
@@ -81,3 +80,12 @@ type stmt =
   | While of expr * stmt
   | Break
   | Continue
+
+type formal = types * string
+
+type func = {
+  func_name : string;
+  function_return_t : types;
+  function_formals : formal list;
+  function_body : stmt list;
+}
