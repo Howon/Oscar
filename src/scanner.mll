@@ -28,6 +28,7 @@ rule token = parse
     | "=>"                  { FUNCTION }
     | "|>"                  { SEND }
     | "|>>"                 { BROADCAST }
+    | '.'                   { APPLY }
     | "true"                { TRUE }
     | "false"               { FALSE }
     | "if"                  { IF }
@@ -43,9 +44,9 @@ rule token = parse
     | "die"                 { DIE }
     | "spawn"               { SPAWN }
     | "list"                { LIST }
-    | "MAYBE"               { OPTION_MAYBE }
-    | "NONE"                { OPTION_NONE }
-    | "SOME"                { OPTION_SOME }
+    | "maybe"               { OPTION_MAYBE }
+    | "none"                { OPTION_NONE }
+    | "some"                { OPTION_SOME }
     | ['0'-'9']+ as lxm { LITERAL(int_of_string lit) }
     | ['a' - 'z' 'A' - 'Z']['a' - 'z' 'A' - 'Z' '0' - '9' '_']* as lxm { ID(lxm) }
     | eof { EOF }
