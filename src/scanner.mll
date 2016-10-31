@@ -15,6 +15,8 @@ rule token = parse
   | '}'                   { RBRACE }
   | '['                   { LBRACKET }
   | ']'                   { RBRACKET }
+  | '<'                   { LANGLE_BRACKET }
+  | '>'                   { RANGLE_BRACKET }
 
   | '='                   { ASSIGN }
 
@@ -33,9 +35,7 @@ rule token = parse
   (* logic *)
   | "=="                  { LOGIC_EQ }
   | "!="                  { LOGIC_NEQ }
-  | '<'                   { LCARET }
   | "<="                  { LOGIC_LEQ }
-  | '>'                   { RCARET }
   | ">="                  { LOGIC_GEQ }
   | "&&"                  { LOGIC_AND }
   | "||"                  { LOGIC_OR }

@@ -1,7 +1,6 @@
 *~
-*.mll
-*.output
-*.swp
-*.out
 *.cmi
 *.cmo
+*.out
+*.output
+*.swp

@@ -4,7 +4,7 @@
 %token ARITH_PLUS ARITH_MINUS ARITH_TIMES ARITH_DIVIDE ARITH_MOD
 %token ASSIGN
 %token PUNC_DOT PUNC_COMMA PUNC_SEMI
-%token LOGIC_EQ LOGIC_NEQ LCARET LOGIC_LEQ RCARET LOGIC_GEQ
+%token LOGIC_EQ LOGIC_NEQ LANGLE_BRACKET LOGIC_LEQ RANGLE_BRACKET LOGIC_GEQ
 %token LOGIC_AND LOGIC_OR LOGIC_TRUE LOGIC_FALSE
 %token BITWISE_AND BITWISE_OR BITWISE_XOR BITWISE_NOT BITWISE_RIGHT BITWISE_LEFT
 %token FUNC_ARG_TYPE ARROW FUNC_RET_TYPE RETURN
@@ -28,7 +28,7 @@
 %left FUNC_ARG_TYPE ARROW FUN_RET_TYPE
 %left LOGIC_AND LOGIC_OR
 %left LOGIC_EQ LOGIC_NEQ
-%left LCARET RCARET LOGIC_LEQ LOGIC_GEQ
+%left LANGLE_BRACKET RANGLE_BRACKET LOGIC_LEQ LOGIC_GEQ
 %left BITWISE_AND BITWISE_XOR BITWISE_OR
 %right BITWISE_LEFT BITWISE_RIGHT
 %left ARITH_PLUS ARITH_MINUS
@@ -110,10 +110,10 @@ simple_typ:
   | TYPE_STR      { String_t }
 
 fancy_typ:
-  | TYPE_MAP LCARET typ PUNC_COMMA typ RCARET { map($3, $5) }
-  | TYPE_TUPLE LCARET typ_list RCARET { tuple($3) }
-  | TYPE_SET LCARET typ RCARET { set($3) }
-  | TYPE_LIST LCARET typ RCARET { lst($3) }
+  | TYPE_MAP LANGLE_BRACKET typ PUNC_COMMA typ RANGLE_BRACKET { map($3, $5) }
+  | TYPE_TUPLE LANGLE_BRACKET typ_list RANGLE_BRACKET { tuple($3) }
+  | TYPE_SET LANGLE_BRACKET typ RANGLE_BRACKET { set($3) }
+  | TYPE_LIST LANGLE_BRACKET typ RANGLE_BRACKET { lst($3) }
 
 vdecl_list:
   /* nothing */       { [] }
@@ -144,18 +144,18 @@ mut_decl:
 /* TODO: make assignments more generalized, or at least make for all types */
 /* TODO: try to reduce the number of patterns for these different types */
 set_list_decl:
-  typ LCARET typ RCARET ID ASSIGN LBRACKET RBRACKET PUNC_SEMI                            { None }
-  | TYPE_SET LCARET   typ RCARET   ID ASSIGN TYPE_SET LCARET   typ
-      RCARET   LBRACKET RBRACKET PUNC_SEMI                            { None }
+  typ LANGLE_BRACKET typ RANGLE_BRACKET ID ASSIGN LBRACKET RBRACKET PUNC_SEMI                            { None }
+  | TYPE_SET LANGLE_BRACKET   typ RANGLE_BRACKET   ID ASSIGN TYPE_SET LANGLE_BRACKET   typ
+      RANGLE_BRACKET   LBRACKET RBRACKET PUNC_SEMI                            { None }
 
 /* NOTE: there isn't a type check for these types matching up, but i think that's ok */
 map_decl:
-  TYPE_MAP LCARET   typ PUNC_COMMA typ RCARET   ID ASSIGN TYPE_MAP
-      LCARET   typ RCARET   LBRACKET RBRACKET PUNC_SEMI               { None }
+  TYPE_MAP LANGLE_BRACKET   typ PUNC_COMMA typ RANGLE_BRACKET   ID ASSIGN TYPE_MAP
+      LANGLE_BRACKET   typ RANGLE_BRACKET   LBRACKET RBRACKET PUNC_SEMI               { None }
 
 tuple_decl:
-  TYPE_TUPLE LCARET typ_list RCARET ID ASSIGN TYPE_TUPLE LCARET
-      typ_list RCARET   LBRACKET RBRACKET PUNC_SEMI                   { None }
+  TYPE_TUPLE LANGLE_BRACKET typ_list RANGLE_BRACKET ID ASSIGN TYPE_TUPLE LANGLE_BRACKET
+      typ_list RANGLE_BRACKET   LBRACKET RBRACKET PUNC_SEMI                   { None }
 
 /* for pattern matching with receive */
 /* TODO: cleanup pattern matching */
@@ -221,9 +221,9 @@ expr:
   | expr ARITH_MOD    expr                          { bin_op($1, Mod, $3) }
   | expr LOGIC_EQ     expr                          { bin_op($1, Equal, $3) }
   | expr LOGIC_NEQ    expr                          { bin_op($1, Neq, $3) }
-  | expr LCARET       expr                          { bin_op($1, Less, $3) }
+  | expr LANGLE_BRACKET       expr                  { bin_op($1, Less, $3) }
   | expr LOGIC_LEQ    expr                          { bin_op($1, Leq, $3) }
-  | expr RCARET       expr                          { bin_op($1, Greater,$3) }
+  | expr RANGLE_BRACKET       expr                  { bin_op($1, Greater,$3) }
   | expr LOGIC_GEQ    expr                          { bin_op($1, Geq, $3) }
   | expr LOGIC_AND    expr                          { bin_op($1, And, $3) }
   | expr LOGIC_OR     expr                          { bin_op($1, Or, $3) }
