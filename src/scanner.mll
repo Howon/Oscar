@@ -100,7 +100,7 @@ rule token = parse
   | digit+ as lxm { LITERAL(int_of_string lit) }
   | double as lxm { DOUBLE_LIT(float_of_string lxm)}
   | '\"' ([^'\"']* as lxm) '\"' { STRING_LIT(lxm) }
-  | chr as lxm) '\'' { CHAR_LIT(lxm) }
+  | chr as lxm '\'' { CHAR_LIT(lxm) }
   | "true"|"false" as lxm { BOOL_LIT(bool_of_string lxm) }
   (* identifiers *)
   | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
