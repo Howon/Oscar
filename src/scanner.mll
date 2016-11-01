@@ -5,7 +5,7 @@ let double = ('-'?)((digit+'.'digit*) | ('.'digit+));
 let chr = '\'' (('a'-'z'|'A'-'Z')|'\\'['\\' '*' 'n' 'r' 't' '"' '''];
 
 rule token = parse
-  | [' ' '\t' '\r' '\n']  { token lexbuf }
+    [' ' '\t' '\r' '\n']  { token lexbuf }
   | "/*"                  { comment lexbuf }
 
   (* braces/parens/brackets *)
@@ -78,7 +78,7 @@ rule token = parse
   (* primitive types *)
   | "int"                 { TYPE_INT }
   | "double"              { TYPE_DOUBLE }
-  | "char"		            { TYPE_CHAR }
+  | "char"		          { TYPE_CHAR }
   | "bool"                { TYPE_BOOL }
   | "unit"                { TYPE_UNIT }
 
@@ -97,7 +97,7 @@ rule token = parse
   | "def"                 { TYPE_DEF }
 
   (* literals *)
-  | digit+ as lxm { LITERAL(int_of_string lit) }
+  | digit+ as lxm { LITERAL(int_of_string lxm) }
   | double as lxm { DOUBLE_LIT(float_of_string lxm)}
   | '\"' ([^'\"']* as lxm) '\"' { STRING_LIT(lxm) }
   | chr as lxm '\'' { CHAR_LIT(lxm) }
