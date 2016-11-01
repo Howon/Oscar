@@ -38,7 +38,7 @@ type actor_type = Actor_t of string
 type pool_type = Pool_t of actor_type list
 
 type bit_op =
-    Big_RShift
+    Bit_RShift
   | Bit_LShift
   | Bit_And
   | Bit_Or
@@ -48,21 +48,22 @@ type bit_op =
 type message_type = {
     name: string;
     body: stmt list;
+    sender: string;
 }
 
 and expr =
     Binop of expr * bin_op * expr
   | Bitop of int * bit_op * int
-  | Uop of u_op * expr
+  | Unop of u_op * expr
   | Id of string
   | Assign of string * expr
-  | Int_lit of int
-  | Bool_lit of bool
-  | Double_lit of float
-  | Char_lit of char
-  | String_lit of string
+  | Int_Lit of int
+  | Double_Lit of float
+  | Char_Lit of char
+  | String_Lit of string
+  | Bool_Lit of bool
   | List_init of expr list
-  | Function_call of string * expr list
+  | Call of string * expr list
   | Actor_comm of message_type * actor_op * actor_type
   | Noexpr
 

@@ -1,23 +1,38 @@
 open Ast
 
-let registers = Array.make 10 0 
-
 let rec eval = function 
-    | Lit(x) -> x
-    | Seq(e1, e2) ->
-        let _ = eval e1 in eval e2
-    | Asn(x, e) ->
-        let result = eval e in 
-        let _ = registers.(x) <- result in result
-    | Var(x) -> 
-        registers.(x)
+      Id(s) -> s
+    | Int_Lit(x) -> x
+    | Double_Lit(x) -> x
+    | Char_Lit(x) -> x
+    | String_Lit(x) -> x
+    | Bool_Lit(x) -> x
     | Binop(e1, op, e2) ->
         let v1 = eval e1 and v2 = eval e2 in
         match op with
-            | Add -> v1 + v2
+              Add -> v1 + v2
             | Sub -> v1 - v2
-            | Mul -> v1 * v2
+            | Mult -> v1 * v2
             | Div -> v1 / v2
+            | Mod -> v1 % v2
+            | Equal -> v1 = v2
+            | Neq -> v1 <> v2
+            | Less -> v1 < v2
+            | Leq -> v1 <= v2
+            | Greater -> v1 > v2
+            | Geq -> v1 >= v2
+            | And -> v1 && v2
+            | Or -> v1 || v2
+    | Unop(op, e) ->
+        let v = eval e in
+        match op with
+            Neg -> -v
+    | Asn(x, e) ->  x ^ " = " ^ string_of_expr e
+    (* todo: make it right
+    | Call(f, el) ->
+          f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+    *)
+    | Noexpr -> ""
 
 let _ =
     let lexbuf = Lexing.from_channel stdin in
