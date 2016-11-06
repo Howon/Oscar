@@ -17,17 +17,16 @@ type actor_op =
   | Actor_broadcast
   | Actor_receive
 
-type types =
-    Primitive of p_type
-  | Container of cont_type
-  | None_type
+type types = Primitive of p_type | Container of cont_type
 
-type opt_type = Maybe_t | Some_t | None_t
+type opt_type = Maybe_t | Some_t 
 
-type optional = {
+type optional_rec = {
     type_: opt_type;
     param: types;
 }
+
+type optional = Optional_t of optional_rec | None_t
 
 type formal = string * types
 
