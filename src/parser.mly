@@ -103,15 +103,10 @@ fdecl:
       function_formals = $4; function_body = $10;
       function_return = $} }
 
-
-
 lambda:
   LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN expr { $2, $5, $7 }
   | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
       ASSIGN RETURN expr                                  { $2, $5, $8 }
-
-
-
 
 formals_opt:
   /* nothing */   { [] }
