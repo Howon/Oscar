@@ -1,4 +1,4 @@
-type program = None
+type program = message list * actor list * func list
 
 type bin_op =
     Add | Sub | Mult | Div
@@ -44,12 +44,6 @@ type bit_op =
   | Bit_Xor
   | Bit_Not
 
-type message_type = {
-    name: string;
-    body: stmt list;
-    sender: string;
-}
-
 and expr =
     Binop of expr * bin_op * expr
   | Bitop of int * bit_op * int
@@ -76,18 +70,28 @@ and stmt =
   | Break
   | Continue
 
+type pattern = {
+  
+}
+
+type message = {
+    name : string;
+    formals : formal list;
+}
+
+type actor = {
+  name : string;
+  formals : formal list;
+  body : stmt list;
+  functions: func list;
+  receive: pattern list;
+}
+
 type func = {
   name : string;
   return_t : types;
   formals : formal list;
   body : stmt list;
-}
-
-type actor = {
-  fields : field list;
-  name : string;
-  formals : formal list;
-  receive: message_type list;
 }
 
 let rec eval = function

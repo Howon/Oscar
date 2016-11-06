@@ -61,7 +61,7 @@ message_list:
   | message_list message_decl { $2::$1 }
 
 message_decl:
-  TYPE_MESSAGE ID LPAREN formals_opt RPAREN         { None }
+  TYPE_MESSAGE ID LPAREN formals_opt RPAREN   { { name = $2; formals = $4 } }
 
 
 /**********
@@ -78,7 +78,9 @@ actor_list:
 
 actor_decl:
   TYPE_ACTOR ID LPAREN formals_opt RPAREN LBRACE
-      mut_vdecl_list functions receive RBRACE      { $2 }
+      mut_vdecl_list functions receive RBRACE
+        { { name = $2; formals = $4; body = $7;
+            functions = $8; receive = $9 } }
 
 
 /**********
@@ -94,14 +96,13 @@ function_list:
   | function_list fdecl       { $2::$1 }
 
 
-/* TODO: right now functions need to have variables declared before statements */
+/* TODO: implement lambda functs */
 fdecl:
   TYPE_DEF ID lambda { $2, $3 }
   | TYPE_DEF ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
     ASSIGN LBRACE stmt_list RBRACE
-      { { func_name = $2; function_return_t = $7;
-      function_formals = $4; function_body = $10;
-      function_return = $} }
+      { { name = $2; formals = $4;
+      formals = $4; function_body = $10 } }
 
 lambda:
   LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN expr { $2, $5, $7 }
