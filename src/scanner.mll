@@ -41,6 +41,7 @@ rule token = parse
   | "||"                  { LOGIC_OR }
   | "true"                { LOGIC_TRUE }
   | "false"               { LOGIC_FALSE }
+  | '!'                   { LOGIC_NOT }
 
   (* bit math *)
   | '&'                   { BITWISE_AND }

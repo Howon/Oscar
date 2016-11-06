@@ -4,7 +4,7 @@
 %token ARITH_PLUS ARITH_MINUS ARITH_TIMES ARITH_DIVIDE ARITH_MOD
 %token ASSIGN
 %token PUNC_DOT PUNC_COMMA PUNC_SEMI
-%token LOGIC_EQ LOGIC_NEQ LANGLE_BRACKET LOGIC_LEQ RANGLE_BRACKET LOGIC_GEQ
+%token LOGIC_EQ LOGIC_NEQ LANGLE_BRACKET LOGIC_LEQ RANGLE_BRACKET LOGIC_GEQ LOGIC_NOT
 %token LOGIC_AND LOGIC_OR LOGIC_TRUE LOGIC_FALSE
 %token BITWISE_AND BITWISE_OR BITWISE_XOR BITWISE_NOT BITWISE_RIGHT BITWISE_LEFT
 %token FUNC_ARG_TYPE ARROW FUNC_RET_TYPE RETURN
@@ -33,6 +33,7 @@
 %right BITWISE_LEFT BITWISE_RIGHT
 %left ARITH_PLUS ARITH_MINUS
 %left ARITH_TIMES ARITH_DIVIDE ARITH_MOD
+%right LOGIC_NOT
 %right BITWISE_NOT
 %left ACT_SEND ACT_BROADCAST
 %left PUNC_DOT
@@ -218,7 +219,7 @@ stmt:
   /* NOTE: FLOW_IF, FLOW_ELSE, for are not defined in our LRM */
 
 stmt_iter:
-  FLOW_FOR LPAREN vdecl LOOP_FROM INT_LIT LOOP_TO
+    FLOW_FOR LPAREN expr_opt LOOP_FROM INT_LIT LOOP_TO
       INT_LIT LOOP_BY INT_LIT RPAREN stmt   { For($3, $5, $7, $9, $11) }
   | FLOW_WHILE LPAREN expr RPAREN stmt      { While($3, $5) }
 
@@ -233,7 +234,7 @@ expr_opt:
   | expr          { $1 }
 
 expr:
-  ID                                                { Id($1) }
+    ID                                                { Id($1) }
   | INT_LIT                                         { Int_Lit($1) }
   | DOUBLE_LIT                                      { Double_Lit($1) }
   | CHAR_LIT                                        { Char_Lit($1) }
@@ -255,13 +256,13 @@ expr:
   | expr LOGIC_AND    expr                          { Binop($1, And, $3) }
   | expr LOGIC_OR     expr                          { Binop($1, Or, $3) }
   | ARITH_MINUS expr %prec NEG                      { Unop(Neg, $2) }
-  /* | NOT expr                                     { Unop(Not, $2) } */
+  | LOGIC_NOT expr                                  { Unop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                    { Call($1, $3) }
   | LPAREN expr RPAREN                              { $2 }
   | ID LPAREN actuals_opt RPAREN ACT_SEND ID        { None }
   | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID   { None }
+  | ID ASSIGN expr                                  { Assign($1, $3) }
   /* TODO: implement ACT_BROADCASTing lists of messages */
-  /* NOTE: negation, eg !a, does not exist in our LRM */
 
 actuals_opt:
   /* nothing */   { [] }

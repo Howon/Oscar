@@ -116,8 +116,9 @@ let rec eval = function
     | Unop(op, e) ->
         let v = eval e in
         match op with
-            Neg -> -v
-    | Asn(x, e) ->  x ^ " = " ^ string_of_expr e
+              Neg -> -v
+            | Not -> !v
+    | Assign(x, e) ->  x ^ " = " ^ string_of_expr e
     (* todo: make it right
     | Call(f, el) ->
           f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
