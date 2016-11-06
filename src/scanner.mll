@@ -97,7 +97,7 @@ rule token = parse
   | "def"                 { TYPE_DEF }
 
   (* literals *)
-  | digit+ as lxm { LITERAL(int_of_string lxm) }
+  | digit+ as lxm { INT_LIT(int_of_string lxm) }
   | double as lxm { DOUBLE_LIT(float_of_string lxm)}
   | '\"' ([^'\"']* as lxm) '\"' { STRING_LIT(lxm) }
   | chr as lxm '\'' { CHAR_LIT(lxm) }

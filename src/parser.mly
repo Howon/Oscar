@@ -14,7 +14,7 @@
 %token TYPE_INT TYPE_DOUBLE TYPE_CHAR TYPE_BOOL TYPE_UNIT
 %token TYPE_STR TYPE_MAYBE TYPE_SOME TYPE_NONE TYPE_LIST TYPE_SET TYPE_MAP
 %token TYPE_TUPLE TYPE_MESSAGE TYPE_ACTOR TYPE_POOL TYPE_DEF
-%token <int> LITERAL
+%token <int> INT_LIT
 %token <float> DOUBLE_LIT
 %token <string> STRING_LIT
 %token <char> CHAR_LIT
@@ -191,8 +191,8 @@ stmt:
   /* NOTE: FLOW_IF, FLOW_ELSE, for are not defined in our LRM */
 
 stmt_iter:
-  FLOW_FOR LPAREN vdecl LOOP_FROM LITERAL LOOP_TO
-      LITERAL LOOP_BY LITERAL RPAREN stmt   { For($3, $5, $7, $9, $11) }
+  FLOW_FOR LPAREN vdecl LOOP_FROM INT_LIT LOOP_TO
+      INT_LIT LOOP_BY INT_LIT RPAREN stmt   { For($3, $5, $7, $9, $11) }
   | FLOW_WHILE LPAREN expr RPAREN stmt      { While($3, $5) }
 
 /* TODO: this causes a shift/reduce conflict */
@@ -207,7 +207,7 @@ expr_opt:
 
 expr:
   ID                                                { Id($1) }
-  | LITERAL                                         { Int_Lit($1) }
+  | INT_LIT                                         { Int_Lit($1) }
   | DOUBLE_LIT                                      { Double_Lit($1) }
   | CHAR_LIT                                        { Char_Lit($1) }
   | STRING_LIT                                      { String_Lit($1) }
