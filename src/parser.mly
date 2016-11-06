@@ -45,32 +45,54 @@
 %%
 
 program:
-  decls EOF { $1 }
+  messages actors functions EOF { Program($1, $2, $3) }
 
-/* TODO: this does not build up a list properly */
-/* how do we do this with three lists? */
-decls:
-  /* nothing */             { [], [], [] }
-  | decls message_decl      { $2, $1 }
-  | decls actor_decl        { $2, $1 }
-  | decls fdecl             { $2, $1 }
 
+/**********
+MESSAGES
+***********/
+
+messages:
+  /* nothing */               { [] }
+  | message_list              { List.rev $1 }
+
+message_list:
+    message_decl              { [$1] }
+  | message_list message_decl { $2::$1 }
 
 message_decl:
   TYPE_MESSAGE ID LPAREN formals_opt RPAREN         { None }
 
+
+/**********
+ACTORS
+***********/
+
+actors:
+  /* nothing */               { [] }
+  | actor_list                { List.rev $1 }
+
+actor_list:
+    actor_decl                { [$1] }
+  | actor_list actor_decl     { $2::$1 }
+
 actor_decl:
   TYPE_ACTOR ID LPAREN formals_opt RPAREN LBRACE
-      mut_vdecl_list fdecl_list receive RBRACE      { $2 }
+      mut_vdecl_list functions receive RBRACE      { $2 }
 
-lambda:
-  LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN expr { $2, $5, $7 }
-  | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
-      ASSIGN RETURN expr                                  { $2, $5, $8 }
 
-fdecl_list:
-  /* nothing */ { [] }
-  | fdecl_list fdecl { List.rev $1 }
+/**********
+FUNCTIONS
+***********/
+
+functions:
+  /* nothing */               { [] }
+  | function_list             { List.rev $1 }
+
+function_list:
+    fdecl                     { [$1] }
+  | function_list fdecl       { $2::$1 }
+
 
 /* TODO: right now functions need to have variables declared before statements */
 fdecl:
@@ -80,6 +102,16 @@ fdecl:
       { { func_name = $2; function_return_t = $7;
       function_formals = $4; function_body = $10;
       function_return = $} }
+
+
+
+lambda:
+  LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN expr { $2, $5, $7 }
+  | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
+      ASSIGN RETURN expr                                  { $2, $5, $8 }
+
+
+
 
 formals_opt:
   /* nothing */   { [] }
