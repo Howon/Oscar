@@ -1,9 +1,9 @@
 type program = None
 
 type bin_op =
-  | Add    | Minus | Multiply | Divide
-  | Modulo | Equal | Neq      | Lt
-  | Leq    | Gt    | Geq      | And
+    Add | Sub | Mult | Div
+  | Mod | Equal | Neq | Less
+  | Leq | Greater | Geq | And
   | Or
 
 type u_op = Not | Neg
@@ -12,68 +12,63 @@ type p_type = Int_t | Bool_t | Double_t | Char_t | Unit_t
 
 type cont_type = String_t | List_t | Set_t | Map_t | Tuple_t
 
-type opt_type = Maybe_t of types | Some_t of types | None_t
+type actor_op =
+    Actor_send
+  | Actor_broadcast
+  | Actor_receive
 
-type message_type = Message_t
+type types =
+    Primitive of p_type
+  | Container of cont_type
+  | None_type
+
+type opt_type = Maybe_t | Some_t | None_t
+
+type optional = {
+    type_: opt_type;
+    param: types;
+}
+
+type formal = string * types
 
 type field = Field of types * string
-
-type func = {
-  func_name : string;
-  function_return_t : types;
-  function_formals : formal list;
-  function_body : stmt list;
-}
-
-type actor = {
-  actor_fields : field list;
-  actor_name : string;
-  acator_receive: receive;
-}
 
 type actor_type = Actor_t of string
 
 type pool_type = Pool_t of actor_type list
 
-type types =
-  | Primitive of p_type
-  | Container of cont_type
-  | Optional of opt_type
-  | Actor_t of actor_op
-
-type bind_type = types * string
-
 type bit_op =
-  | Big_RShift
+    Bit_RShift
   | Bit_LShift
   | Bit_And
   | Bit_Or
   | Bit_Xor
   | Bit_Not
 
-type actor_op =
-  | Actor_send
-  | Actor_broadcast
-  | Actor_receive
+type message_type = {
+    name: string;
+    body: stmt list;
+    sender: string;
+}
 
-type expr =
-  | Binop of expr * bin_op * expr
+and expr =
+    Binop of expr * bin_op * expr
   | Bitop of int * bit_op * int
-  | Uop of u_op * expr
+  | Unop of u_op * expr
   | Id of string
-  | Assign of expr * expr
-  | Int_lit of int
-  | Bool_lit of bool
-  | Double_lit of float
-  | Char_lit of char
-  | String_lit of string
+  | Assign of string * expr
+  | Int_Lit of int
+  | Double_Lit of float
+  | Char_Lit of char
+  | String_Lit of string
+  | Bool_Lit of bool
   | List_init of expr list
-  | Function_call of string * expr list
+  | Call of string * expr list
   | Actor_comm of message_type * actor_op * actor_type
   | Noexpr
 
-type stmt =
-  | Block of stmt list
+and stmt =
+    Block of stmt list
   | Expr of expr
   | Return of expr
   | If of expr * stmt * stmt
@@ -81,3 +76,57 @@ type stmt =
   | While of expr * stmt
   | Break
   | Continue
+
+type func = {
+  name : string;
+  return_t : types;
+  formals : formal list;
+  body : stmt list;
+}
+
+type actor = {
+  fields : field list;
+  name : string;
+  formals : formal list;
+  receive: message_type list;
+}
+
+let rec eval = function
+      Id(s) -> s
+    | Int_Lit(x) -> x
+    | Double_Lit(x) -> x
+    | Char_Lit(x) -> x
+    | String_Lit(x) -> x
+    | Bool_Lit(x) -> x
+    | Binop(e1, op, e2) ->
+        let v1 = eval e1 and v2 = eval e2 in
+        match op with
+              Add -> v1 + v2
+            | Sub -> v1 - v2
+            | Mult -> v1 * v2
+            | Div -> v1 / v2
+            | Mod -> v1 % v2
+            | Equal -> v1 = v2
+            | Neq -> v1 <> v2
+            | Less -> v1 < v2
+            | Leq -> v1 <= v2
+            | Greater -> v1 > v2
+            | Geq -> v1 >= v2
+            | And -> v1 && v2
+            | Or -> v1 || v2
+    | Unop(op, e) ->
+        let v = eval e in
+        match op with
+            Neg -> -v
+    | Asn(x, e) ->  x ^ " = " ^ string_of_expr e
+    (* todo: make it right
+    | Call(f, el) ->
+          f ^ "(" ^ String.concat ", " (List.map string_of_expr el) ^ ")"
+    *)
+    | Noexpr -> ""
+
+let _ =
+    let lexbuf = Lexing.from_channel stdin in
+    let expr = Parser.expr Scanner.token lexbuf in
+    let result = eval expr in
+    print_endline (string_of_int result)
