@@ -4,7 +4,7 @@
 #include <vector>
 #include <queue>
 
-#include "node/internal.hpp"
+#include "node.hpp"
 
 template <typename T>
 class HAMT {

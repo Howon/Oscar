@@ -46,6 +46,32 @@ namespace hamt {
         vector<node> children;
 
     public:
+        node() {
+            this->type = EMPTY;
+            this->hash = 0;
+            this->key = "";
+            this->val = NULL;
+            this->mask = 0;
+            this->children = NULL;
+        }
+
+        node<T> &operator=(const node<T> &rhs)
+        {
+            if (this == &rhs)
+                return *this;
+
+            this->type = rhs.type;
+            this->hash = rhs.hash;
+            this->key = rhs.key;
+            this->val = rhs.val;
+            this->mask = rhs.mask;
+            this->vector = rhs.vector;
+
+            return *this;
+        }
+
+        bool operator==(const node<T> &rhs) { return this == &rhs; }
+
         types get_type() { return type; }
 
         virtual node &modify(const int shift, T(*fun)(T),
@@ -56,24 +82,11 @@ namespace hamt {
         }
 
         vector<node> get_children() { return this->children; }
-
-        node<T> &operator=(const node<T> &rhs)
-        {
-            if (this == &rhs)
-                return *this;
-
-            this->type = rhs->type;
-
-        }
-
-        bool operator==(const node<T> &rhs) { return this == &rhs; }
     };
 
     template <typename T>
     class empty_node : node<T>
     {
-        empty_node() { this->type = EMPTY; }
-
         node<T> &modify(const int shift, T(*fun)(T),
             const u_int hash, const string key, int *size)
         {
