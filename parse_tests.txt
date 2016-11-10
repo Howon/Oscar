@@ -1,3 +1,6 @@
+use command:
+menhir --interpret --interpret-show-cst parser.mly
+
 -----blank message-----
 message hello()
 
