@@ -97,6 +97,12 @@ type func = {
   body: stmt list;
 }
 
+type lambda = {
+  formals: formal list;
+  return_t: types;
+  return_expr: expr;
+}
+
 let rec eval = function
       Id(s) -> s
     | Int_Lit(x) -> x

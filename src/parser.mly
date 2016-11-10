@@ -97,16 +97,10 @@ function_list:
 
 /* TODO: implement lambda functs */
 fdecl:
-  TYPE_DEF ID lambda { $2, $3 }
   | TYPE_DEF ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
     ASSIGN LBRACE stmt_list RBRACE
       { { name = $2; formals = $4;
-      formals = $4; function_body = $10 } }
-
-lambda:
-  LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN expr { $2, $5, $7 }
-  | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
-      ASSIGN RETURN expr                                  { $2, $5, $8 }
+      return_t = $7; function_body = $10 } }
 
 formals_opt:
   /* nothing */   { [] }
@@ -187,7 +181,6 @@ tuple_decl:
 
 
 /* for pattern matching with receive */
-/* TODO: cleanup pattern matching */
 receive:
   ACT_RECEIVE LBRACE pattern_opt RBRACE { None }
 
@@ -210,10 +203,6 @@ stmt_list:
   /* nothing */       { [] }
   | stmt_list stmt    { $2 :: $1 }
 
-/* TODO: because RETURNs are allowed here, it means they are allowed within patterns
-      which we don't want, see Q on line 67 ish */
-/* NOTE: statements must end with a PUNC_SEMI */
-/* NOTE: one shift reduce conflict?????? */
 stmt:
   expr PUNC_SEMI                                      { Expr $1 }
   | RETURN PUNC_SEMI                                  { RETURN Noexpr }
@@ -221,7 +210,6 @@ stmt:
   | LBRACE stmt_list RBRACE                           { Block(List.rev $2) }
   | stmt_cond                                         { $1 }
   | stmt_iter                                         { $1 }
-  /* NOTE: FLOW_IF, FLOW_ELSE, for are not defined in our LRM */
 
 stmt_iter:
   FLOW_FOR LPAREN vdecl LOOP_FROM LITERAL LOOP_TO
@@ -266,8 +254,14 @@ expr:
   | LPAREN expr RPAREN                              { $2 }
   | ID LPAREN actuals_opt RPAREN ACT_SEND ID        { None }
   | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID   { None }
-  /* TODO: implement ACT_BROADCASTing lists of messages */
+  | lambda
   /* NOTE: negation, eg !a, does not exist in our LRM */
+
+lambda:
+  LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN expr 
+        { { formals = $2; return_t = $5;, return_expr = $7; } }
+  | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN RETURN expr
+        { { formals = $2; return_t = $5;, return_expr = $8; } }
 
 actuals_opt:
   /* nothing */   { [] }
