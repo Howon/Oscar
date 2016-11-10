@@ -70,28 +70,31 @@ and stmt =
   | Break
   | Continue
 
-type pattern = {
-  
-}
 
 type message = {
-    name : string;
-    formals : formal list;
+    name: string;
+    formals: formal list;
+}
+
+type pattern = {
+  message_id: string;
+  message_formals: formals list;
+  stmts: stmt list;
 }
 
 type actor = {
-  name : string;
-  formals : formal list;
-  body : stmt list;
+  name: string;
+  formals: formal list;
+  body: stmt list;
   functions: func list;
   receive: pattern list;
 }
 
 type func = {
-  name : string;
-  return_t : types;
-  formals : formal list;
-  body : stmt list;
+  name: string;
+  return_t: types;
+  formals: formal list;
+  body: stmt list;
 }
 
 let rec eval = function

@@ -23,9 +23,8 @@
 %token EOF
 
 %nonassoc NOELSE
-%nonassoc PATTERN
 %right ASSIGN
-%left FUNC_ARG_TYPE ARROW FUN_RET_TYPE
+%left FUNC_ARG_TYPE ARROW FUNC_RET_TYPE
 %left LOGIC_AND LOGIC_OR
 %left LOGIC_EQ LOGIC_NEQ
 %left LANGLE_BRACKET RANGLE_BRACKET LOGIC_LEQ LOGIC_GEQ
@@ -185,6 +184,8 @@ tuple_decl:
   TYPE_TUPLE LANGLE_BRACKET typ_list RANGLE_BRACKET ID ASSIGN TYPE_TUPLE LANGLE_BRACKET
       typ_list RANGLE_BRACKET   LBRACKET RBRACKET PUNC_SEMI                   { None }
 
+
+
 /* for pattern matching with receive */
 /* TODO: cleanup pattern matching */
 receive:
@@ -194,12 +195,16 @@ pattern_opt:
   /* nothing */   { [] }
   | pattern_list  { List.rev $1 }
 
-/* NOTE: patterns end with statements, which end with PUNC_SEMIcolons */
 pattern_list:
-  BITWISE_OR ID LPAREN formals_opt RPAREN FUNC_RET_TYPE
-      stmt_list %prec PATTERN       { [($2, $4, $7)] }
-  | pattern_list BITWISE_OR ID LPAREN formals_opt RPAREN FUNC_RET_TYPE
-      stmt_list                     { [($3, $5, $8)] :: $1 }
+    pattern              { [$1] }
+  | pattern_list pattern { $2::$1 }
+
+pattern:
+    BITWISE_OR ID LPAREN formals_opt RPAREN FUNC_RET_TYPE 
+      LBRACE stmt_list RBRACE
+            { [($2, $4, $7)] }
+
+
 
 stmt_list:
   /* nothing */       { [] }
@@ -211,8 +216,8 @@ stmt_list:
 /* NOTE: one shift reduce conflict?????? */
 stmt:
   expr PUNC_SEMI                                      { Expr $1 }
-  | RETURN PUNC_SEMI                             { RETURN Noexpr }
-  | RETURN expr PUNC_SEMI                        { RETURN $2 }
+  | RETURN PUNC_SEMI                                  { RETURN Noexpr }
+  | RETURN expr PUNC_SEMI                             { RETURN $2 }
   | LBRACE stmt_list RBRACE                           { Block(List.rev $2) }
   | stmt_cond                                         { $1 }
   | stmt_iter                                         { $1 }
