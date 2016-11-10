@@ -182,7 +182,7 @@ tuple_decl:
 
 /* for pattern matching with receive */
 receive:
-  ACT_RECEIVE LBRACE pattern_opt RBRACE { None }
+  ACT_RECEIVE ASSIGN LBRACE pattern_opt RBRACE { None }
 
 pattern_opt:
   /* nothing */   { [] }
@@ -195,8 +195,7 @@ pattern_list:
 pattern:
     BITWISE_OR ID LPAREN formals_opt RPAREN FUNC_RET_TYPE 
       LBRACE stmt_list RBRACE
-            { [($2, $4, $7)] }
-
+            { { message_id = $2; message_formals = $4; stmts = $8; } }
 
 
 stmt_list:
@@ -254,14 +253,14 @@ expr:
   | LPAREN expr RPAREN                              { $2 }
   | ID LPAREN actuals_opt RPAREN ACT_SEND ID        { None }
   | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID   { None }
-  | lambda
+  | lambda                                          { $1 }
   /* NOTE: negation, eg !a, does not exist in our LRM */
 
 lambda:
-  LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN expr 
-        { { formals = $2; return_t = $5;, return_expr = $7; } }
-  | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN RETURN expr
-        { { formals = $2; return_t = $5;, return_expr = $8; } }
+  LPAREN LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN expr RPAREN
+        { { formals = $3; return_t = $6;, return_expr = $8; } }
+  | LPAREN LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN RETURN expr RPAREN
+        { { formals = $3; return_t = $6;, return_expr = $9; } }
 
 actuals_opt:
   /* nothing */   { [] }
