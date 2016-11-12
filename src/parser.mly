@@ -3,7 +3,7 @@
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token ARITH_PLUS ARITH_MINUS ARITH_TIMES ARITH_DIVIDE ARITH_MOD
 %token ASSIGN
-%token PUNC_DOT PUNC_COMMA PUNC_SEMI
+%token PUNC_COMMA PUNC_SEMI
 %token LOGIC_EQ LOGIC_NEQ LANGLE_BRACKET LOGIC_LEQ RANGLE_BRACKET LOGIC_GEQ LOGIC_NOT
 %token LOGIC_AND LOGIC_OR LOGIC_TRUE LOGIC_FALSE
 %token BITWISE_AND BITWISE_OR BITWISE_XOR BITWISE_NOT BITWISE_RIGHT BITWISE_LEFT
@@ -35,7 +35,6 @@
 %right LOGIC_NOT
 %right BITWISE_NOT
 %left ACT_SEND ACT_BROADCAST
-%left PUNC_DOT
 
 %right NEG /* for negative numbers */
 
@@ -249,10 +248,10 @@ expr:
   | expr LOGIC_GEQ      expr                        { Binop($1, Geq, $3) }
   | expr LOGIC_AND      expr                        { Binop($1, And, $3) }
   | expr LOGIC_OR       expr                        { Binop($1, Or, $3) }
-  | expr BITWISE_AND    expr                        { Binop($1, Bit_And, $3)}
-  | expr BITWISE_OR     expr                        { Binop($1, Bit_Or, $3)}
-  | expr BITWISE_XOR    expr                        { Binop($1, Bit_Xor, $3)}
-  | expr BITWISE_NOT    expr                        { Binop($1, Bit_Not, $3)}
+  | expr BITWISE_AND    expr                        { Binop($1, Bit_And, $3) }
+  | expr BITWISE_OR     expr                        { Binop($1, Bit_Or, $3) }
+  | expr BITWISE_XOR    expr                        { Binop($1, Bit_Xor, $3) }
+  | expr BITWISE_NOT    expr                        { Unop($1, Bit_Not) }
   | expr BITWISE_RIGHT  expr                        { Binop($1, Bit_RShift, $3)}
   | expr BITWISE_LEFT   expr                        { Binop($1, Bit_LShift, $3)}
   | ARITH_MINUS expr %prec NEG                      { Unop(Neg, $2) }
