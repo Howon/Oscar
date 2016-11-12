@@ -24,11 +24,11 @@ let rec eval = function
             | Geq -> v1 >= v2
             | And -> v1 && v2
             | Or -> v1 || v2
-            | Bit_And -> v1 & v2
-            | Bit_Or -> v1 | v2
-            | Bit_Xor -> v1 ^ v2
-            | Bit_RShift -> v1 >> v2
-            | Bit_LShift -> v1 << v2
+            | Bit_And -> v1 land v2
+            | Bit_Or -> v1 lor v2
+            | Bit_Xor -> v1 lxor v2
+            | Bit_RShift -> v1 lsr v2
+            | Bit_LShift -> v1 lsl v2
         )
     | Unop(op, e) ->
         let v = eval e in
@@ -36,7 +36,8 @@ let rec eval = function
           match op with
               Neg -> -v
             | Not -> !v
-            | Bit_Not -> ~v
+            (* todo: i couldn't find Bit_Not in OCaml *)
+            (* | Bit_Not -> ~v *)
         )
     | Assign(x, e) ->  x ^ " = " ^ eval e
     (* todo: make it right
