@@ -4,7 +4,7 @@
 %token ARITH_PLUS ARITH_MINUS ARITH_TIMES ARITH_DIVIDE ARITH_MOD
 %token ASSIGN
 %token PUNC_DOT PUNC_COMMA PUNC_SEMI
-%token LOGIC_EQ LOGIC_NEQ LANGLE_BRACKET LOGIC_LEQ RANGLE_BRACKET LOGIC_GEQ
+%token LOGIC_EQ LOGIC_NEQ LANGLE_BRACKET LOGIC_LEQ RANGLE_BRACKET LOGIC_GEQ LOGIC_NOT
 %token LOGIC_AND LOGIC_OR LOGIC_TRUE LOGIC_FALSE
 %token BITWISE_AND BITWISE_OR BITWISE_XOR BITWISE_NOT BITWISE_RIGHT BITWISE_LEFT
 %token FUNC_ARG_TYPE ARROW FUNC_RET_TYPE RETURN
@@ -14,7 +14,7 @@
 %token TYPE_INT TYPE_DOUBLE TYPE_CHAR TYPE_BOOL TYPE_UNIT
 %token TYPE_STR TYPE_MAYBE TYPE_SOME TYPE_NONE TYPE_LIST TYPE_SET TYPE_MAP
 %token TYPE_TUPLE TYPE_MESSAGE TYPE_ACTOR TYPE_POOL TYPE_DEF
-%token <int> LITERAL
+%token <int> INT_LIT
 %token <float> DOUBLE_LIT
 %token <string> STRING_LIT
 %token <char> CHAR_LIT
@@ -32,6 +32,7 @@
 %right BITWISE_LEFT BITWISE_RIGHT
 %left ARITH_PLUS ARITH_MINUS
 %left ARITH_TIMES ARITH_DIVIDE ARITH_MOD
+%right LOGIC_NOT
 %right BITWISE_NOT
 %left ACT_SEND ACT_BROADCAST
 %left PUNC_DOT
@@ -204,61 +205,64 @@ stmt_list:
 
 stmt:
   expr PUNC_SEMI                                      { Expr $1 }
-  | RETURN PUNC_SEMI                                  { RETURN Noexpr }
-  | RETURN expr PUNC_SEMI                             { RETURN $2 }
+  | RETURN PUNC_SEMI                                  { Return Noexpr }
+  | RETURN expr PUNC_SEMI                             { Return $2 }
   | LBRACE stmt_list RBRACE                           { Block(List.rev $2) }
   | stmt_cond                                         { $1 }
   | stmt_iter                                         { $1 }
 
 stmt_iter:
-  FLOW_FOR LPAREN vdecl LOOP_FROM LITERAL LOOP_TO
-      LITERAL LOOP_BY LITERAL RPAREN stmt   { For($3, $5, $7, $9, $11) }
+    FLOW_FOR LPAREN expr_opt LOOP_FROM INT_LIT LOOP_TO
+      INT_LIT LOOP_BY INT_LIT RPAREN stmt   { For($3, $5, $7, $9, $11) }
   | FLOW_WHILE LPAREN expr RPAREN stmt      { While($3, $5) }
 
 /* TODO: this causes a shift/reduce conflict, also action is wrong */
 stmt_cond:
-  FLOW_IF LPAREN expr RPAREN stmt %prec NOELSE
-        { FLOW_IF($3, $5, Block([])) }
-  | FLOW_IF LPAREN expr RPAREN stmt FLOW_ELSE stmt { FLOW_IF($3, $5, $7) }
+  FLOW_IF LPAREN expr RPAREN LBRACE stmt RBRACE %prec NOELSE
+        { FLOW_IF($3, $6, Block([])) }
+  | FLOW_IF LPAREN expr RPAREN LBRACE stmt RBRACE
+        FLOW_ELSE LBRACE stmt RBRACE { FLOW_IF($3, $6, $10) }
 
 expr_opt:
   /* nothing */   { Noexpr }
   | expr          { $1 }
 
 expr:
-    ID                                              { Id($1) }
-  | LITERAL                                         { Lit($1) }
+    ID                                                { Id($1) }
+  | INT_LIT                                         { Int_Lit($1) }
   | DOUBLE_LIT                                      { Double_Lit($1) }
   | CHAR_LIT                                        { Char_Lit($1) }
   | STRING_LIT                                      { String_Lit($1) }
   | BOOL_LIT                                        { Bool_Lit($1) }
-  | LOGIC_TRUE                                      { BoolLit(true) }
-  | LOGIC_FALSE                                     { BoolLit(false) }
-  | expr ARITH_PLUS   expr                          { bin_op($1, Add, $3) }
-  | expr ARITH_MINUS  expr                          { bin_op($1, Sub, $3) }
-  | expr ARITH_TIMES  expr                          { bin_op($1, Mult, $3) }
-  | expr ARITH_DIVIDE expr                          { bin_op($1, Div, $3) }
-  | expr ARITH_MOD    expr                          { bin_op($1, Mod, $3) }
-  | expr LOGIC_EQ     expr                          { bin_op($1, Equal, $3) }
-  | expr LOGIC_NEQ    expr                          { bin_op($1, Neq, $3) }
-  | expr LANGLE_BRACKET       expr                  { bin_op($1, Less, $3) }
-  | expr LOGIC_LEQ    expr                          { bin_op($1, Leq, $3) }
-  | expr RANGLE_BRACKET       expr                  { bin_op($1, Greater,$3) }
-  | expr LOGIC_GEQ    expr                          { bin_op($1, Geq, $3) }
-  | expr LOGIC_AND    expr                          { bin_op($1, And, $3) }
-  | expr LOGIC_OR     expr                          { bin_op($1, Or, $3) }
-  /* | MINUS expr %prec NEG                         { Unop(Neg, $2) } */
-  /* | NOT expr                                     { Unop(Not, $2) } */
+  | LOGIC_TRUE                                      { Bool_Lit(true) }
+  | LOGIC_FALSE                                     { Bool_Lit(false) }
+  | expr ARITH_PLUS   expr                          { Binop($1, Add, $3) }
+  | expr ARITH_MINUS  expr                          { Binop($1, Sub, $3) }
+  | expr ARITH_TIMES  expr                          { Binop($1, Mult, $3) }
+  | expr ARITH_DIVIDE expr                          { Binop($1, Div, $3) }
+  | expr ARITH_MOD    expr                          { Binop($1, Mod, $3) }
+  | expr LOGIC_EQ     expr                          { Binop($1, Equal, $3) }
+  | expr LOGIC_NEQ    expr                          { Binop($1, Neq, $3) }
+  | expr LANGLE_BRACKET       expr                  { Binop($1, Less, $3) }
+  | expr LOGIC_LEQ    expr                          { Binop($1, Leq, $3) }
+  | expr RANGLE_BRACKET       expr                  { Binop($1, Greater,$3) }
+  | expr LOGIC_GEQ    expr                          { Binop($1, Geq, $3) }
+  | expr LOGIC_AND    expr                          { Binop($1, And, $3) }
+  | expr LOGIC_OR     expr                          { Binop($1, Or, $3) }
+  | ARITH_MINUS expr %prec NEG                      { Unop(Neg, $2) }
+  | LOGIC_NOT expr                                  { Unop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                    { Call($1, $3) }
   | LPAREN expr RPAREN                              { $2 }
   | ID LPAREN actuals_opt RPAREN ACT_SEND ID        { None }
   | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID   { None }
   | lambda                                          { $1 }
+  | ID ASSIGN expr                                  { Assign($1, $3) }
   /* NOTE: negation, eg !a, does not exist in our scanner */
 
 lambda:
   | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmt_list RBRACE
         { { formals = $2; return_t = $5; body = $8; } }
+
 
 actuals_opt:
   /* nothing */   { [] }
