@@ -225,9 +225,10 @@ stmt_iter:
 
 /* TODO: this causes a shift/reduce conflict */
 stmt_cond:
-  FLOW_IF LPAREN expr RPAREN stmt %prec NOELSE
-        { FLOW_IF($3, $5, Block([])) }
-  | FLOW_IF LPAREN expr RPAREN stmt FLOW_ELSE stmt { FLOW_IF($3, $5, $7) }
+  FLOW_IF LPAREN expr RPAREN LBRACE stmt RBRACE %prec NOELSE
+        { FLOW_IF($3, $6, Block([])) }
+  | FLOW_IF LPAREN expr RPAREN LBRACE stmt RBRACE
+        FLOW_ELSE LBRACE stmt RBRACE { FLOW_IF($3, $6, $10) }
 
 expr_opt:
   /* nothing */   { Noexpr }
