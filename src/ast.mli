@@ -92,15 +92,15 @@ type actor = {
 
 type func = {
   name: string;
-  return_t: types;
   formals: formal list;
+  return_t: types;
   body: stmt list;
 }
 
 type lambda = {
   formals: formal list;
   return_t: types;
-  return_expr: expr;
+  body: stmt list;
 }
 
 let rec eval = function

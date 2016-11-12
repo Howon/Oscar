@@ -215,7 +215,7 @@ stmt_iter:
       LITERAL LOOP_BY LITERAL RPAREN stmt   { For($3, $5, $7, $9, $11) }
   | FLOW_WHILE LPAREN expr RPAREN stmt      { While($3, $5) }
 
-/* TODO: this causes a shift/reduce conflict */
+/* TODO: this causes a shift/reduce conflict, also action is wrong */
 stmt_cond:
   FLOW_IF LPAREN expr RPAREN stmt %prec NOELSE
         { FLOW_IF($3, $5, Block([])) }
@@ -226,7 +226,7 @@ expr_opt:
   | expr          { $1 }
 
 expr:
-  ID                                                { Id($1) }
+    ID                                              { Id($1) }
   | LITERAL                                         { Lit($1) }
   | DOUBLE_LIT                                      { Double_Lit($1) }
   | CHAR_LIT                                        { Char_Lit($1) }
@@ -254,13 +254,11 @@ expr:
   | ID LPAREN actuals_opt RPAREN ACT_SEND ID        { None }
   | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID   { None }
   | lambda                                          { $1 }
-  /* NOTE: negation, eg !a, does not exist in our LRM */
+  /* NOTE: negation, eg !a, does not exist in our scanner */
 
 lambda:
-  LPAREN LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN expr RPAREN
-        { { formals = $3; return_t = $6;, return_expr = $8; } }
-  | LPAREN LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN RETURN expr RPAREN
-        { { formals = $3; return_t = $6;, return_expr = $9; } }
+  | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmt_list RBRACE
+        { { formals = $2; return_t = $5; body = $8; } }
 
 actuals_opt:
   /* nothing */   { [] }
