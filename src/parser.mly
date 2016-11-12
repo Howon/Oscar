@@ -157,15 +157,17 @@ pattern:
             { { message_id = $2; message_formals = $4; stmts = $8; } }
 
 
+actor_stmt:
+  stmt                  { $1 }
+  | mut_vdecl PUNC_SEMI { $1 }
+
 actor_stmt_opt:
   /* nothing */     { [] }
   | actor_stmt_list { List.rev $1 }
 
 actor_stmt_list:
-  stmt                        { [$1] }
-  | mut_vdecl                 { [$1] }
-  | actor_stmt_list stmt      { $2 :: $1 }
-  | actor_stmt_list mut_vdecl { $2 :: $1 }
+  actor_stmt                    { [$1] }
+  | actor_stmt_list actor_stmt  { $2 :: $1 }
 
 stmt_list:
   /* nothing */       { [] }
@@ -173,8 +175,7 @@ stmt_list:
 
 stmt:
   expr PUNC_SEMI                                      { Expr $1 }
-  | typ ID ASSIGN expr                                { Vdecl($2, $1, $4) }
-  | ID ASSIGN expr                                    { Vassign($1, $3) }
+  | typ ID ASSIGN expr PUNC_SEMI                      { Vdecl($2, $1, $4) }
   | RETURN PUNC_SEMI                                  { Return Noexpr }
   | RETURN expr PUNC_SEMI                             { Return $2 }
   | LBRACE stmt_list RBRACE                           { Block(List.rev $2) }
@@ -182,15 +183,16 @@ stmt:
   | stmt_iter                                         { $1 }
 
 stmt_iter:
-    FLOW_FOR LPAREN expr_opt LOOP_FROM INT_LIT LOOP_TO
-      INT_LIT LOOP_BY INT_LIT RPAREN stmt   { For($3, $5, $7, $9, $11) }
-  | FLOW_WHILE LPAREN expr RPAREN stmt      { While($3, $5) }
+  FLOW_FOR LPAREN TYPE_INT ID LOOP_FROM INT_LIT LOOP_TO INT_LIT LOOP_BY
+      INT_LIT RPAREN LBRACE stmt_list RBRACE    { For($4, $6, $8, $10, $13) }
+  | FLOW_WHILE LPAREN expr RPAREN
+      LBRACE stmt_list RBRACE                   { While($3, $6) }
 
 stmt_cond:
-  FLOW_IF LPAREN expr RPAREN LBRACE stmt RBRACE %prec NOELSE
-        { FLOW_IF($3, $6, Block([])) }
-  | FLOW_IF LPAREN expr RPAREN LBRACE stmt RBRACE
-        FLOW_ELSE LBRACE stmt RBRACE { FLOW_IF($3, $6, $10) }
+  FLOW_IF LPAREN expr RPAREN LBRACE stmt_list RBRACE %prec NOELSE
+        { If($3, $6, Block([])) }
+  | FLOW_IF LPAREN expr RPAREN LBRACE stmt_list RBRACE
+        FLOW_ELSE LBRACE stmt RBRACE { If($3, $6, $10) }
 
 map_opt:
   /* nothing */   { [] }
@@ -210,12 +212,8 @@ fancy_lit:
   | TYPE_TUPLE LANGLE typ_opt RANGLE
         LPAREN actuals_opt RPAREN                 { Tuple_List($3, $6) }
 
-expr_opt:
-  /* nothing */   { Noexpr }
-  | expr          { $1 }
-
 expr:
-    ID                                                { Id($1) }
+  ID                                                { Id($1) }
   | INT_LIT                                         { Int_Lit($1) }
   | DOUBLE_LIT                                      { Double_Lit($1) }
   | CHAR_LIT                                        { Char_Lit($1) }
@@ -223,8 +221,6 @@ expr:
   | BOOL_LIT                                        { Bool_Lit($1) }
   | LOGIC_TRUE                                      { Bool_Lit(true) }
   | LOGIC_FALSE                                     { Bool_Lit(false) }
-  | LPAREN actuals_opt RPAREN                       { Tuple_Lit($2) }
-  | LBRACKET actuals_opt RPAREN                     { List_Lit($2) }
   | fancy_lit                                       { $1 }
   | expr ARITH_PLUS   expr                          { Binop($1, Add, $3) }
   | expr ARITH_MINUS  expr                          { Binop($1, Sub, $3) }
@@ -233,18 +229,18 @@ expr:
   | expr ARITH_MOD    expr                          { Binop($1, Mod, $3) }
   | expr LOGIC_EQ     expr                          { Binop($1, Equal, $3) }
   | expr LOGIC_NEQ    expr                          { Binop($1, Neq, $3) }
-  | expr LANGLE       expr                  { Binop($1, Less, $3) }
+  | expr LANGLE       expr                          { Binop($1, Less, $3) }
   | expr LOGIC_LEQ    expr                          { Binop($1, Leq, $3) }
-  | expr RANGLE       expr                  { Binop($1, Greater,$3) }
+  | expr RANGLE       expr                          { Binop($1, Greater,$3) }
   | expr LOGIC_GEQ    expr                          { Binop($1, Geq, $3) }
   | expr LOGIC_AND    expr                          { Binop($1, And, $3) }
   | expr LOGIC_OR     expr                          { Binop($1, Or, $3) }
   | ARITH_MINUS expr %prec NEG                      { Unop(Neg, $2) }
   | LOGIC_NOT expr                                  { Unop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                    { Call($1, $3) }
-  /*| LPAREN expr RPAREN                              { $2 }
+  | LPAREN expr RPAREN                              { $2 }
   | ID LPAREN actuals_opt RPAREN ACT_SEND ID        { None }
-  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID   { None }*/
+  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID   { None }
   | lambda                                          { $1 }
   | ID ASSIGN expr                                  { Assign($1, $3) }
   /* NOTE: negation, eg !a, does not exist in our scanner */
