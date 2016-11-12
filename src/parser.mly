@@ -236,19 +236,25 @@ expr:
   | BOOL_LIT                                        { Bool_Lit($1) }
   | LOGIC_TRUE                                      { Bool_Lit(true) }
   | LOGIC_FALSE                                     { Bool_Lit(false) }
-  | expr ARITH_PLUS   expr                          { Binop($1, Add, $3) }
-  | expr ARITH_MINUS  expr                          { Binop($1, Sub, $3) }
-  | expr ARITH_TIMES  expr                          { Binop($1, Mult, $3) }
-  | expr ARITH_DIVIDE expr                          { Binop($1, Div, $3) }
-  | expr ARITH_MOD    expr                          { Binop($1, Mod, $3) }
-  | expr LOGIC_EQ     expr                          { Binop($1, Equal, $3) }
-  | expr LOGIC_NEQ    expr                          { Binop($1, Neq, $3) }
-  | expr LANGLE_BRACKET       expr                  { Binop($1, Less, $3) }
-  | expr LOGIC_LEQ    expr                          { Binop($1, Leq, $3) }
-  | expr RANGLE_BRACKET       expr                  { Binop($1, Greater,$3) }
-  | expr LOGIC_GEQ    expr                          { Binop($1, Geq, $3) }
-  | expr LOGIC_AND    expr                          { Binop($1, And, $3) }
-  | expr LOGIC_OR     expr                          { Binop($1, Or, $3) }
+  | expr ARITH_PLUS     expr                        { Binop($1, Add, $3) }
+  | expr ARITH_MINUS    expr                        { Binop($1, Sub, $3) }
+  | expr ARITH_TIMES    expr                        { Binop($1, Mult, $3) }
+  | expr ARITH_DIVIDE   expr                        { Binop($1, Div, $3) }
+  | expr ARITH_MOD      expr                        { Binop($1, Mod, $3) }
+  | expr LOGIC_EQ       expr                        { Binop($1, Equal, $3) }
+  | expr LOGIC_NEQ      expr                        { Binop($1, Neq, $3) }
+  | expr LANGLE_BRACKET expr                        { Binop($1, Less, $3) }
+  | expr LOGIC_LEQ      expr                        { Binop($1, Leq, $3) }
+  | expr RANGLE_BRACKET expr                        { Binop($1, Greater,$3) }
+  | expr LOGIC_GEQ      expr                        { Binop($1, Geq, $3) }
+  | expr LOGIC_AND      expr                        { Binop($1, And, $3) }
+  | expr LOGIC_OR       expr                        { Binop($1, Or, $3) }
+  | expr BITWISE_AND    expr                        { Binop($1, Bit_And, $3)}
+  | expr BITWISE_OR     expr                        { Binop($1, Bit_Or, $3)}
+  | expr BITWISE_XOR    expr                        { Binop($1, Bit_Xor, $3)}
+  | expr BITWISE_NOT    expr                        { Binop($1, Bit_Not, $3)}
+  | expr BITWISE_RIGHT  expr                        { Binop($1, Bit_RShift, $3)}
+  | expr BITWISE_LEFT   expr                        { Binop($1, Bit_LShift, $3)}
   | ARITH_MINUS expr %prec NEG                      { Unop(Neg, $2) }
   | LOGIC_NOT expr                                  { Unop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                    { Call($1, $3) }

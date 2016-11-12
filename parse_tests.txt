@@ -104,9 +104,9 @@ TYPE_ACTOR ID LPAREN RPAREN LBRACE ACT_RECEIVE ASSIGN LBRACE BITWISE_OR ID LPARE
 
 
 -----blank function-----
-def func() => int = {}
+def func() => int = {return 1 | 2;}
 
-TYPE_DEF ID LPAREN RPAREN FUNC_RET_TYPE TYPE_INT ASSIGN LBRACE RBRACE
+TYPE_DEF ID LPAREN RPAREN FUNC_RET_TYPE TYPE_INT ASSIGN LBRACE RETURN INT_LIT BITWISE_OR INT_LIT PUNC_SEMI RBRACE
 
 [program:
   [messages:]
@@ -132,7 +132,7 @@ TYPE_DEF ID LPAREN RPAREN FUNC_RET_TYPE TYPE_INT ASSIGN LBRACE RBRACE
 ]
 
 
------function with one-line inside it-----
+-----function with one-line lambda inside it-----
 def func() => int = {
   return map.((a: int) => int = {return a + 2;}, 5);
 }
