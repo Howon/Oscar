@@ -6,7 +6,7 @@ type bin_op =
   | Leq | Greater | Geq | And
   | Or
 
-type u_op = Not | Neg
+type u_op = Not | Neg | Bit_Not
 
 type p_type = Int_t | Bool_t | Double_t | Char_t | Unit_t
 
