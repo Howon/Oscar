@@ -28,7 +28,6 @@ rule token = parse
   | '%'                   { ARITH_MOD }
 
   (* comma, dot, semi *)
-  | '.'                   { PUNC_DOT }
   | ','                   { PUNC_COMMA }
   | ';'                   { PUNC_SEMI }
 
