@@ -37,12 +37,12 @@ type actor_type = Actor_t of string
 type pool_type = Pool_t of actor_type list
 
 type bit_op =
-    Bit_RShift
-  | Bit_LShift
-  | Bit_And
+    Bit_And
   | Bit_Or
   | Bit_Xor
   | Bit_Not
+  | Bit_RShift
+  | Bit_LShift
 
 and expr =
     Binop of expr * bin_op * expr
