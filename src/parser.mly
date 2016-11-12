@@ -27,7 +27,7 @@
 %left FUNC_ARG_TYPE ARROW FUNC_RET_TYPE
 %left LOGIC_AND LOGIC_OR
 %left LOGIC_EQ LOGIC_NEQ
-%left LANGLE_BRACKET RANGLE_BRACKET LOGIC_LEQ LOGIC_GEQ
+%left LANGLE RANGLE LOGIC_LEQ LOGIC_GEQ
 %left BITWISE_AND BITWISE_XOR BITWISE_OR
 %right BITWISE_LEFT BITWISE_RIGHT
 %left ARITH_PLUS ARITH_MINUS
@@ -46,7 +46,6 @@
 program:
   messages actors functions EOF { Program($1, $2, $3) }
 
-
 /**********
 MESSAGES
 ***********/
@@ -62,7 +61,6 @@ message_list:
 message_decl:
   TYPE_MESSAGE ID LPAREN formals_opt RPAREN   { { name = $2; formals = $4 } }
 
-
 /**********
 ACTORS
 ***********/
@@ -77,10 +75,9 @@ actor_list:
 
 actor_decl:
   TYPE_ACTOR ID LPAREN formals_opt RPAREN LBRACE
-      mut_vdecl_list functions receive RBRACE
+      actor_stmt_opt functions receive RBRACE
         { { name = $2; formals = $4; body = $7;
             functions = $8; receive = $9 } }
-
 
 /**********
 FUNCTIONS
@@ -94,8 +91,6 @@ function_list:
     fdecl                     { [$1] }
   | function_list fdecl       { $2::$1 }
 
-
-/* TODO: implement lambda functs */
 fdecl:
   | TYPE_DEF ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
     ASSIGN LBRACE stmt_list RBRACE
@@ -110,11 +105,13 @@ formal_list:
   ID FUNC_ARG_TYPE typ                            { [($1, $3)] }
   | formal_list PUNC_COMMA ID FUNC_ARG_TYPE typ   { ($3, $5) :: $1 }
 
-typ_list:
-   /* nothing */
-  | typ                       { None }
-  | typ_list PUNC_COMMA typ   { List.rev $1 }
+typ_opt:
+  /* nothing */     { [] }
+  | typ_list        { List.rev $1 }
 
+typ_list:
+  | typ                       { [$1] }
+  | typ_list PUNC_COMMA typ   { $3 :: $1 }
 
 /* primative types */
 /* TODO: handle MAYBE/SOME/NONE */
@@ -131,52 +128,14 @@ simple_typ:
   | TYPE_STR      { String_t }
 
 fancy_typ:
-  | TYPE_MAP LANGLE_BRACKET typ PUNC_COMMA typ RANGLE_BRACKET { map($3, $5) }
-  | TYPE_TUPLE LANGLE_BRACKET typ_list RANGLE_BRACKET { tuple($3) }
-  | TYPE_SET LANGLE_BRACKET typ RANGLE_BRACKET { set($3) }
-  | TYPE_LIST LANGLE_BRACKET typ RANGLE_BRACKET { lst($3) }
+  | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE { Map($3, $5) }
+  | TYPE_TUPLE LANGLE typ_opt RANGLE { Tuple($3) }
+  | TYPE_SET LANGLE typ RANGLE { Set($3) }
+  | TYPE_LIST LANGLE typ RANGLE { List($3) }
 
-vdecl_list:
-  /* nothing */       { [] }
-  | vdecl_list vdecl  { $2 :: $1 }
-
-vdecl:
-  simple_typ ID ASSIGN expr PUNC_SEMI   { $1, $2, $4 }
-  | set_list_decl                       { $1 }
-  | map_decl                            { $1 }
-  | tuple_decl                          { $1 }
-  /* Q: do pools count as variable declarations? */
-
-vassign:
-  typ ID ASSIGN expr  { $1, $2, $4 }
-  | ID ASSIGN expr {$1, $3}
-
-/* allows for mutables or immutables */
-/* TODO: WE GOTTA MAKE MUTABLE MORE GENERALIZED */
-/*       AKA mut map<str,int> NEEDS TO BE ACCEPTED */
-mut_vdecl_list:
-  /* nothing */               { [] }
-  | mut_vdecl_list mut_decl   { $2 :: $1 }
-  | mut_vdecl_list vdecl      { $2 :: $1 }
-
-mut_decl:
-  MUTABLE vdecl { $2 }
-
-/* TODO: make assignments more generalized, or at least make for all types */
-/* TODO: try to reduce the number of patterns for these different types */
-set_list_decl:
-  typ LANGLE_BRACKET typ RANGLE_BRACKET ID ASSIGN LBRACKET RBRACKET PUNC_SEMI                            { None }
-  | TYPE_SET LANGLE_BRACKET   typ RANGLE_BRACKET   ID ASSIGN TYPE_SET LANGLE_BRACKET   typ
-      RANGLE_BRACKET   LBRACKET RBRACKET PUNC_SEMI                            { None }
-
-/* NOTE: there isn't a type check for these types matching up, but i think that's ok */
-map_decl:
-  TYPE_MAP LANGLE_BRACKET   typ PUNC_COMMA typ RANGLE_BRACKET   ID ASSIGN TYPE_MAP
-      LANGLE_BRACKET   typ RANGLE_BRACKET   LBRACKET RBRACKET PUNC_SEMI               { None }
-
-tuple_decl:
-  TYPE_TUPLE LANGLE_BRACKET typ_list RANGLE_BRACKET ID ASSIGN TYPE_TUPLE LANGLE_BRACKET
-      typ_list RANGLE_BRACKET   LBRACKET RBRACKET PUNC_SEMI                   { None }
+mut_vdecl:
+  MUTABLE typ ID { Mut($3, $2) }
+  | MUTABLE typ ID ASSIGN expr { Mut($3, $2); Vassign($2, $5) }
 
 
 
@@ -198,12 +157,24 @@ pattern:
             { { message_id = $2; message_formals = $4; stmts = $8; } }
 
 
+actor_stmt_opt:
+  /* nothing */     { [] }
+  | actor_stmt_list { List.rev $1 }
+
+actor_stmt_list:
+  stmt                        { [$1] }
+  | mut_vdecl                 { [$1] }
+  | actor_stmt_list stmt      { $2 :: $1 }
+  | actor_stmt_list mut_vdecl { $2 :: $1 }
+
 stmt_list:
   /* nothing */       { [] }
   | stmt_list stmt    { $2 :: $1 }
 
 stmt:
   expr PUNC_SEMI                                      { Expr $1 }
+  | typ ID ASSIGN expr                                { Vdecl($2, $1, $4) }
+  | ID ASSIGN expr                                    { Vassign($1, $3) }
   | RETURN PUNC_SEMI                                  { Return Noexpr }
   | RETURN expr PUNC_SEMI                             { Return $2 }
   | LBRACE stmt_list RBRACE                           { Block(List.rev $2) }
@@ -215,12 +186,29 @@ stmt_iter:
       INT_LIT LOOP_BY INT_LIT RPAREN stmt   { For($3, $5, $7, $9, $11) }
   | FLOW_WHILE LPAREN expr RPAREN stmt      { While($3, $5) }
 
-/* TODO: this causes a shift/reduce conflict, also action is wrong */
 stmt_cond:
   FLOW_IF LPAREN expr RPAREN LBRACE stmt RBRACE %prec NOELSE
         { FLOW_IF($3, $6, Block([])) }
   | FLOW_IF LPAREN expr RPAREN LBRACE stmt RBRACE
         FLOW_ELSE LBRACE stmt RBRACE { FLOW_IF($3, $6, $10) }
+
+map_opt:
+  /* nothing */   { [] }
+  | map_list      { List.rev $1 }
+
+map_list:
+  expr ARROW expr                         { [($1, $3)] }
+  | map_list PUNC_COMMA expr ARROW expr   { ($3, $5) :: $1 }
+
+fancy_lit:
+  TYPE_LIST LANGLE typ RANGLE
+        LBRACKET actuals_opt RBRACKET             { List_Lit($3, $6) }
+  | TYPE_SET LANGLE typ RANGLE
+        LBRACKET actuals_opt RBRACKET             { Set_Lit($3, $6) }
+  | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE
+        LBRACKET map_opt RBRACKET                 { Map_Lit($3, $5, $8) }
+  | TYPE_TUPLE LANGLE typ_opt RANGLE
+        LPAREN actuals_opt RPAREN                 { Tuple_List($3, $6) }
 
 expr_opt:
   /* nothing */   { Noexpr }
@@ -235,31 +223,28 @@ expr:
   | BOOL_LIT                                        { Bool_Lit($1) }
   | LOGIC_TRUE                                      { Bool_Lit(true) }
   | LOGIC_FALSE                                     { Bool_Lit(false) }
-  | expr ARITH_PLUS     expr                        { Binop($1, Add, $3) }
-  | expr ARITH_MINUS    expr                        { Binop($1, Sub, $3) }
-  | expr ARITH_TIMES    expr                        { Binop($1, Mult, $3) }
-  | expr ARITH_DIVIDE   expr                        { Binop($1, Div, $3) }
-  | expr ARITH_MOD      expr                        { Binop($1, Mod, $3) }
-  | expr LOGIC_EQ       expr                        { Binop($1, Equal, $3) }
-  | expr LOGIC_NEQ      expr                        { Binop($1, Neq, $3) }
-  | expr LANGLE_BRACKET expr                        { Binop($1, Less, $3) }
-  | expr LOGIC_LEQ      expr                        { Binop($1, Leq, $3) }
-  | expr RANGLE_BRACKET expr                        { Binop($1, Greater,$3) }
-  | expr LOGIC_GEQ      expr                        { Binop($1, Geq, $3) }
-  | expr LOGIC_AND      expr                        { Binop($1, And, $3) }
-  | expr LOGIC_OR       expr                        { Binop($1, Or, $3) }
-  | expr BITWISE_AND    expr                        { Binop($1, Bit_And, $3) }
-  | expr BITWISE_OR     expr                        { Binop($1, Bit_Or, $3) }
-  | expr BITWISE_XOR    expr                        { Binop($1, Bit_Xor, $3) }
-  | expr BITWISE_NOT    expr                        { Unop($1, Bit_Not) }
-  | expr BITWISE_RIGHT  expr                        { Binop($1, Bit_RShift, $3)}
-  | expr BITWISE_LEFT   expr                        { Binop($1, Bit_LShift, $3)}
+  | LPAREN actuals_opt RPAREN                       { Tuple_Lit($2) }
+  | LBRACKET actuals_opt RPAREN                     { List_Lit($2) }
+  | fancy_lit                                       { $1 }
+  | expr ARITH_PLUS   expr                          { Binop($1, Add, $3) }
+  | expr ARITH_MINUS  expr                          { Binop($1, Sub, $3) }
+  | expr ARITH_TIMES  expr                          { Binop($1, Mult, $3) }
+  | expr ARITH_DIVIDE expr                          { Binop($1, Div, $3) }
+  | expr ARITH_MOD    expr                          { Binop($1, Mod, $3) }
+  | expr LOGIC_EQ     expr                          { Binop($1, Equal, $3) }
+  | expr LOGIC_NEQ    expr                          { Binop($1, Neq, $3) }
+  | expr LANGLE       expr                  { Binop($1, Less, $3) }
+  | expr LOGIC_LEQ    expr                          { Binop($1, Leq, $3) }
+  | expr RANGLE       expr                  { Binop($1, Greater,$3) }
+  | expr LOGIC_GEQ    expr                          { Binop($1, Geq, $3) }
+  | expr LOGIC_AND    expr                          { Binop($1, And, $3) }
+  | expr LOGIC_OR     expr                          { Binop($1, Or, $3) }
   | ARITH_MINUS expr %prec NEG                      { Unop(Neg, $2) }
   | LOGIC_NOT expr                                  { Unop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                    { Call($1, $3) }
-  | LPAREN expr RPAREN                              { $2 }
+  /*| LPAREN expr RPAREN                              { $2 }
   | ID LPAREN actuals_opt RPAREN ACT_SEND ID        { None }
-  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID   { None }
+  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID   { None }*/
   | lambda                                          { $1 }
   | ID ASSIGN expr                                  { Assign($1, $3) }
   /* NOTE: negation, eg !a, does not exist in our scanner */
