@@ -4,9 +4,10 @@ type bin_op =
     Add | Sub | Mult | Div
   | Mod | Equal | Neq | Less
   | Leq | Greater | Geq | And
-  | Or
+  | Or | Bit_And | Bit_Or | Bit_Xor
+  | Bit_RShift | Bit_LShift
 
-type u_op = Not | Neg
+type u_op = Not | Neg | Bit_Not
 
 type p_type = Int_t | Bool_t | Double_t | Char_t | Unit_t
 
@@ -36,17 +37,8 @@ type actor_type = Actor_t of string
 
 type pool_type = Pool_t of actor_type list
 
-type bit_op =
-    Bit_And
-  | Bit_Or
-  | Bit_Xor
-  | Bit_Not
-  | Bit_RShift
-  | Bit_LShift
-
 and expr =
     Binop of expr * bin_op * expr
-  | Bitop of int * bit_op * int
   | Unop of u_op * expr
   | Id of string
   | Assign of string * expr
