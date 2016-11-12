@@ -15,10 +15,11 @@ rule token = parse
   | '}'                   { RBRACE }
   | '['                   { LBRACKET }
   | ']'                   { RBRACKET }
-  | '<'                   { LANGLE_BRACKET }
-  | '>'                   { RANGLE_BRACKET }
+  | '<'                   { LANGLE }
+  | '>'                   { RANGLE }
 
   | '='                   { ASSIGN }
+  | "->"                  { ARROW }
 
   (* math *)
   | '+'                   { ARITH_PLUS }
