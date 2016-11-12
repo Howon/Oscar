@@ -4,9 +4,10 @@ type bin_op =
     Add | Sub | Mult | Div
   | Mod | Equal | Neq | Less
   | Leq | Greater | Geq | And
-  | Or
+  | Or | Bit_And | Bit_Or | Bit_Xor
+  | Bit_RShift | Bit_LShift
 
-type u_op = Not | Neg
+type u_op = Not | Neg | Bit_Not
 
 type p_type = Int_t | Bool_t | Double_t | Char_t | Unit_t
 
