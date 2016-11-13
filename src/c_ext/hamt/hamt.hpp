@@ -1,3 +1,7 @@
+/**
+ * inspired by http://blog.mattbierner.com/hash-array-mapped-tries-in-javascript/
+ */
+
 #include <iostream>
 #include <string>
 #include <exception>
@@ -32,14 +36,14 @@ public:
         while (true) {
             switch (node.type) {
                 case LEAF: {
-                    return !key.compare(node.key) ? node.value : fallback;
+                    return !key.compare(node.get_key()) ? node.value : fallback;
                 }
                 case COLLISION: {
                     if (hash == node.hash) {
                         auto children = node.children;
 
                         for (auto child : children) {
-                            if (child.key == key)
+                            if (child.get_key() == key)
                                 return child.value;
                         }
                     }
@@ -130,7 +134,7 @@ public:
         auto root = this->root;
 
         if (root.type == LEAF)
-            return fun(seed, root.value, root.key);
+            return fun(seed, root.value, root.get_key());
 
         std::queue<vector<hamt::node<T>> > queue =
             std::queue<vector<hamt::node<T>> >(0);
@@ -145,7 +149,7 @@ public:
 
                 if (child.type != EMPTY) {
                     if (child.type == LEAF)
-                        seed = fun(seed, child.value, child.key);
+                        seed = fun(seed, child.value, child.get_key());
                     else
                         queue.push(child.children);
                 }
@@ -158,6 +162,4 @@ public:
     void for_each(void(*fun)(T)) { fold(fun, NULL); }
 
     int count() const { return this->size; }
-
-
 };

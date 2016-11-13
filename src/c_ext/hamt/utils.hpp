@@ -7,10 +7,10 @@
 #include <vector>
 
 #define SIZE 5
-#define BUCKET_SIZE 2 << SIZE
-#define MASK (BUCKET_SIZE - 1)
-#define MAX_INDEX_NODE BUCKET_SIZE / 2
-#define MIN_ARRAY_NODE BUCKET_SIZE / 4
+#define BUCKET_size() 2 << SIZE
+#define MASK (BUCKET_size() - 1)
+#define MAX_INDEX_NODE BUCKET_size() / 2
+#define MIN_ARRAY_NODE BUCKET_size() / 4
 
 typedef unsigned int u_int;
 
@@ -45,15 +45,13 @@ static inline int pop_count(const u_int x)
 
 /**
  * Gets the part of a hash we are interested in at a given level.
+ *
  * @param level  Level/depth of the trie
  * @param hash  Hash value.
  * @return Hash partition
  */
 static inline u_int hash_part(const u_int hash, const int level)
 {
-    if (!(level % SIZE))
-        throw std::invalid_argument("INVALID SHIFT AMOUNT");
-
     return (hash >> level) & (SIZE - 1);
 }
 
@@ -81,38 +79,38 @@ static inline int from_bit_map(const u_int bit_map, const u_int bit)
 }
 
 template <typename T>
-std::vector<T> vec_rm(std::vector<T> vec, const int index)
+std::vector<T> *vec_rm(const bool can_edit, std::vector<T> *vec, const int index)
 {
-    if (index > vec.size)
-        throw std::invalid_argument("INVALID INDEX");
+    auto new_vec = can_edit ? vec : new std::vector<T>(*vec);
 
-    std::vector<T> new_vec = new std::vector<T>(vec);
-    new_vec.erase(new_vec.begin() + index);
-    return new_vec;
-}
-
-template <typename T>
-std::vector<T> vec_put(std::vector<T> vec, const int index, const T val)
-{
-    if (index > vec.size)
-        throw std::invalid_argument("INVALID INDEX");
-
-    std::vector<T> new_vec = new std::vector<T>(vec);
-
-    new_vec.insert(new_vec.begin() + index, val);
+    if (index > vec->size())
+        new_vec->erase(new_vec->begin() + index);
 
     return new_vec;
 }
 
 template <typename T>
-std::vector<T> vec_upd(std::vector<T> vec, const int index, const T val)
+std::vector<T> *vec_put(const bool can_edit, std::vector<T> *vec, const int index, T val)
 {
-    std::vector<T> new_vec = new std::vector<T>(vec);
+    auto new_vec = can_edit ? vec : new std::vector<T>(*vec);
 
-    if (index < new_vec.size())
-        new_vec[index] = val;
-    else
-        new_vec.push(val);
+    if (index >= vec->size())
+        new_vec->resize(index + 1);
+
+    (*new_vec).insert(new_vec->begin() + index, val);
+
+    return new_vec;
+}
+
+template <typename T>
+std::vector<T> *vec_upd(const bool can_edit, std::vector<T> *vec, const int index, T val)
+{
+    auto new_vec = can_edit ? vec : new std::vector<T>(*vec);
+
+    if (index >= vec->size())
+        new_vec->resize(index + 1);
+
+    (*new_vec)[index] = val;
 
     return new_vec;
 }
