@@ -1,7 +1,7 @@
 open Ast
 
 let rec eval = function
-      Id(s) -> s
+      Id(x) -> x
     | Int_Lit(x) -> x
     | Double_Lit(x) -> x
     | Char_Lit(x) -> x
@@ -15,7 +15,7 @@ let rec eval = function
             | Sub -> v1 - v2
             | Mult -> v1 * v2
             | Div -> v1 / v2
-            | Mod -> v1 % v2
+            | Mod -> v1 mod v2
             | Equal -> v1 = v2
             | Neq -> v1 <> v2
             | Less -> v1 < v2
@@ -39,6 +39,7 @@ let rec eval = function
             (* todo: i couldn't find Bit_Not in OCaml *)
             (* | Bit_Not -> ~v *)
         )
+    (* todo: make it right *)
     | Assign(x, e) ->  x ^ " = " ^ eval e
     (* todo: make it right
     | Call(f, el) ->
