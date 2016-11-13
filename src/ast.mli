@@ -1,5 +1,3 @@
-type program = message list * actor list * func list
-
 type bin_op =
     Add | Sub | Mult | Div
   | Mod | Equal | Neq | Less
@@ -31,6 +29,11 @@ type optional = Optional_t of optional_rec | None_t
 
 type formal = string * types
 
+type message = {
+    name: string;
+    formals: formal list;
+}
+
 type field = Field of types * string
 
 type actor_type = Actor_t of string
@@ -49,7 +52,7 @@ and expr =
   | Bool_Lit of bool
   | List_init of expr list
   | Call of string * expr list
-  | Actor_comm of message_type * actor_op * actor_type
+  | Actor_comm of message * actor_op * actor_type
   | Noexpr
 
 and stmt =
@@ -62,16 +65,17 @@ and stmt =
   | Break
   | Continue
 
-
-type message = {
-    name: string;
-    formals: formal list;
-}
-
 type pattern = {
   message_id: string;
-  message_formals: formals list;
+  message_formals: formal list;
   stmts: stmt list;
+}
+
+type func = {
+  name: string;
+  formals: formal list;
+  return_t: types;
+  body: stmt list;
 }
 
 type actor = {
@@ -82,18 +86,13 @@ type actor = {
   receive: pattern list;
 }
 
-type func = {
-  name: string;
-  formals: formal list;
-  return_t: types;
-  body: stmt list;
-}
-
 type lambda = {
   formals: formal list;
   return_t: types;
   body: stmt list;
 }
+
+type program = message list * actor list * func list
 
 let rec eval = function
       Id(s) -> s
