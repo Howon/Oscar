@@ -40,12 +40,12 @@ let rec eval = function
             (* | Bit_Not -> ~v *)
         )
     (* todo: make it right *)
+    (*
     | Assign(x, e) ->  x ^ " = " ^ eval e
-    (* todo: make it right
     | Call(f, el) ->
           f ^ "(" ^ String.concat ", " (List.map eval el) ^ ")"
-    *)
     | Noexpr -> ""
+    *)
 
 let _ =
     let lexbuf = Lexing.from_channel stdin in
