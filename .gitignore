@@ -1,4 +1,6 @@
 *~
+parser.ml
+parser.mli
 *.cmi
 *.cmo
 *.out
