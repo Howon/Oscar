@@ -213,36 +213,42 @@ fancy_lit:
         LPAREN actuals_opt RPAREN                 { Tuple_List($3, $6) }
 
 expr:
-  ID                                                { Id($1) }
-  | INT_LIT                                         { Int_Lit($1) }
-  | DOUBLE_LIT                                      { Double_Lit($1) }
-  | CHAR_LIT                                        { Char_Lit($1) }
-  | STRING_LIT                                      { String_Lit($1) }
-  | BOOL_LIT                                        { Bool_Lit($1) }
-  | LOGIC_TRUE                                      { Bool_Lit(true) }
-  | LOGIC_FALSE                                     { Bool_Lit(false) }
-  | fancy_lit                                       { $1 }
-  | expr ARITH_PLUS   expr                          { Binop($1, Add, $3) }
-  | expr ARITH_MINUS  expr                          { Binop($1, Sub, $3) }
-  | expr ARITH_TIMES  expr                          { Binop($1, Mult, $3) }
-  | expr ARITH_DIVIDE expr                          { Binop($1, Div, $3) }
-  | expr ARITH_MOD    expr                          { Binop($1, Mod, $3) }
-  | expr LOGIC_EQ     expr                          { Binop($1, Equal, $3) }
-  | expr LOGIC_NEQ    expr                          { Binop($1, Neq, $3) }
-  | expr LANGLE       expr                          { Binop($1, Less, $3) }
-  | expr LOGIC_LEQ    expr                          { Binop($1, Leq, $3) }
-  | expr RANGLE       expr                          { Binop($1, Greater,$3) }
-  | expr LOGIC_GEQ    expr                          { Binop($1, Geq, $3) }
-  | expr LOGIC_AND    expr                          { Binop($1, And, $3) }
-  | expr LOGIC_OR     expr                          { Binop($1, Or, $3) }
-  | ARITH_MINUS expr %prec NEG                      { Unop(Neg, $2) }
-  | LOGIC_NOT expr                                  { Unop(Not, $2) }
-  | ID LPAREN actuals_opt RPAREN                    { Call($1, $3) }
-  | LPAREN expr RPAREN                              { $2 }
-  | ID LPAREN actuals_opt RPAREN ACT_SEND ID        { None }
-  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID   { None }
-  | lambda                                          { $1 }
-  | ID ASSIGN expr                                  { Assign($1, $3) }
+  ID                                              { Id($1) }
+  | INT_LIT                                       { Int_Lit($1) }
+  | DOUBLE_LIT                                    { Double_Lit($1) }
+  | CHAR_LIT                                      { Char_Lit($1) }
+  | STRING_LIT                                    { String_Lit($1) }
+  | BOOL_LIT                                      { Bool_Lit($1) }
+  | LOGIC_TRUE                                    { Bool_Lit(true) }
+  | LOGIC_FALSE                                   { Bool_Lit(false) }
+  | fancy_lit                                     { $1 }
+  | expr ARITH_PLUS     expr                      { Binop($1, Add, $3) }
+  | expr ARITH_MINUS    expr                      { Binop($1, Sub, $3) }
+  | expr ARITH_TIMES    expr                      { Binop($1, Mult, $3) }
+  | expr ARITH_DIVIDE   expr                      { Binop($1, Div, $3) }
+  | expr ARITH_MOD      expr                      { Binop($1, Mod, $3) }
+  | expr LOGIC_EQ       expr                      { Binop($1, Equal, $3) }
+  | expr LOGIC_NEQ      expr                      { Binop($1, Neq, $3) }
+  | expr LANGLE         expr                      { Binop($1, Less, $3) }
+  | expr LOGIC_LEQ      expr                      { Binop($1, Leq, $3) }
+  | expr RANGLE         expr                      { Binop($1, Greater,$3) }
+  | expr LOGIC_GEQ      expr                      { Binop($1, Geq, $3) }
+  | expr LOGIC_AND      expr                      { Binop($1, And, $3) }
+  | expr LOGIC_OR       expr                      { Binop($1, Or, $3) }
+  | expr BITWISE_AND	  expr                      { Binor($1, Bot_And, $3) }
+  | expr BITWISE_OR  	  expr                      { Binop($1, Bit_Or, $3) }
+  | expr BITWISE_XOR    expr                      { Binop($1, Bit_Xor, $3) }
+  | expr BITWISE_RIGHT  expr                      { Binop($1, Bit_RShift, $3)}
+  | expr BITWISE_LEFT   expr                      { Binop($1, Bit_LShift, $3)}
+  | expr BITWISE_NOT                              { Unop($1, Bit_Not) }
+  | ARITH_MINUS expr %prec NEG                    { Unop(Neg, $2) }
+  | LOGIC_NOT expr                                { Unop(Not, $2) }
+  | ID LPAREN actuals_opt RPAREN                  { Call($1, $3) }
+  | LPAREN expr RPAREN                            { $2 }
+  | ID LPAREN actuals_opt RPAREN ACT_SEND ID      { None }
+  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { None }
+  | lambda                                        { $1 }
+  | ID ASSIGN expr                                { Assign($1, $3) }
   /* NOTE: negation, eg !a, does not exist in our scanner */
 
 lambda:
