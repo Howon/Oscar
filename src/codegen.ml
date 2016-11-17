@@ -26,7 +26,8 @@ let translate (messages, actors, functions) =
   and void_t = L.void_type context in
 
   let ltype_of_typ = function
-    | A.Unit_t -> void_t in
+    | A.Unit_t -> void_t
+  in
 
   (* Declare print(), which the print built-in function will call *)
   let print_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
@@ -38,7 +39,7 @@ let translate (messages, actors, functions) =
       let name = func.A.name
       and formal_types =
   Array.of_list (List.map (fun (_,t) -> ltype_of_typ t) func.A.formals)
-      in let ftype = L.function_type (ltype_of_typ func.A.typ) formal_types in
+      in let ftype = L.function_type (ltype_of_typ func.A.return_t) formal_types in
       StringMap.add name (L.define_function name ftype the_module, func) m in
     List.fold_left function_decl StringMap.empty functions in
   
