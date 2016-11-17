@@ -123,10 +123,9 @@ simple_typ:
   | TYPE_DOUBLE   { Double_t }
   | TYPE_CHAR     { Char_t }
   | TYPE_UNIT     { Unit_t }
-  | TYPE_STR      { String_t }
-  | TPYE_UNIT     { Unit_t }
 
 cont_typ:
+  TYPE_STR      { String_t }
   | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE { Map($3, $5) }
   | TYPE_TUPLE LANGLE typ_opt RANGLE { Tuple($3) }
   | TYPE_SET LANGLE typ RANGLE { Set($3) }
@@ -243,7 +242,6 @@ expr:
   | expr BITWISE_XOR    expr                      { Binop($1, Bit_Xor, $3) }
   | expr BITWISE_RIGHT  expr                      { Binop($1, Bit_RShift, $3)}
   | expr BITWISE_LEFT   expr                      { Binop($1, Bit_LShift, $3)}
-  | expr BITWISE_NOT                              { Unop($1, Bit_Not) }
   | ARITH_MINUS expr %prec NEG                    { Unop(Neg, $2) }
   | LOGIC_NOT expr                                { Unop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                  { Call($1, $3) }
@@ -252,7 +250,7 @@ expr:
   | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { None }
   | lambda                                        { $1 }
   | ID ASSIGN expr                                { Assign($1, $3) }
-  | ID LBRACKET expr RBRACK                       { None }
+  | ID LBRACKET expr RBRACKET                     { None }
 
 lambda:
   | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmt_list RBRACE
