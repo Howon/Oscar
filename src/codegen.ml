@@ -36,21 +36,22 @@ let translate (messages, actors, functions) =
   (* Define each function (arguments and return type) so we can call it *)
   let function_decls =
     let function_decl m func =
-      let name = func.A.name
+      let name = func.A.f_name
       and formal_types =
-  Array.of_list (List.map (fun (_,t) -> ltype_of_typ t) func.A.formals)
-      in let ftype = L.function_type (ltype_of_typ func.A.return_t) formal_types in
+         Array.of_list (List.map (fun (_,t) -> ltype_of_typ t) func.A.f_formals)
+      in 
+      let ftype = L.function_type (ltype_of_typ func.A.f_return_t) formal_types in
       StringMap.add name (L.define_function name ftype the_module, func) m in
     List.fold_left function_decl StringMap.empty functions in
   
   (* Fill in the body of the given function *)
   let build_function_body func =
-    let (the_function, _) = StringMap.find func.A.name function_decls in
+    let (the_function, _) = StringMap.find func.A.f_name function_decls in
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
     (* Construct code for an expression; return its value *)
     let rec expr builder = function
-        A.String_t(s) -> L.build_global_stringptr s "tmp" builder
+        A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
       | A.Call ("print", [e]) ->
               L.build_call print_func [| (expr builder e) |] "print" builder
     in
@@ -69,10 +70,10 @@ let translate (messages, actors, functions) =
     in
 
     (* Build the code for each statement in the function *)
-    let builder = stmt builder (A.Block func.A.body) in
+    let builder = stmt builder (A.Block func.A.f_body) in
 
     (* Add a return if the last block falls off the end *)
-    add_terminal builder (match func.A.typ with
+    add_terminal builder (match func.A.f_return_t with
       | A.Unit_t -> L.build_ret_void)
   in
 
