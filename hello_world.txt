@@ -1,3 +1,41 @@
+-----hello world-----
+
 def main() => unit = {
     print("Hello World!\n");
 }
+
+TYPE_DEF ID LPAREN RPAREN FUNC_RET_TYPE TYPE_UNIT ASSIGN LBRACE ID LPAREN STRING_LIT RPAREN PUNC_SEMI RBRACE
+
+[program:
+  [messages:]
+  [actors:]
+  [functions:
+    [function_list:
+      [fdecl:
+        TYPE_DEF
+        ID
+        LPAREN
+        [formals_opt:]
+        RPAREN
+        FUNC_RET_TYPE
+        [typ: [simple_typ: TYPE_UNIT]]
+        ASSIGN
+        LBRACE
+        [stmt_list:
+          [stmt_list:]
+          [stmt:
+            [expr:
+              ID
+              LPAREN
+              [actuals_opt: [actuals_list: [expr: STRING_LIT]]]
+              RPAREN
+            ]
+            PUNC_SEMI
+          ]
+        ]
+        RBRACE
+      ]
+    ]
+  ]
+  EOF
+]
