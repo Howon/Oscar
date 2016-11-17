@@ -221,7 +221,7 @@ expr:
   | CHAR_LIT                                      { Char_Lit($1) }
   | STRING_LIT                                    { String_Lit($1) }
   | BOOL_LIT                                      { Bool_Lit($1) }
-  | UNIT_LIT                                      { Unit_Lit() }
+  | TYPE_UNIT                                     { Unit_Lit() }
   | LOGIC_TRUE                                    { Bool_Lit(true) }
   | LOGIC_FALSE                                   { Bool_Lit(false) }
   | cont_lit                                      { $1 }
@@ -256,7 +256,6 @@ expr:
 lambda:
   | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmt_list RBRACE
         { { formals = $2; return_t = $5; body = $8; } }
-
 
 actuals_opt:
   /* nothing */   { [] }
