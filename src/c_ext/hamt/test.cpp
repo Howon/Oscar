@@ -199,7 +199,7 @@ TEST_CASE("Merge test", "[functionality]")
     auto node_a = leaf_node<int>(false, hash_a, key_a, 5);
     auto node_b = leaf_node<int>(false, hash_b, key_b, 10);
 
-    auto merged_coll = hamt::__merge(false, shift, hash_a, &node_a, hash_b, &node_b);
+    auto merged_coll = hamt::merge<int>(false, shift, hash_a, &node_a, hash_b, &node_b);
 
     cout << merged_coll->get_type() << endl;
     cout << merged_coll->get_hash() << endl;

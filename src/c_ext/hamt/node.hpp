@@ -135,14 +135,14 @@ namespace hamt {
 
         bool editable() const { return this->can_edit; }
 
-        void make_mut(const bool mode) { this->can_edit = mode; }
+        void make_mut(bool mode) { this->can_edit = mode; }
 
         void set_chdrn(vector<node<T> * > *chdrn) { this->chdrn = chdrn; }
 
         vector<node<T> * > *get_chdrn() const { return this->chdrn; }
 
-        virtual node<T> *modify(const int shift, T(*fun)(T), const u_int hash,
-                const string key, int *size)
+        virtual node<T> *modify(const int shift, const u_int hash, u_int *size,
+                const string &key, T(*fun)(T))
         {
             return this;
         };
@@ -153,12 +153,12 @@ namespace hamt {
     };
 
     template <typename T>
-    node<T> *__merge(const bool can_edit, const int shift, const u_int h_a,
-            node<T> *node_a, const u_int h_b, node<T> *node_b);
+    node<T> *merge(bool can_edit, int shift, u_int h_a, node<T> *node_a,
+            u_int h_b, node<T> *node_b);
 
     template <typename T>
-    vector<node<T> * > *__update_coll(const bool can_edit, const u_int hash,
-            const string key, T(*fun)(T), vector<node<T> * > *vec, int *size);
+    vector<node<T> * > *update_coll(bool can_edit, u_int hash, u_int *size,
+            const string &key, T(*fun)(T), vector<node<T> * > *vec);
 
     template <typename T>
     class empty_node : public node<T> {
@@ -169,15 +169,14 @@ namespace hamt {
             this->key = "";
         }
 
-        node<T> *modify(const int shift, T(*fun)(T), const u_int hash,
-                const string key, int *size);
+        node<T> *modify(const int shift, const u_int hash, u_int *size,
+                const string &key, T(*fun)(T));
     };
 
     template <typename T>
     class leaf_node : public node<T> {
     public:
-        leaf_node(const bool can_edit, const u_int hash, const string key,
-                const T val)
+        leaf_node(bool can_edit, u_int hash, const string &key, const T &val)
         {
             this->type = LEAF;
             this->hash = hash;
@@ -186,8 +185,8 @@ namespace hamt {
             this->make_mut(can_edit);
         }
 
-        node<T> *modify(const int shift, T(*fun)(T), const u_int hash,
-                const string key, int *size);
+        node<T> *modify(const int shift, const u_int hash, u_int *size,
+                const string &key, T(*fun)(T));
     };
 
     template <typename T>
@@ -202,8 +201,11 @@ namespace hamt {
             this->make_mut(can_edit);
         }
 
-        node<T> *modify(const int shift, T(*fun)(T), const u_int hash,
-                const string key, int *size);
+        node<T> *modify(const int shift, const u_int hash, u_int *size,
+                const string &key, T(*fun)(T));
+
+        node<T> *merge(bool can_edit, int shift, u_int h_a, node<T> *node_a,
+            u_int h_b, node<T> *node_b);
     };
 
     template <typename T>
@@ -218,8 +220,8 @@ namespace hamt {
             this->make_mut(can_edit);
         }
 
-        node<T> *modify(const int shift, T(*fun)(T), const u_int hash,
-                const string key, int *size);
+        node<T> *modify(const int shift, const u_int hash, u_int *size,
+                const string &key, T(*fun)(T));
 
         internal_node<T> *expand(const u_int part, const u_int bit_map,
             const hamt::node<T> child);
@@ -258,16 +260,16 @@ namespace hamt {
             return new indexed_node<T>(this->editable(), bit_map, chdrn);
         }
 
-        node<T> *modify(const int shift, T(*fun)(T), const u_int hash,
-                const string key, int *size);
+        node<T> *modify(const int shift, const u_int hash, u_int *size,
+                const string &key, T(*fun)(T));
     };
 };
 
 using namespace hamt;
 
 template <typename T>
-node<T> *empty_node<T>::modify(const int shift, T(*fun)(T),
-    const u_int hash, const string key, int *size)
+node<T> *empty_node<T>::modify(const int shift, const u_int hash, u_int *size,
+        const string &key, T(*fun)(T))
 {
     T v = fun(T());
 
@@ -280,8 +282,8 @@ node<T> *empty_node<T>::modify(const int shift, T(*fun)(T),
 }
 
 template<typename T>
-node<T> *leaf_node<T>::modify(const int shift, T(*fun)(T),
-    const u_int hash, const string key, int *size)
+node<T> *leaf_node<T>::modify(const int shift, const u_int hash, u_int *size,
+        const string &key, T(*fun)(T))
 {
     T val;
 
@@ -313,22 +315,25 @@ node<T> *leaf_node<T>::modify(const int shift, T(*fun)(T),
 
     *size += 1;
 
-    return new empty_node<T>();;//__merge<T>(this->editable(), shift, this->hash, *this,
+    return new empty_node<T>();;//merge<T>(this->editable(), shift, this->hash, *this,
             //hash, leaf_node<T>(hash, key, val));
 }
 
 template <typename T>
-node<T> *collision_node<T>::modify(const int shift, T(*fun)(T),
-        const u_int hash, const string key, int *size)
+node<T> *collision_node<T>::modify(const int shift, const u_int hash, u_int *size,
+        const string &key, T(*fun)(T))
 {
     if (hash == this->hash) {
-        auto vec =
-            __update_coll(this->editable(), hash, key, fun, this->get_chdrn(), size);
+        auto vec = update_coll(this->editable(), hash, size, key, fun,
+                this->get_chdrn());
 
         if (vec == this->get_chdrn())
             return this;
 
-        return !vec->empty() ? new collision_node<T>(this->editable(), hash, vec) : (*vec)[0];
+        if (!vec->empty())
+            return new collision_node<T>(this->editable(), hash, vec);
+        else
+            return (*vec)[0];
     }
 
     T val = fun(T());
@@ -339,13 +344,13 @@ node<T> *collision_node<T>::modify(const int shift, T(*fun)(T),
     *size += 1;
 
     return new leaf_node<T>(this->editable(), hash, key, val);
-        //__merge<T>(this->editable(), shift, this->hash, *this,
+        //merge<T>(this->editable(), shift, this->hash, *this,
          //   hash, leaf_node<T>(hash, key, val));
 }
 
 template <typename T>
-node<T> *indexed_node<T>::modify(const int shift, T(*fun)(T),
-        const u_int hash, const string key, int *size)
+node<T> *indexed_node<T>::modify(const int shift, const u_int hash, u_int *size,
+        const string &key, T(*fun)(T))
 {
     u_int hp = hash_part(shift, hash);
     u_int bit = to_bit_map(hp);
@@ -356,7 +361,7 @@ node<T> *indexed_node<T>::modify(const int shift, T(*fun)(T),
     auto chdrn = this->get_chdrn();
 
     auto curr = child_exists ? (*chdrn)[index] : new empty_node<T>();;
-    auto child = curr->modify(shift + SIZE, fun, hash, key, size);
+    auto child = curr->modify(shift + SIZE, hash, size, key, fun);
 
     if (curr == child)
         return this;
@@ -371,7 +376,7 @@ node<T> *indexed_node<T>::modify(const int shift, T(*fun)(T),
             return (*chdrn)[index ^ 1];
 
         return new indexed_node<T>(this->editable(), bit_map,
-                vec_rm<node<T> * >(this->editable(), chdrn, index));
+                vec_rm<node<T> *>(this->editable(), chdrn, index));
     }
 
     if (!child_exists && child->get_type() != EMPTY) {
@@ -379,24 +384,24 @@ node<T> *indexed_node<T>::modify(const int shift, T(*fun)(T),
             return this;//expand(hp, child, this->mask);
 
         return new indexed_node<T>(this->editable(), this->mask | bit,
-                    vec_put<node<T> * >(this->editable(), chdrn, index, child));
+                    vec_put<node<T> *>(this->editable(), chdrn, index, child));
     }
 
     return new indexed_node<T>(this->editable(), this->mask,
-                vec_upd<node<T> * >(this->editable(), chdrn, index, child));
+                vec_upd<node<T> *>(this->editable(), chdrn, index, child));
 }
 
 template <typename T>
-node<T> *internal_node<T>::modify(const int shift, T(*fun)(T),
-        const u_int hash, const string key, int *size)
+node<T> *internal_node<T>::modify(const int shift, const u_int hash, u_int *size,
+        const string &key, T(*fun)(T))
 {
     int count = this->size;
     u_int hp = hash_part(shift, hash);
 
     auto chdrn = this->get_chdrn();
     auto child = hp < chdrn->size() ? (*chdrn)[hp] : new empty_node<T>();;
-    auto new_child = child->modify(shift + SIZE, fun, hash, key, size);
-    auto new_chdrn = vec_upd<node<T> * >(this->editable(), chdrn, hp, new_child);
+    auto new_child = child->modify(shift + SIZE, hash, size, key, fun);
+    auto new_chdrn = vec_upd<node<T> *>(this->editable(), chdrn, hp, new_child);
 
     if (child == new_child)
         return new internal_node<T>(this->editable(), this->size + 1, new_chdrn);
@@ -408,7 +413,7 @@ node<T> *internal_node<T>::modify(const int shift, T(*fun)(T),
             return pack(count, hp);
 
         new_chdrn =
-            vec_upd<node<T> * >(this->editable(), chdrn, hp, new empty_node<T>());
+            vec_upd<node<T> *>(this->editable(), chdrn, hp, new empty_node<T>());
     }
 
     if (this->editable()) {
@@ -422,8 +427,8 @@ node<T> *internal_node<T>::modify(const int shift, T(*fun)(T),
 }
 
 template <typename T>
-node<T> *hamt::__merge(const bool can_edit, const int shift, const u_int h_a,
-        node<T> *node_a, const u_int h_b, node<T> *node_b)
+node<T> *hamt::merge(bool can_edit, int shift, u_int h_a, node<T> *node_a,
+        u_int h_b, node<T> *node_b)
 {
     if (h_a == h_b)
         return new collision_node<T>(can_edit, h_a,
@@ -434,10 +439,11 @@ node<T> *hamt::__merge(const bool can_edit, const int shift, const u_int h_a,
 
     u_int bit_map_merge = to_bit_map(hp_a) | to_bit_map(hp_b);
 
-    auto nodes = new vector<node<T> * >{node_a, node_b};
+    auto nodes = new vector<node<T> *>{node_a, node_b};
 
     if (hp_a == hp_b) {
-        auto merge = __merge(can_edit, shift + SIZE, h_a, node_a, h_b, node_b);
+        node<T> * merge =
+                merge(can_edit, shift + SIZE, h_a, node_a, h_b, node_b);
 
         nodes->clear();
         nodes->push_back(merge);
@@ -453,8 +459,8 @@ node<T> *hamt::__merge(const bool can_edit, const int shift, const u_int h_a,
 }
 
 template <typename T>
-vector<node<T> * > *hamt::__update_coll(const bool can_edit, const u_int hash,
-        const string key, T(*fun)(T), vector<node<T> * > *vec, int *size)
+vector<node<T> *> *hamt::update_coll(bool can_edit, u_int hash, u_int *size,
+        const string &key, T(*fun)(T), vector<node<T> *> *vec)
 {
     int length = vec->size();
 
