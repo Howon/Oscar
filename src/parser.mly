@@ -6,14 +6,14 @@
 %token PUNC_COMMA PUNC_SEMI
 %token LOGIC_EQ LOGIC_NEQ LANGLE RANGLE LOGIC_LEQ LOGIC_GEQ LOGIC_NOT
 %token LOGIC_AND LOGIC_OR LOGIC_TRUE LOGIC_FALSE
-%token BITWISE_AND BITWISE_OR BITWISE_XOR BITWISE_NOT BITWISE_RIGHT BITWISE_LEFT
+%token BITWISE_AND BITWISE_OR BITWISE_XOR  BITWISE_RIGHT BITWISE_LEFT
 %token FUNC_ARG_TYPE ARROW FUNC_RET_TYPE RETURN
 %token FLOW_IF FLOW_ELSE FLOW_WHILE FLOW_FOR LOOP_TO LOOP_BY LOOP_FROM
 %token ACT_SENDER ACT_DIE ACT_SPAWN ACT_RECEIVE ACT_SEND ACT_BROADCAST
 %token MUTABLE
-%token TYPE_INT TYPE_DOUBLE TYPE_CHAR TYPE_BOOL TYPE_UNIT
-%token TYPE_STR TYPE_MAYBE TYPE_SOME TYPE_NONE TYPE_LIST TYPE_SET TYPE_MAP
-%token TYPE_TUPLE TYPE_MESSAGE TYPE_ACTOR TYPE_POOL TYPE_DEF
+%token TYPE_INT TYPE_DOUBLE TYPE_CHAR TYPE_BOOL TYPE_UNIT TYPE_STR
+%token TYPE_LIST TYPE_SET TYPE_MAP TYPE_TUPLE
+%token TYPE_MESSAGE TYPE_ACTOR TYPE_POOL TYPE_FUNC
 %token <int> INT_LIT
 %token <float> DOUBLE_LIT
 %token <string> STRING_LIT
@@ -33,7 +33,6 @@
 %left ARITH_PLUS ARITH_MINUS
 %left ARITH_TIMES ARITH_DIVIDE ARITH_MOD
 %right LOGIC_NOT
-%right BITWISE_NOT
 %left ACT_SEND ACT_BROADCAST
 
 %right NEG /* for negative numbers */
@@ -92,7 +91,7 @@ function_list:
   | function_list fdecl       { $2::$1 }
 
 fdecl:
-  | TYPE_DEF ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
+  | TYPE_FUNC ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
     ASSIGN LBRACE stmt_list RBRACE
       { { name = $2; formals = $4;
       return_t = $7; function_body = $10 } }
@@ -114,10 +113,9 @@ typ_list:
   | typ_list PUNC_COMMA typ   { $3 :: $1 }
 
 /* primative types */
-/* TODO: handle MAYBE/SOME/NONE */
 typ:
   simple_typ    { $1 }
-  | fancy_typ   { $1 }
+  | cont_typ   { $1 }
 
 simple_typ:
   TYPE_INT        { Int_t }
@@ -126,18 +124,13 @@ simple_typ:
   | TYPE_CHAR     { Char_t }
   | TYPE_UNIT     { Unit_t }
   | TYPE_STR      { String_t }
+  | TPYE_UNIT     { Unit_t }
 
-fancy_typ:
+cont_typ:
   | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE { Map($3, $5) }
   | TYPE_TUPLE LANGLE typ_opt RANGLE { Tuple($3) }
   | TYPE_SET LANGLE typ RANGLE { Set($3) }
   | TYPE_LIST LANGLE typ RANGLE { List($3) }
-
-mut_vdecl:
-  MUTABLE typ ID { Mut($3, $2) }
-  | MUTABLE typ ID ASSIGN expr { Mut($3, $2); Vassign($2, $5) }
-
-
 
 /* for pattern matching with receive */
 receive:
@@ -156,6 +149,15 @@ pattern:
       LBRACE stmt_list RBRACE
             { { message_id = $2; message_formals = $4; stmts = $8; } }
 
+mut_vdecl:
+  MUTABLE typ ID { Mut($3, $2) }
+  | MUTABLE typ ID ASSIGN expr { Mut($3, $2); Vassign($2, $5) }
+
+actor_spawn:
+  TYPE_ACTOR LANGLE ID RANGLE ID ASSIGN
+    ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE LPAREN actuals_opt RPAREN { None }
+  | TYPE_POOL LANGLE ID RANGLE ID ASSIGN
+    ACT_SPAWN TYPE_POOL LANGLE ID RANGLE LPAREN actuals_opt RPAREN { None }
 
 actor_stmt:
   stmt                  { $1 }
@@ -176,6 +178,7 @@ stmt_list:
 stmt:
   expr PUNC_SEMI                                      { Expr $1 }
   | typ ID ASSIGN expr PUNC_SEMI                      { Vdecl($2, $1, $4) }
+  | actor_spawn                                       { $1 }
   | RETURN PUNC_SEMI                                  { Return Noexpr }
   | RETURN expr PUNC_SEMI                             { Return $2 }
   | LBRACE stmt_list RBRACE                           { Block(List.rev $2) }
@@ -202,7 +205,7 @@ map_list:
   expr ARROW expr                         { [($1, $3)] }
   | map_list PUNC_COMMA expr ARROW expr   { ($3, $5) :: $1 }
 
-fancy_lit:
+cont_lit:
   TYPE_LIST LANGLE typ RANGLE
         LBRACKET actuals_opt RBRACKET             { List_Lit($3, $6) }
   | TYPE_SET LANGLE typ RANGLE
@@ -221,7 +224,7 @@ expr:
   | BOOL_LIT                                      { Bool_Lit($1) }
   | LOGIC_TRUE                                    { Bool_Lit(true) }
   | LOGIC_FALSE                                   { Bool_Lit(false) }
-  | fancy_lit                                     { $1 }
+  | cont_lit                                      { $1 }
   | expr ARITH_PLUS     expr                      { Binop($1, Add, $3) }
   | expr ARITH_MINUS    expr                      { Binop($1, Sub, $3) }
   | expr ARITH_TIMES    expr                      { Binop($1, Mult, $3) }
@@ -249,7 +252,7 @@ expr:
   | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { None }
   | lambda                                        { $1 }
   | ID ASSIGN expr                                { Assign($1, $3) }
-  /* NOTE: negation, eg !a, does not exist in our scanner */
+  | ID LBRACKET expr RBRACK                       { None }
 
 lambda:
   | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmt_list RBRACE
