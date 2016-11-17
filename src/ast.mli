@@ -7,7 +7,7 @@ type bin_op =
 
 type u_op = Not | Neg
 
-type p_type = Int_t | Bool_t | Double_t | Char_t | Unit_t
+type p_type = int | bool | float | char | unit
 
 type cont_type =
   String_t of string
@@ -22,14 +22,15 @@ type actor_op =
 
 type types = Primitive of p_type | Container of cont_type
 
-type opt_type = Maybe_t | Some_t
+(* Commenting out optional types for now *)
+(*type opt_type = Maybe_t | Some_t
 
 type optional_rec = {
     type_: opt_type;
     param: types;
 }
 
-type optional = Optional_t of optional_rec | None_t
+type optional = Optional_t of optional_rec | None_t*)
 
 type formal = string * types
 
@@ -54,6 +55,7 @@ and expr =
   | Char_Lit of char
   | String_Lit of string
   | Bool_Lit of bool
+  | Unit_Lit of unit
   | List_Lit of List_t * expr list
   | Set_Lit of Set_t * expr list
   | Map_Lit of Map_t * (expr * expr) list

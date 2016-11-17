@@ -126,10 +126,10 @@ simple_typ:
 
 cont_typ:
   TYPE_STR      { String_t }
-  | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE { Map($3, $5) }
-  | TYPE_TUPLE LANGLE typ_opt RANGLE { Tuple($3) }
-  | TYPE_SET LANGLE typ RANGLE { Set($3) }
-  | TYPE_LIST LANGLE typ RANGLE { List($3) }
+  | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE { Map_t($3, $5) }
+  | TYPE_TUPLE LANGLE typ_opt RANGLE { Tuple_t($3) }
+  | TYPE_SET LANGLE typ RANGLE { Set_t($3) }
+  | TYPE_LIST LANGLE typ RANGLE { List_t($3) }
 
 /* for pattern matching with receive */
 receive:
@@ -144,13 +144,13 @@ pattern_list:
   | pattern_list pattern { $2::$1 }
 
 pattern:
-    BITWISE_OR ID LPAREN formals_opt RPAREN FUNC_RET_TYPE 
+    BITWISE_OR ID LPAREN formals_opt RPAREN FUNC_RET_TYPE
       LBRACE stmt_list RBRACE
             { { message_id = $2; message_formals = $4; stmts = $8; } }
 
 mut_vdecl:
   MUTABLE typ ID { Mut($3, $2) }
-  | MUTABLE typ ID ASSIGN expr { Mut($3, $2); Vassign($2, $5) }
+  | MUTABLE typ ID ASSIGN expr { Mut($3, $2); Assign($2, $5) }
 
 actor_spawn:
   TYPE_ACTOR LANGLE ID RANGLE ID ASSIGN
@@ -194,7 +194,7 @@ stmt_cond:
   FLOW_IF LPAREN expr RPAREN LBRACE stmt_list RBRACE %prec NOELSE
         { If($3, $6, Block([])) }
   | FLOW_IF LPAREN expr RPAREN LBRACE stmt_list RBRACE
-        FLOW_ELSE LBRACE stmt RBRACE { If($3, $6, $10) }
+        FLOW_ELSE LBRACE stmt_list RBRACE { If($3, $6, $10) }
 
 map_opt:
   /* nothing */   { [] }
@@ -212,7 +212,7 @@ cont_lit:
   | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE
         LBRACKET map_opt RBRACKET                 { Map_Lit($3, $5, $8) }
   | TYPE_TUPLE LANGLE typ_opt RANGLE
-        LPAREN actuals_opt RPAREN                 { Tuple_List($3, $6) }
+        LPAREN actuals_opt RPAREN                 { Tuple_Lit($3, $6) }
 
 expr:
   ID                                              { Id($1) }
@@ -221,6 +221,7 @@ expr:
   | CHAR_LIT                                      { Char_Lit($1) }
   | STRING_LIT                                    { String_Lit($1) }
   | BOOL_LIT                                      { Bool_Lit($1) }
+  | UNIT_LIT                                      { Unit_Lit() }
   | LOGIC_TRUE                                    { Bool_Lit(true) }
   | LOGIC_FALSE                                   { Bool_Lit(false) }
   | cont_lit                                      { $1 }
