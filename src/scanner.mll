@@ -47,12 +47,12 @@ rule token = parse
   | '&'                   { BITWISE_AND }
   | '|'                   { BITWISE_OR }
   | '^'                   { BITWISE_XOR }
-  | ">>"                  { BITSHIFT_RIGHT }
-  | "<<"                  { BITSHIFT_LEFT }
+  | ">>"                  { BITWISE_RIGHT }
+  | "<<"                  { BITWISE_LEFT }
 
   (* functions *)
   | ':'                   { FUNC_ARG_TYPE}
-  | "=>"                  { FUNC_TYPE }
+  | "=>"                  { FUNC_RET_TYPE }
   | "return"              { RETURN }
 
   (* flow control *)
@@ -97,7 +97,8 @@ rule token = parse
   | digit+ as lxm { INT_LIT(int_of_string lxm) }
   | double as lxm { DOUBLE_LIT(float_of_string lxm)}
   | '\"' ([^'\"']* as lxm) '\"' { STRING_LIT(lxm) }
-  | '\'' (chr as lxm) '\'' { CHAR_LIT(lxm) }
+  (* TODO: this for some reason is a string or something? *)
+ (* | '\'' (chr as lxm) '\'' { CHAR_LIT(lxm) } *)
   | "true" | "false" as lxm { BOOL_LIT(bool_of_string lxm) }
   (* identifiers *)
   | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '-']* as lxm { ID(lxm) }
