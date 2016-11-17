@@ -31,7 +31,7 @@ let translate (messages, actors, functions) =
 
   (* Declare print(), which the print built-in function will call *)
   let print_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
-  let print_func = L.declare_function "print" print_t the_module in
+  let print_func = L.declare_function "printf" print_t the_module in
 
   (* Define each function (arguments and return type) so we can call it *)
   let function_decls =
@@ -53,7 +53,7 @@ let translate (messages, actors, functions) =
     let rec expr builder = function
         A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
       | A.Call ("print", [e]) ->
-              L.build_call print_func [| (expr builder e) |] "print" builder
+              L.build_call print_func [| (expr builder e) |] "printf" builder
     in
 
     (* Invoke "f builder" if the current block doesn't already
@@ -67,6 +67,7 @@ let translate (messages, actors, functions) =
        the statement's successor *)
     let rec stmt builder = function
         A.Expr e -> ignore (expr builder e); builder
+      | A.Block sl -> List.fold_left stmt builder sl
     in
 
     (* Build the code for each statement in the function *)

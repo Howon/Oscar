@@ -118,7 +118,7 @@ typ:
   | cont_typ   { $1 }
 
 simple_typ:
-  TYPE_INT        { Int_t }
+    TYPE_INT       { Int_t }
   | TYPE_BOOL     { Bool_t }
   | TYPE_DOUBLE   { Double_t }
   | TYPE_CHAR     { Char_t }
