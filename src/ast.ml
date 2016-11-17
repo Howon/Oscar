@@ -7,10 +7,10 @@ type bin_op =
 
 type u_op = Not | Neg
 
-type p_type = int | bool | float | char | unit
+type p_type = Int_t | Bool_t | Float_t | Char_t | Unit_t
 
 type cont_type =
-  String_t of string
+  String_t
   | List_t of types
   | Set_t of types
   | Map_t of types * types
