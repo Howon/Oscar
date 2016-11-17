@@ -2,7 +2,7 @@
 
 let digit = ['0' - '9']
 let double = ('-'?)((digit+'.'digit*) | ('.'digit+))
-let chr = ['a'-'z'] | ['A'-'Z'] | digit | ('\\'['*' 'n' 'r' 't' '"' '''])
+let chr = ['a'-'z' 'A'-'Z' '_' '-'] | digit | ('\\'['n' 'r' 't' '"' '''])
 
 rule token = parse
     [' ' '\t' '\r' '\n']  { token lexbuf }
@@ -47,7 +47,6 @@ rule token = parse
   | '&'                   { BITWISE_AND }
   | '|'                   { BITWISE_OR }
   | '^'                   { BITWISE_XOR }
-  | '~'                   { BITWISE_NOT }
   | ">>"                  { BITSHIFT_RIGHT }
   | "<<"                  { BITSHIFT_LEFT }
 
@@ -79,15 +78,12 @@ rule token = parse
   (* primitive types *)
   | "int"                 { TYPE_INT }
   | "double"              { TYPE_DOUBLE }
-  | "char"		          { TYPE_CHAR }
+  | "char"		            { TYPE_CHAR }
   | "bool"                { TYPE_BOOL }
   | "unit"                { TYPE_UNIT }
 
   (* non-primitive types *)
   | "string"              { TYPE_STR }
-  | "maybe"               { TYPE_MAYBE }
-  | "none"                { TYPE_NONE }
-  | "some"                { TYPE_OPTION_SOME }
   | "list"                { TYPE_LIST }
   | "set"                 { TYPE_SET }
   | "map"                 { TYPE_MAP }
@@ -102,9 +98,9 @@ rule token = parse
   | double as lxm { DOUBLE_LIT(float_of_string lxm)}
   | '\"' ([^'\"']* as lxm) '\"' { STRING_LIT(lxm) }
   | '\'' (chr as lxm) '\'' { CHAR_LIT(lxm) }
-  | "true"|"false" as lxm { BOOL_LIT(bool_of_string lxm) }
+  | "true" | "false" as lxm { BOOL_LIT(bool_of_string lxm) }
   (* identifiers *)
-  | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_']* as lxm { ID(lxm) }
+  | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '-']* as lxm { ID(lxm) }
   | eof { EOF }
 
 and comment = parse
