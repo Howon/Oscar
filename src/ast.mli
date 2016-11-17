@@ -5,20 +5,24 @@ type bin_op =
   | Or | Bit_And | Bit_Or | Bit_Xor
   | Bit_RShift | Bit_LShift
 
-type u_op = Not | Neg | Bit_Not
+type u_op = Not | Neg
 
 type p_type = Int_t | Bool_t | Double_t | Char_t | Unit_t
 
-type cont_type = String_t | List_t | Set_t | Map_t | Tuple_t
+type cont_type =
+  String_t of string
+  | List_t of types
+  | Set_t of types
+  | Map_t of types * types
+  | Tuple_t of types list
 
 type actor_op =
     Actor_send
   | Actor_broadcast
-  | Actor_receive
 
 type types = Primitive of p_type | Container of cont_type
 
-type opt_type = Maybe_t | Some_t 
+type opt_type = Maybe_t | Some_t
 
 type optional_rec = {
     type_: opt_type;
@@ -38,7 +42,7 @@ type field = Field of types * string
 
 type actor_type = Actor_t of string
 
-type pool_type = Pool_t of actor_type list
+type pool_type = Pool_t of actor_type * int
 
 and expr =
     Binop of expr * bin_op * expr
@@ -50,17 +54,22 @@ and expr =
   | Char_Lit of char
   | String_Lit of string
   | Bool_Lit of bool
-  | List_init of expr list
+  | List_Lit of List_t * expr list
+  | Set_Lit of Set_t * expr list
+  | Map_Lit of Map_t * (expr * expr) list
+  | Tuple_Lit of Tuple_t * expr list
   | Call of string * expr list
   | Actor_comm of message * actor_op * actor_type
   | Noexpr
 
 and stmt =
-    Block of stmt list
+    Block of stt list
   | Expr of expr
   | Return of expr
+  | Mut of string * types
+  | Vdecl
   | If of expr * stmt * stmt
-  | For of expr * expr * expr * stmt
+  | For of int * int * int * stmt
   | While of expr * stmt
   | Break
   | Continue
