@@ -154,7 +154,7 @@ mut_vdecl:
  /* MUTABLE typ ID { Mut($3, $2) }
   | MUTABLE typ ID ASSIGN expr { Mut($3, $2); Assign($2, $5) } */
 
-/* TODO: this needs and action, which will go in the AST! */
+/* TODO: this needs an action, which will go in the AST! */
 actor_spawn:
   TYPE_ACTOR LANGLE ID RANGLE ID ASSIGN
     ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE LPAREN actuals_opt RPAREN { None }
