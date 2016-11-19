@@ -62,57 +62,62 @@ type expr =
   | Unop of u_op * expr
   | Id of string
   | Assign of string * expr
+  | Access of string * expr
   | Int_Lit of int
   | Double_Lit of float
   | Char_Lit of char
   | String_Lit of string
   | Bool_Lit of bool
   | Unit_Lit of unit
-(* | List_Lit of List_t * expr list
-  | Set_Lit of Set_t * expr list
-  | Map_Lit of Map_t * (expr * expr) list
-  | Tuple_Lit of Tuple_t * expr list *)
+  | List_Lit of types * expr list
+  | Set_Lit of types * expr list
+  | Map_Lit of types * types * (expr * expr) list
+  | Tuple_Lit of types list * expr list
+  | Lambda of lambda
   | Call of string * expr list
   | Actor_comm of message * actor_op * actor_type
   | Noexpr
 
-type stmt =
+and stmt =
     Block of stmt list
   | Expr of expr
   | Return of expr
   | Mut of string * types
-  | Vdecl
-  | If of expr * stmt * stmt list
+  | Mutdecl of string * types * expr
+  | Vdecl of string * types * expr
+  | If of expr * stmt list * stmt list
   | For of string * int * int * int * stmt list
   | While of expr * stmt list
+  | Spawn_act of string * string * string * expr list
+  | Spawn_pool of string * string * string * expr list
   | Break
   | Continue
 
-type pattern = {
+and lambda = {
+  l_formals: formal list;
+  l_return_t: types;
+  l_body: stmt list;
+}
+
+and pattern = {
   p_message_id: string;
   p_message_formals: formal list;
   p_stmts: stmt list;
 }
 
-type func = {
+and func = {
   f_name: string;
   f_formals: formal list;
   f_return_t: types;
   f_body: stmt list;
 }
 
-type actor = {
+and actor = {
   a_name: string;
   a_formals: formal list;
   a_body: stmt list;
   a_functions: func list;
   a_receive: pattern list;
-}
-
-type lambda = {
-  l_formals: formal list;
-  l_return_t: types;
-  l_body: stmt list;
 }
 
 type program = message list * actor list * func list
