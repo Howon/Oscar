@@ -65,39 +65,39 @@ let translate (messages, actors, functions) =
       | A.Call ("print", el) -> build_print_call el builder
     
 
-      (* Takes a list of expressions and builds the correct print call *)
-      and build_print_call el builder = 
+    (* Takes a list of expressions and builds the correct print call *)
+    and build_print_call el builder = 
 
-        let rec map_param_to_type = function
-            A.Int_Lit(_)      -> A.Int_t
-          | A.Double_Lit(_)   -> A.Double_t
-          | A.String_Lit(_)   -> A.String_t
-          | A.Binop(e1, _, _)  -> map_param_to_type e1 
-                                    (* temp fix, grabs type of left arg *)
-        in 
+      let rec map_param_to_type = function
+          A.Int_Lit(_)      -> A.Int_t
+        | A.Double_Lit(_)   -> A.Double_t
+        | A.String_Lit(_)   -> A.String_t
+        | A.Binop(e1, _, _)  -> map_param_to_type e1 
+                                  (* temp fix, grabs type of left arg *)
+      in 
 
-        let map_type_to_string = function 
-            A.Int_t           -> "%d"
-         (*  | A.Bool_Lit          -> "%s" *)
-          | A.Double_t        -> "%f"
-         (* | A.Char_Lit          -> "%c" *)
-          | A.String_t        -> "%s"
+      let map_type_to_string = function 
+          A.Int_t           -> "%d"
+       (*  | A.Bool_Lit          -> "%s" *)
+        | A.Double_t        -> "%f"
+       (* | A.Char_Lit          -> "%c" *)
+        | A.String_t        -> "%s"
 
-        in
-
-        let params = List.map (expr builder) el in
-        let param_types = List.map map_param_to_type el in
-
-        
-        let const_str = List.fold_left 
-                          (fun s t -> s ^ map_type_to_string t) "" param_types
-        in
-        (* default add newline *)
-        let fmt_str = L.build_global_stringptr 
-                          (const_str ^ "\n") "tmp" builder in
-        L.build_call print_func 
-                          (Array.of_list (fmt_str :: params)) "printf" builder
       in
+
+      let params = List.map (expr builder) el in
+      let param_types = List.map map_param_to_type el in
+
+      
+      let const_str = List.fold_left 
+                        (fun s t -> s ^ map_type_to_string t) "" param_types
+      in
+      (* default add newline *)
+      let fmt_str = L.build_global_stringptr 
+                        (const_str ^ "\n") "tmp" builder in
+      L.build_call print_func 
+                        (Array.of_list (fmt_str :: params)) "printf" builder
+    in
 
     
 
