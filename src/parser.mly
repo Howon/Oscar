@@ -92,7 +92,7 @@ function_list:
 
 fdecl:
   | TYPE_FUNC ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
-    ASSIGN LBRACE stmt_list RBRACE
+    ASSIGN LBRACE stmts RBRACE
       { { f_name = $2; f_formals = $4;
       f_return_t = $7; f_body = $10 } }
 
@@ -145,7 +145,7 @@ pattern_list:
 
 pattern:
     BITWISE_OR ID LPAREN formals_opt RPAREN FUNC_RET_TYPE
-      LBRACE stmt_list RBRACE
+      LBRACE stmts RBRACE
             { { p_message_id = $2; p_message_formals = $4; p_stmts = $8; } }
 
 mut_vdecl:
@@ -172,8 +172,12 @@ actor_stmt_list:
   actor_stmt                    { [$1] }
   | actor_stmt_list actor_stmt  { $2 :: $1 }
 
-stmt_list:
+stmts:
   /* nothing */       { [] }
+  | stmt_list         { List.rev $1 }
+
+stmt_list:
+  stmt       { [$1] }
   | stmt_list stmt    { $2 :: $1 }
 
 stmt:
@@ -183,7 +187,7 @@ stmt:
   /* | actor_spawn                                       { $1 } */
   | RETURN PUNC_SEMI                                  { Return Noexpr }
   | RETURN expr PUNC_SEMI                             { Return $2 }
-  | LBRACE stmt_list RBRACE                           { Block(List.rev $2) }
+  | LBRACE stmts RBRACE                               { Block($2) }
   | stmt_cond                                         { $1 }
   | stmt_iter                                         { $1 }
 
@@ -191,17 +195,17 @@ stmt:
 /* TODO: the action for While does not match up with the one in the AST! */
 stmt_iter:
   FLOW_FOR LPAREN TYPE_INT ID LOOP_FROM INT_LIT LOOP_TO INT_LIT LOOP_BY
-      INT_LIT RPAREN LBRACE stmt_list RBRACE    { For($4, $6, $8, $10, $13) }
+      INT_LIT RPAREN LBRACE stmts RBRACE    { For($4, $6, $8, $10, $13) }
   | FLOW_WHILE LPAREN expr RPAREN
-      LBRACE stmt_list RBRACE                   { While($3, $6) }
+      LBRACE stmts RBRACE                   { While($3, $6) }
 
 /* TODO: the action for both ifs does not match with the one in the AST! */
 stmt_cond:
 /* nothing */ { Continue }
- /* FLOW_IF LPAREN expr RPAREN LBRACE stmt_list RBRACE %prec NOELSE
+ /* FLOW_IF LPAREN expr RPAREN LBRACE stmts RBRACE %prec NOELSE
         { If($3, $6, []) }
-  | FLOW_IF LPAREN expr RPAREN LBRACE stmt_list RBRACE
-        FLOW_ELSE LBRACE stmt_list RBRACE { If($3, $6, $10) } */
+  | FLOW_IF LPAREN expr RPAREN LBRACE stmts RBRACE
+        FLOW_ELSE LBRACE stmts RBRACE { If($3, $6, $10) } */
 
 map_opt:
   /* nothing */   { [] }
@@ -268,7 +272,7 @@ expr:
 /* TODO: this needs to be of type expr in the AST! */
 lambda:
 /* nothing */ { Noexpr }
-  /* | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmt_list RBRACE
+  /* | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
         { { l_formals = $2; l_return_t = $5; l_body = $8; } } */
 
 actuals_opt:
