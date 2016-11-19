@@ -43,7 +43,7 @@
 %%
 
 program:
-  messages actors functions EOF { Program($1, $2, $3) }
+  messages actors functions EOF { ($1, $2, $3) }
 
 /**********
 MESSAGES
@@ -58,7 +58,7 @@ message_list:
   | message_list message_decl { $2::$1 }
 
 message_decl:
-  TYPE_MESSAGE ID LPAREN formals_opt RPAREN   { { name = $2; formals = $4 } }
+  TYPE_MESSAGE ID LPAREN formals_opt RPAREN   { { m_name = $2; m_formals = $4 } }
 
 /**********
 ACTORS
@@ -75,8 +75,8 @@ actor_list:
 actor_decl:
   TYPE_ACTOR ID LPAREN formals_opt RPAREN LBRACE
       actor_stmt_opt functions receive RBRACE
-        { { name = $2; formals = $4; body = $7;
-            functions = $8; receive = $9 } }
+        { { a_name = $2; a_formals = $4; a_body = $7;
+            a_functions = $8; a_receive = $9 } }
 
 /**********
 FUNCTIONS
@@ -93,8 +93,8 @@ function_list:
 fdecl:
   | TYPE_FUNC ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
     ASSIGN LBRACE stmt_list RBRACE
-      { { name = $2; formals = $4;
-      return_t = $7; function_body = $10 } }
+      { { f_name = $2; f_formals = $4;
+      f_return_t = $7; f_body = $10 } }
 
 formals_opt:
   /* nothing */   { [] }
@@ -118,7 +118,7 @@ typ:
   | cont_typ   { $1 }
 
 simple_typ:
-  TYPE_INT        { Int_t }
+    TYPE_INT       { Int_t }
   | TYPE_BOOL     { Bool_t }
   | TYPE_DOUBLE   { Double_t }
   | TYPE_CHAR     { Char_t }
@@ -133,7 +133,7 @@ cont_typ:
 
 /* for pattern matching with receive */
 receive:
-  ACT_RECEIVE ASSIGN LBRACE pattern_opt RBRACE { None }
+  ACT_RECEIVE ASSIGN LBRACE pattern_opt RBRACE { $4 }
 
 pattern_opt:
   /* nothing */   { [] }
@@ -146,12 +146,15 @@ pattern_list:
 pattern:
     BITWISE_OR ID LPAREN formals_opt RPAREN FUNC_RET_TYPE
       LBRACE stmt_list RBRACE
-            { { message_id = $2; message_formals = $4; stmts = $8; } }
+            { { p_message_id = $2; p_message_formals = $4; p_stmts = $8; } }
 
+/* TODO: Mut and Vassign do not exist in the AST! */
 mut_vdecl:
-  MUTABLE typ ID { Mut($3, $2) }
-  | MUTABLE typ ID ASSIGN expr { Mut($3, $2); Assign($2, $5) }
+/* nothing */ { Continue }
+ /* MUTABLE typ ID { Mut($3, $2) }
+  | MUTABLE typ ID ASSIGN expr { Mut($3, $2); Assign($2, $5) } */
 
+/* TODO: this needs an action, which will go in the AST! */
 actor_spawn:
   TYPE_ACTOR LANGLE ID RANGLE ID ASSIGN
     ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE LPAREN actuals_opt RPAREN { None }
@@ -174,27 +177,33 @@ stmt_list:
   /* nothing */       { [] }
   | stmt_list stmt    { $2 :: $1 }
 
+/* TODO: Vdecl does not exist in the AST! */
 stmt:
   expr PUNC_SEMI                                      { Expr $1 }
-  | typ ID ASSIGN expr PUNC_SEMI                      { Vdecl($2, $1, $4) }
-  | actor_spawn                                       { $1 }
+
+   /* | typ ID ASSIGN expr PUNC_SEMI                  { Vdecl($2, $1, $4) } */
+  /* | actor_spawn                                       { $1 } */
   | RETURN PUNC_SEMI                                  { Return Noexpr }
   | RETURN expr PUNC_SEMI                             { Return $2 }
   | LBRACE stmt_list RBRACE                           { Block(List.rev $2) }
   | stmt_cond                                         { $1 }
   | stmt_iter                                         { $1 }
 
+/* TODO: the action for For does not match up with the one in the AST! */
+/* TODO: the action for While does not match up with the one in the AST! */
 stmt_iter:
   FLOW_FOR LPAREN TYPE_INT ID LOOP_FROM INT_LIT LOOP_TO INT_LIT LOOP_BY
       INT_LIT RPAREN LBRACE stmt_list RBRACE    { For($4, $6, $8, $10, $13) }
   | FLOW_WHILE LPAREN expr RPAREN
       LBRACE stmt_list RBRACE                   { While($3, $6) }
 
+/* TODO: the action for both ifs does not match with the one in the AST! */
 stmt_cond:
-  FLOW_IF LPAREN expr RPAREN LBRACE stmt_list RBRACE %prec NOELSE
-        { If($3, $6, Block([])) }
+/* nothing */ { Continue }
+ /* FLOW_IF LPAREN expr RPAREN LBRACE stmt_list RBRACE %prec NOELSE
+        { If($3, $6, []) }
   | FLOW_IF LPAREN expr RPAREN LBRACE stmt_list RBRACE
-        FLOW_ELSE LBRACE stmt_list RBRACE { If($3, $6, $10) }
+        FLOW_ELSE LBRACE stmt_list RBRACE { If($3, $6, $10) } */
 
 map_opt:
   /* nothing */   { [] }
@@ -204,7 +213,10 @@ map_list:
   expr ARROW expr                         { [($1, $3)] }
   | map_list PUNC_COMMA expr ARROW expr   { ($3, $5) :: $1 }
 
+/* TODO: these don't work because List_Lit has syntax errors in the AST! */
 cont_lit:
+/* nothing */ { Noexpr }
+/*
   TYPE_LIST LANGLE typ RANGLE
         LBRACKET actuals_opt RBRACKET             { List_Lit($3, $6) }
   | TYPE_SET LANGLE typ RANGLE
@@ -212,7 +224,7 @@ cont_lit:
   | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE
         LBRACKET map_opt RBRACKET                 { Map_Lit($3, $5, $8) }
   | TYPE_TUPLE LANGLE typ_opt RANGLE
-        LPAREN actuals_opt RPAREN                 { Tuple_Lit($3, $6) }
+        LPAREN actuals_opt RPAREN                 { Tuple_Lit($3, $6) } */
 
 expr:
   ID                                              { Id($1) }
@@ -238,7 +250,7 @@ expr:
   | expr LOGIC_GEQ      expr                      { Binop($1, Geq, $3) }
   | expr LOGIC_AND      expr                      { Binop($1, And, $3) }
   | expr LOGIC_OR       expr                      { Binop($1, Or, $3) }
-  | expr BITWISE_AND    expr                      { Binor($1, Bot_And, $3) }
+  | expr BITWISE_AND    expr                      { Binop($1, Bit_And, $3) }
   | expr BITWISE_OR     expr                      { Binop($1, Bit_Or, $3) }
   | expr BITWISE_XOR    expr                      { Binop($1, Bit_Xor, $3) }
   | expr BITWISE_RIGHT  expr                      { Binop($1, Bit_RShift, $3)}
@@ -247,15 +259,19 @@ expr:
   | LOGIC_NOT expr                                { Unop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                  { Call($1, $3) }
   | LPAREN expr RPAREN                            { $2 }
-  | ID LPAREN actuals_opt RPAREN ACT_SEND ID      { None }
-  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { None }
+  /* TODO: These need real actions, and to be put in the AST! */
+/*  | ID LPAREN actuals_opt RPAREN ACT_SEND ID      { None } 
+  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { None } */
   | lambda                                        { $1 }
   | ID ASSIGN expr                                { Assign($1, $3) }
-  | ID LBRACKET expr RBRACKET                     { None }
+  /* TODO: This needs a real action, and to be put in the AST! */
+  /* | ID LBRACKET expr RBRACKET                     { None } */
 
+/* TODO: this needs to be of type expr in the AST! */
 lambda:
-  | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmt_list RBRACE
-        { { formals = $2; return_t = $5; body = $8; } }
+/* nothing */ { Noexpr }
+  /* | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmt_list RBRACE
+        { { l_formals = $2; l_return_t = $5; l_body = $8; } } */
 
 actuals_opt:
   /* nothing */   { [] }
