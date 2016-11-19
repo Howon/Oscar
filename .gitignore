@@ -1,0 +1,10 @@
+*~
+parser.ml
+parser.mli
+*.cmi
+*.cmo
+*.cmx
+*.out
+*.output
+*.o
+*.swp
