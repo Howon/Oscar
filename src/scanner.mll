@@ -2,7 +2,7 @@
 
 let digit = ['0' - '9']
 let double = ('-'?)((digit+'.'digit*) | ('.'digit+))
-let chr = ['a'-'z' 'A'-'Z' '_' '-'] | digit | ('\\'['n' 'r' 't' '"' '''])
+let chr = ['a'-'z' 'A'-'Z' '_' '-' ' ' '\n' '\r' '\t' '\"' '\''] | digit
 
 rule token = parse
     [' ' '\t' '\r' '\n']  { token lexbuf }
@@ -98,7 +98,7 @@ rule token = parse
   | double as lxm { DOUBLE_LIT(float_of_string lxm)}
   | '\"' ([^'\"']* as lxm) '\"' { STRING_LIT(lxm) }
   (* TODO: this for some reason is a string or something? *)
- (* | '\'' (chr as lxm) '\'' { CHAR_LIT(lxm) } *)
+  | '\'' (chr as lxm) '\'' { CHAR_LIT(lxm) }
   | "true" | "false" as lxm { BOOL_LIT(bool_of_string lxm) }
   (* identifiers *)
   | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '-']* as lxm { ID(lxm) }
