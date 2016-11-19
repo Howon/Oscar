@@ -191,21 +191,17 @@ stmt:
   | stmt_cond                                         { $1 }
   | stmt_iter                                         { $1 }
 
-/* TODO: the action for For does not match up with the one in the AST! */
-/* TODO: the action for While does not match up with the one in the AST! */
 stmt_iter:
   FLOW_FOR LPAREN TYPE_INT ID LOOP_FROM INT_LIT LOOP_TO INT_LIT LOOP_BY
-      INT_LIT RPAREN LBRACE stmts RBRACE    { For($4, $6, $8, $10, $13) }
+      INT_LIT RPAREN LBRACE stmts RBRACE  { For($4, $6, $8, $10, $13) }
   | FLOW_WHILE LPAREN expr RPAREN
-      LBRACE stmts RBRACE                   { While($3, $6) }
+      LBRACE stmts RBRACE                 { While($3, $6) }
 
-/* TODO: the action for both ifs does not match with the one in the AST! */
 stmt_cond:
-/* nothing */ { Continue }
- /* FLOW_IF LPAREN expr RPAREN LBRACE stmts RBRACE %prec NOELSE
+  FLOW_IF LPAREN expr RPAREN LBRACE stmts RBRACE %prec NOELSE
         { If($3, $6, []) }
   | FLOW_IF LPAREN expr RPAREN LBRACE stmts RBRACE
-        FLOW_ELSE LBRACE stmts RBRACE { If($3, $6, $10) } */
+        FLOW_ELSE LBRACE stmts RBRACE { If($3, $6, $10) }
 
 map_opt:
   /* nothing */   { [] }
