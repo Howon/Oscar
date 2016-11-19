@@ -1,26 +1,22 @@
-open Ast
+(* Top-level of the Oscar compiler: scan & parse the input,
+   check the resulting AST, generate LLVM IR, and dump the module *)
 
-let registers = Array.make 10 0 
-
-let rec eval = function 
-    | Lit(x) -> x
-    | Seq(e1, e2) ->
-        let _ = eval e1 in eval e2
-    | Asn(x, e) ->
-        let result = eval e in 
-        let _ = registers.(x) <- result in result
-    | Var(x) -> 
-        registers.(x)
-    | Binop(e1, op, e2) ->
-        let v1 = eval e1 and v2 = eval e2 in
-        match op with
-            | Add -> v1 + v2
-            | Sub -> v1 - v2
-            | Mul -> v1 * v2
-            | Div -> v1 / v2
+type action = Ast | LLVM_IR | Compile
 
 let _ =
-    let lexbuf = Lexing.from_channel stdin in
-    let expr = Parser.expr Scanner.token lexbuf in
-    let result = eval expr in
-    print_endline (string_of_int result)
+  let action = if Array.length Sys.argv > 1 then
+    List.assoc Sys.argv.(1) [ ("-a", Ast);	(* Print the AST only *)
+			      ("-l", LLVM_IR);  (* Generate LLVM, don't check *)
+			      ("-c", Compile) ] (* Generate, check LLVM IR *)
+  else Compile in
+  let lexbuf = Lexing.from_channel stdin in
+  let ast = Parser.program Scanner.token lexbuf in
+  (* let ast = Parser.program Scanner.token lexbuf in
+  Semant.check ast; *)
+  match action with
+   
+   (* Ast -> print_string (Ast.string_of_program ast) *)
+  | LLVM_IR -> print_string (Llvm.string_of_llmodule (Codegen.translate ast))
+  | Compile -> let m = Codegen.translate ast in
+    Llvm_analysis.assert_valid_module m;
+    print_string (Llvm.string_of_llmodule m)

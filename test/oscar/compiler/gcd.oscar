@@ -1,0 +1,12 @@
+def gcd(a: int, b: int) => int = {
+  if (b == a) {
+    return a;
+  } else {
+    return gcd(b, a % b);
+  }
+}
+
+def main() => unit = {
+  println(gcd(135, 17));
+  println(gcd(40, 10));
+}

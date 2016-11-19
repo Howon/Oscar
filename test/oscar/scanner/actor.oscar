@@ -1,0 +1,27 @@
+actor Master(numWorkers: int, numMsgs: int, numElems: int) {
+  mut pi = 0.0;
+  mut numResults = 0;
+  mut pool<Worker> workerPool = spawn pool<Worker>(numWorkers);
+
+  Listener listener = spawn Listener(“pi listener”);
+
+  receive {
+    | start() => {
+        list<work> msgList = [int i <- 0 to numMsgs by 1].map(i => {
+          work(i * numElems, numElems);
+        })
+
+        msgList |>> workerPool;
+      }
+    | result() => {
+        pi = pi + value;
+        numResults = numResults + 1;
+        if (numResults == numMsgs) {
+          piApproximation(pi) |>> listener;
+        }
+      }
+    | end => {
+        die();
+      }
+  }
+}
