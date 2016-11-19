@@ -73,11 +73,6 @@ let translate (messages, actors, functions) =
           | A.String_Lit(_)   -> A.String_t
         in 
 
-        (* let map_param_to_string = function
-            A.Int_Lit(_) -> "%d"
-          | A.String_Lit(_) -> "%s"
-        in *)
-
         let map_type_to_string = function 
             A.Int_t           -> "%d"
          (*  | A.Bool_Lit          -> "%s"
@@ -94,9 +89,11 @@ let translate (messages, actors, functions) =
         let const_str = List.fold_left 
                           (fun s t -> s ^ map_type_to_string t) "" param_types
         in
-        let fmt_str = L.build_global_stringptr const_str "tmp" builder in
+        (* default add newline *)
+        let fmt_str = L.build_global_stringptr 
+                          (const_str ^ "\n") "tmp" builder in
         L.build_call print_func 
-                        (Array.of_list (fmt_str :: params)) "printf" builder
+                          (Array.of_list (fmt_str :: params)) "printf" builder
       in
 
     
