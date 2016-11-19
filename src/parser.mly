@@ -148,11 +148,10 @@ pattern:
       LBRACE stmt_list RBRACE
             { { p_message_id = $2; p_message_formals = $4; p_stmts = $8; } }
 
-/* TODO: Mut and Vassign do not exist in the AST! */
 mut_vdecl:
 /* nothing */ { Continue }
- /* MUTABLE typ ID { Mut($3, $2) }
-  | MUTABLE typ ID ASSIGN expr { Mut($3, $2); Assign($2, $5) } */
+  | MUTABLE typ ID { Mut($3, $2) }
+  | MUTABLE typ ID ASSIGN expr { Mutdecl($3, $2, $5) }
 
 /* TODO: this needs an action, which will go in the AST! */
 actor_spawn:
