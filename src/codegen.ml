@@ -50,7 +50,7 @@ let translate (messages, actors, functions) =
             | A.Sub     -> L.build_sub
             | A.Mult    -> L.build_mul
             | A.Div     -> L.build_sdiv
-             (* | A.Mod     -> L.bulid_mod (* does this exist *) *)
+            | A.Mod     -> L.build_srem
             | A.Equal   -> L.build_icmp L.Icmp.Eq
             | A.Neq     -> L.build_icmp L.Icmp.Ne
             | A.Less    -> L.build_icmp L.Icmp.Slt
