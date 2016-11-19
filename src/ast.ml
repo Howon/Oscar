@@ -11,38 +11,23 @@ type actor_op =
     Actor_send
   | Actor_broadcast
 
-(*
-type types = Primitive of p_type | Container of cont_type
-*)
-
 type types = Int_t | Bool_t | Double_t | Char_t | Unit_t |  String_t
   | List_t of types
   | Set_t of types
   | Map_t of types * types
   | Tuple_t of types list
 
-(*
-type p_type = Int_t | Bool_t | Float_t | Char_t | Unit_t
-
-type cont_type =
-    String_t
-  | List_t of types
-  | Set_t of types
-  | Map_t of types * types
-  | Tuple_t of types list
-*)
-
-
-
 (* Commenting out optional types for now *)
-(* type opt_type = Maybe_t | Some_t
+(* 
+type opt_type = Maybe_t | Some_t
 
 type optional_rec = {
     type_: opt_type;
     param: types;
 }
 
-type optional = Optional_t of optional_rec | None_t *)
+type optional = Optional_t of optional_rec | None_t 
+*)
 
 type formal = string * types
 
