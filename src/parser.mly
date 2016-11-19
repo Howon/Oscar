@@ -155,10 +155,10 @@ mut_vdecl:
 
 /* TODO: this needs an action, which will go in the AST! */
 actor_spawn:
-  TYPE_ACTOR LANGLE ID RANGLE ID ASSIGN
-    ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE LPAREN actuals_opt RPAREN { None }
-  | TYPE_POOL LANGLE ID RANGLE ID ASSIGN
-    ACT_SPAWN TYPE_POOL LANGLE ID RANGLE LPAREN actuals_opt RPAREN { None }
+  TYPE_ACTOR LANGLE ID RANGLE ID ASSIGN ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE
+      LPAREN actuals_opt RPAREN       { Spawn_act($3, $5, $10, $13) }
+  | TYPE_POOL LANGLE ID RANGLE ID ASSIGN ACT_SPAWN TYPE_POOL LANGLE ID RANGLE
+      LPAREN actuals_opt RPAREN       { Spawn_pool($3, $5, $10, $13) }
 
 actor_stmt:
   stmt                  { $1 }
@@ -182,9 +182,8 @@ stmt_list:
 
 stmt:
   expr PUNC_SEMI                                      { Expr $1 }
-
   | typ ID ASSIGN expr PUNC_SEMI                      { Vdecl($2, $1, $4) }
-  /* | actor_spawn                                       { $1 } */
+  | actor_spawn PUNC_SEMI                             { $1 }
   | RETURN PUNC_SEMI                                  { Return Noexpr }
   | RETURN expr PUNC_SEMI                             { Return $2 }
   | LBRACE stmts RBRACE                               { Block($2) }
@@ -211,10 +210,7 @@ map_list:
   expr ARROW expr                         { [($1, $3)] }
   | map_list PUNC_COMMA expr ARROW expr   { ($3, $5) :: $1 }
 
-/* TODO: these don't work because List_Lit has syntax errors in the AST! */
 cont_lit:
-/* nothing */ { Noexpr }
-/*
   TYPE_LIST LANGLE typ RANGLE
         LBRACKET actuals_opt RBRACKET             { List_Lit($3, $6) }
   | TYPE_SET LANGLE typ RANGLE
@@ -222,7 +218,7 @@ cont_lit:
   | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE
         LBRACKET map_opt RBRACKET                 { Map_Lit($3, $5, $8) }
   | TYPE_TUPLE LANGLE typ_opt RANGLE
-        LPAREN actuals_opt RPAREN                 { Tuple_Lit($3, $6) } */
+        LPAREN actuals_opt RPAREN                 { Tuple_Lit($3, $6) }
 
 expr:
   ID                                              { Id($1) }
@@ -258,12 +254,11 @@ expr:
   | ID LPAREN actuals_opt RPAREN                  { Call($1, $3) }
   | LPAREN expr RPAREN                            { $2 }
   /* TODO: These need real actions, and to be put in the AST! */
-/*  | ID LPAREN actuals_opt RPAREN ACT_SEND ID      { None } 
-  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { None } */
+  | ID LPAREN actuals_opt RPAREN ACT_SEND ID      { Noexpr }
+  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { Noexpr }
   | lambda                                        { $1 }
   | ID ASSIGN expr                                { Assign($1, $3) }
-  /* TODO: This needs a real action, and to be put in the AST! */
-  /* | ID LBRACKET expr RBRACKET                     { None } */
+  | ID LBRACKET expr RBRACKET                     { Access($1, $3) }
 
 lambda:
   LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
