@@ -267,9 +267,8 @@ expr:
 
 /* TODO: this needs to be of type expr in the AST! */
 lambda:
-/* nothing */ { Noexpr }
-  /* | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
-        { { l_formals = $2; l_return_t = $5; l_body = $8; } } */
+  LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
+        { Lambda({ l_formals = $2; l_return_t = $5; l_body = $8; }) }
 
 actuals_opt:
   /* nothing */   { [] }

@@ -72,11 +72,12 @@ type expr =
   | Set_Lit of Set_t * expr list
   | Map_Lit of Map_t * (expr * expr) list
   | Tuple_Lit of Tuple_t * expr list *)
+  | Lambda of lambda
   | Call of string * expr list
   | Actor_comm of message * actor_op * actor_type
   | Noexpr
 
-type stmt =
+and stmt =
     Block of stmt list
   | Expr of expr
   | Return of expr
@@ -89,31 +90,31 @@ type stmt =
   | Break
   | Continue
 
-type pattern = {
+and lambda = {
+  l_formals: formal list;
+  l_return_t: types;
+  l_body: stmt list;
+}
+
+and pattern = {
   p_message_id: string;
   p_message_formals: formal list;
   p_stmts: stmt list;
 }
 
-type func = {
+and func = {
   f_name: string;
   f_formals: formal list;
   f_return_t: types;
   f_body: stmt list;
 }
 
-type actor = {
+and actor = {
   a_name: string;
   a_formals: formal list;
   a_body: stmt list;
   a_functions: func list;
   a_receive: pattern list;
-}
-
-type lambda = {
-  l_formals: formal list;
-  l_return_t: types;
-  l_body: stmt list;
 }
 
 type program = message list * actor list * func list
