@@ -68,16 +68,19 @@ let translate (messages, actors, functions) =
       (* Takes a list of expressions and builds the correct print call *)
       and build_print_call el builder = 
 
-        let map_param_to_type = function
+        let rec map_param_to_type = function
             A.Int_Lit(_)      -> A.Int_t
+          | A.Double_Lit(_)   -> A.Double_t
           | A.String_Lit(_)   -> A.String_t
+          | A.Binop(e1, _, _)  -> map_param_to_type e1 
+                                    (* temp fix, grabs type of left arg *)
         in 
 
         let map_type_to_string = function 
             A.Int_t           -> "%d"
-         (*  | A.Bool_Lit          -> "%s"
-          | A.Double_Lit        -> "%f"
-          | A.Char_Lit          -> "%c" *)
+         (*  | A.Bool_Lit          -> "%s" *)
+          | A.Double_t        -> "%f"
+         (* | A.Char_Lit          -> "%c" *)
           | A.String_t        -> "%s"
 
         in
