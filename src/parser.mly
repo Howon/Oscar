@@ -153,7 +153,6 @@ mut_vdecl:
   | MUTABLE typ ID { Mut($3, $2) }
   | MUTABLE typ ID ASSIGN expr { Mutdecl($3, $2, $5) }
 
-/* TODO: this needs an action, which will go in the AST! */
 actor_spawn:
   TYPE_ACTOR LANGLE ID RANGLE ID ASSIGN ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE
       LPAREN actuals_opt RPAREN       { Spawn_act($3, $5, $10, $13) }
