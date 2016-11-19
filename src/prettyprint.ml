@@ -8,23 +8,19 @@ open Scanner
 (* Print Data Types BRUG*)
   
 let string_of_p_type = function
-    Int_t      -> "int"
-  | Bool_t     -> "bool"
-  | Double_t   -> "double"
-  | Char_t     -> "char"
-  | Unit_t     -> "unit"
+    Int_t      -> "Int"
+  | Bool_t     -> "Bool"
+  | Double_t   -> "Double"
+  | Char_t     -> "Char"
+  | Unit_t     -> "Unit"
   
 let string_of_cont_type = function
-    String_t   -> "string"
-  | List_t     -> "list"
-  | Set_t      -> "set"
-  | Map_t      -> "map"
-  | Tuple_t    -> "tup"
+    String_t   -> "String"
+  | List_t     -> "List"
+  | Set_t      -> "Set"
+  | Map_t      -> "Map"
+  | Tuple_t    -> "Tup"
 
-let string_of_opt_type = function 
-    Maybe_t -> "maybe"
-  | Some_t  -> "some"
-  
 let string_of_types = function
     Primitive(p)    -> (string_of_p_type p)
   | Container(c)    -> (string_of_cont_type c)
@@ -79,18 +75,20 @@ let string_of_bit_op = function
   | Bit_And       -> "&"
   | Bit_Or        -> "|"
   | Bit_Xor       -> "^"
-  | Bit_Not       -> "~"
 
  
 (* Print Expressions BRUG*)
   
 let rec string_of_expr = function
-    Binop(e1, bn_o, e2)	-> "(" ^ (string_of_expr e1) ^ " " ^
-	                         (string_of_bin_op b) ^ " " ^ (string_of_expr e2)
-							   ^ ")"
-  | Bitop(e1, bt_o, e2)	-> "(" ^ (string_of_int i) ^ " " ^ (string_of_bit_op b)
-                             ^ " " ^ (string_of_int i) ^ ")"
-  | Unop(u, e)          -> (string_of_expr e) ^ (string_of_u_op u)
+    Binop(e1, o, e2)	-> "(" ^ (string_of_expr e1) ^ " " ^
+                                 (string_of_bin_op o) ^ " " ^
+							     (string_of_expr e2) ^ ")"
+								 
+  | Bitop(i1, o, i2)	-> "(" ^ (string_of_int i1) ^ " " ^
+                                 (string_of_bit_op o) ^ " " ^ 
+							     (string_of_int i2) ^ ")"
+								 
+  | Unop(o, e)          -> (string_of_expr e) ^ (string_of_u_op o)
   | Id(s)               -> s
   | Assign(v, e)        -> v ^ " = " ^ string_of_expr e
   | Int_Lit(i)			-> string_of_int i
@@ -102,8 +100,8 @@ let rec string_of_expr = function
   | List_init           -> "List_init????????"
   | Call(s, el)         -> s ^ "(" ^ String.concat ", " (List.map 
                              string_of_expr el) ^ ")"
-  | Actor_comm(m,a_o,a) -> "(" ^ (string_of_msg m) ^ " " ^
-                             (string_of_actor_op a_o) ^ " " ^
+  | Actor_comm(m,o,a) -> "(" ^ (string_of_msg m) ^ " " ^
+                             (string_of_actor_op o) ^ " " ^
 							   (string_of_actor a) ^ ")"
   | Noexpr              -> ""
   | _                   -> "brug"
@@ -112,7 +110,7 @@ let rec string_of_expr = function
 (* Print Statements BRUG*)
 
 let rec string_of_stmt = function
-    Block(stmts)        -> "{\n" ^ String.concat ""
+    Block(stmts)        -> "{\n" ^ String.concat "\n"
 	                         (List.map string_of_stmt stmts) ^ "}\n"
   | Expr(expr)          -> string_of_expr expr ^ ";\n";
   | Return(expr)        -> "return " ^ string_of_expr expr ^ ";\n";
