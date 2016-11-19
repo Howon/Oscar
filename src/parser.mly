@@ -176,11 +176,10 @@ stmt_list:
   /* nothing */       { [] }
   | stmt_list stmt    { $2 :: $1 }
 
-/* TODO: Vdecl does not exist in the AST! */
 stmt:
   expr PUNC_SEMI                                      { Expr $1 }
 
-   /* | typ ID ASSIGN expr PUNC_SEMI                  { Vdecl($2, $1, $4) } */
+  | typ ID ASSIGN expr PUNC_SEMI                      { Vdecl($2, $1, $4) }
   /* | actor_spawn                                       { $1 } */
   | RETURN PUNC_SEMI                                  { Return Noexpr }
   | RETURN expr PUNC_SEMI                             { Return $2 }
