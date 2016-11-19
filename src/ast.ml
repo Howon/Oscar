@@ -35,14 +35,14 @@ type cont_type =
 
 
 (* Commenting out optional types for now *)
-(*type opt_type = Maybe_t | Some_t
+(* type opt_type = Maybe_t | Some_t
 
 type optional_rec = {
     type_: opt_type;
     param: types;
 }
 
-type optional = Optional_t of optional_rec | None_t*)
+type optional = Optional_t of optional_rec | None_t *)
 
 type formal = string * types
 
