@@ -1,6 +1,8 @@
 *~
+oscar
 parser.ml
 parser.mli
+scanner.ml
 *.cmi
 *.cmo
 *.cmx

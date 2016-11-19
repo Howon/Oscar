@@ -83,7 +83,7 @@ type stmt =
   | Mut of string * types
   | Mutdecl of string * types * expr
   | Vdecl of string * types * expr
-  | If of expr * stmt * stmt list
+  | If of expr * stmt list * stmt list
   | For of string * int * int * int * stmt list
   | While of expr * stmt list
   | Break
