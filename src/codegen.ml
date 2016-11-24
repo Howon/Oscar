@@ -38,7 +38,7 @@ let translate (messages, actors, functions) =
     (* Construct code for an expression; return its value *)
     let rec expr builder = function
         A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
-      | A.Call ("print", [e]) ->
+      | A.Call ("println", [e]) ->
               L.build_call print_func [| (expr builder e) |] "printf" builder
     in
 

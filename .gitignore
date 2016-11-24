@@ -9,3 +9,4 @@ parser.mli
 *.o
 *.swp
 *.log
+*.DS_Store
