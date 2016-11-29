@@ -1,9 +1,8 @@
 #!/bin/bash
 
 # Path to the LLVM interpreter
-LLI="lli"
-#LLI="/usr/local/opt/llvm/bin/lli"
-
+#LLI="lli"
+LLI="/usr/local/opt/llvm/bin/lli"
 
 # Colors
 RED='\033[0;31m'
@@ -105,8 +104,11 @@ test_compiler() {
 
     echo "" >> session_file
 
-    #Perform comparison of outputs
+    # Perform comparison of outputs
     # why is this being done tho lol
+    cat oscar_test_output
+    cat "$test_path"$filename$compiler_extension
+    diff oscar_test_output "$test_path"$filename$compiler_extension
     diff oscar_test_output "$test_path"$filename$compiler_extension >> /dev/null
     show_result $1 $filename $compiler_extension $test_extension
   done
@@ -147,14 +149,14 @@ make_oscar
 logFile=./logfile.log
 echo "" > $logFile
 
-test_path="$TEST_DIR"/oscar/scanner/
-scanner_extension=.scan
+#test_path="$TEST_DIR"/oscar/scanner/
+#scanner_extension=.scan
 
 # test_scanner $test_path $scanner_extension
 
 test_path=oscar/compiler/
-compiler_extension=.out
 test_extension=.oscar
+compiler_extension=$test_extension.out
 test_compiler $test_path $compiler_extension $test_extension
 
 rm -f ../oscar
