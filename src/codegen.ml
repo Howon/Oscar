@@ -62,7 +62,7 @@ let translate (messages, actors, functions) =
             (* add bitwise ops *)
           ) e1' e2' "tmp" builder
       | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
-      | A.Call ("print", el) -> build_print_call el builder
+      | A.Call ("println", el) -> build_print_call el builder
 
     (* Takes a list of expressions and builds the correct print call *)
     and build_print_call el builder =
@@ -87,7 +87,6 @@ let translate (messages, actors, functions) =
       let params = List.map (expr builder) el in
       let param_types = List.map map_param_to_type el in
 
-
       let const_str = List.fold_left
                         (fun s t -> s ^ map_type_to_string t) "" param_types
       in
@@ -96,10 +95,7 @@ let translate (messages, actors, functions) =
                         (const_str ^ "\n") "tmp" builder in
       L.build_call print_func
                         (Array.of_list (fmt_str :: params)) "printf" builder
-    in
-
-
-
+      in
 
     (* Invoke "f builder" if the current block doesn't already
     have a terminal (e.g., a branch). *)
