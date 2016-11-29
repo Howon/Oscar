@@ -32,6 +32,6 @@ actor Types {
   }
 }
 
-def main() = unit => {
+def main() => unit = {
   println("Hello World!");
 }

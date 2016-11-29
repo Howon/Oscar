@@ -106,9 +106,9 @@ test_compiler() {
 
     # Perform comparison of outputs
     # why is this being done tho lol
-    cat oscar_test_output
-    cat "$test_path"$filename$compiler_extension
-    diff oscar_test_output "$test_path"$filename$compiler_extension
+    #cat oscar_test_output
+    #cat "$test_path"$filename$compiler_extension
+    #diff oscar_test_output "$test_path"$filename$compiler_extension
     diff oscar_test_output "$test_path"$filename$compiler_extension >> /dev/null
     show_result $1 $filename $compiler_extension $test_extension
   done
