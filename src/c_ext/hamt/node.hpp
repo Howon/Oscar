@@ -98,7 +98,6 @@ namespace hamt {
                     (this->size == rhs.get_size()) &&
                     (this->val == rhs.get_val()) &&
                     (this->editable() == rhs.editable()) &&
-                    (this->chdrn == rhs.get_chdrn()) &&
                     (*this->chdrn == *rhs.get_chdrn());
         }
 
@@ -443,7 +442,7 @@ node<T> *hamt::merge(bool can_edit, int shift, u_int h_a, node<T> *node_a,
 
     if (hp_a == hp_b) {
         node<T> * merge =
-                merge(can_edit, shift + SIZE, h_a, node_a, h_b, node_b);
+                hamt::merge(can_edit, shift + SIZE, h_a, node_a, h_b, node_b);
 
         nodes->clear();
         nodes->push_back(merge);

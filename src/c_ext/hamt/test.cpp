@@ -8,6 +8,20 @@
 
 using namespace std;
 
+TEST_CASE("Pop count", "[utility]")
+{
+    REQUIRE(pop_count(5) == 2);
+    REQUIRE(pop_count(156) == 4);
+    REQUIRE(pop_count(1234123423) == 18);
+}
+
+TEST_CASE("Hash partition", "[utility]")
+{
+    REQUIRE(pop_count(5) == 2);
+    REQUIRE(pop_count(156) == 4);
+    REQUIRE(pop_count(1234123423) == 18);
+}
+
 TEST_CASE("Empty node equality", "[equality]")
 {
     auto empty = hamt::empty_node<int>();
@@ -207,4 +221,8 @@ TEST_CASE("Merge test", "[functionality]")
     cout << merged_coll->get_mask() << endl;
     cout << merged_coll->get_val() << endl;
     cout << merged_coll->get_size() << endl;
+
+    for (auto node : *merged_coll->get_chdrn())
+        cout << node->get_type() << endl;
+
 }

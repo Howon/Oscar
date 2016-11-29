@@ -32,15 +32,11 @@ static inline u_int str_hash(std::string str)
  */
 static inline int pop_count(const u_int x)
 {
-    int y = x;
-
-    y -= y >> 1 & 0x55555555;
-    y = (y & 0x33333333) + (y >> 2 & 0x33333333);
-    y = y + (y >> 4) & 0x0f0f0f0f;
-    y += y >> 8;
-    y += y >> 16;
-
-    return y & 0x7f;
+    if (sizeof(x)==sizeof(int))
+        return __builtin_popcount(x);
+    if (sizeof(x)==sizeof(long))
+        return __builtin_popcountl(x);
+    return __builtin_popcountll(x);
 }
 
 /**
