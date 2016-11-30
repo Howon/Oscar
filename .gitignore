@@ -6,7 +6,9 @@ scanner.ml
 *.cmi
 *.cmo
 *.cmx
-*.out
+./src/*.out
 *.output
 *.o
 *.swp
+*.log
+*.DS_Store

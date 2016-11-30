@@ -1,0 +1,37 @@
+/*
+ * COMMENT BLOCK
+ */
+
+actor Types {
+  int i;
+  double d;
+  boolean b;
+  char c;
+  string s;
+  list<int> intList;
+  set<int> intSet;
+  map<int, double> intDoubleMap;
+  tuple<string, int, double> strIntDoubleTuple;
+  pool<Worker> workerPool;
+
+  mut int mI;
+  mut double mD;
+  mut boolean mB;
+  mut char mC;
+  mut string mS;
+  mut list<int> mIntList;
+  mut set<int> mIntSet;
+  mut map<int, double> mIntDoubleMap;
+  mut tuple<string, int, double> mStrIntDoubleTuple;
+  mut pool<Worker> mWorkerPool;
+
+  def println(s: string) => unit = { }
+
+  def apply(f: (double) => double, a: double) => double = {
+    return f(a);
+  }
+}
+
+def main() => unit = {
+  println("Hello World!");
+}
