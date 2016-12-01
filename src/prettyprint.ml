@@ -123,30 +123,30 @@ and string_of_kvs kvs =
 (* Print Statements BRUG*)
 
 and string_of_stmt = function
-    Block(stmts)                  -> "{\n" ^ string_of_stmts stmts ^ "\n}\n"
-  | Expr(expr)                    -> string_of_expr expr ^ ";\n"
-  | Return(expr)                  -> "return " ^ string_of_expr expr ^ ";\n"
+    Block(stmts)                  -> "{\n" ^ string_of_stmts stmts ^ "\n}"
+  | Expr(expr)                    -> string_of_expr expr ^ ";"
+  | Return(expr)                  -> "return " ^ string_of_expr expr ^ ";"
   | Mut(v, t)                     -> "mut " ^ string_of_types t ^ " " ^
-                                      v ^ ";\n"
+                                      v ^ ";"
   | Mutdecl(v, t, e)              -> "mut " ^  string_of_types t ^ " " ^ v ^
-                                      string_of_expr e ^";\n"
+                                      string_of_expr e ^";"
   | Vdecl(v, t, e)                -> string_of_types t ^ " " ^ v ^
-                                      string_of_expr e ^ ";\n"
+                                      string_of_expr e ^ ";"
   | If(e, s1, s2)                 -> "if (" ^ string_of_expr e ^ ") {\n" ^
                                       string_of_stmts s1 ^ "\n} else {\n" ^
-                                      string_of_stmts s2 ^ "\n}\n"
+                                      string_of_stmts s2 ^ "\n}"
   | For(v, f1, f2, f3, stmts)     -> "for (int " ^ v ^ " <- " ^
                                       string_of_int f1 ^ " to " ^
                                       string_of_int f2 ^ " by " ^
                                       string_of_int f3 ^ ") {\n" ^
-                                      string_of_stmts stmts ^ "\n}\n"
+                                      string_of_stmts stmts ^ "\n}"
   | While(e, stmts)               -> "while (" ^ (string_of_expr e) ^ ") {\n" ^
-                                      string_of_stmts stmts ^ "\n}\n"
+                                      string_of_stmts stmts ^ "\n}"
   | Spawn_act(t1, v, t2, exprs)   -> t1 ^ " " ^ v ^ " = spawn " ^ t2 ^ "(" ^
-                                      string_of_exprs exprs ^ ");\n"
+                                      string_of_exprs exprs ^ ");"
   | Spawn_pool(t1, v, t2, exprs)  -> "pool<" ^ t1 ^ "> " ^ v ^
                                       " = spawn pool<" ^ t2 ^ ">(" ^
-                                      string_of_exprs exprs ^ ");\n"
+                                      string_of_exprs exprs ^ ");"
   | Break                         -> "break"
   | Continue                      -> "continue"
 
@@ -188,8 +188,8 @@ let string_of_actor actor =
 
 
 let string_of_program (messages, actors, funcs) =
-  String.concat "\n" (List.map string_of_message messages) ^ "\n\n\n" ^
-    String.concat "\n\n" (List.map string_of_actor actors) ^ "\n\n\n" ^
+  String.concat "\n" (List.map string_of_message messages) ^ "\n\n" ^
+    String.concat "\n\n" (List.map string_of_actor actors) ^ "\n\n" ^
 	  String.concat "\n\n" (List.map string_of_func funcs)
 
 (* Words That Do Stuff *)
