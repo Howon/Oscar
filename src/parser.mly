@@ -14,6 +14,7 @@
 %token TYPE_INT TYPE_DOUBLE TYPE_CHAR TYPE_BOOL TYPE_UNIT TYPE_STR
 %token TYPE_LIST TYPE_SET TYPE_MAP TYPE_TUPLE
 %token TYPE_MESSAGE TYPE_ACTOR TYPE_POOL TYPE_FUNC
+%token BREAK CONTINUE
 %token <int> INT_LIT
 %token <float> DOUBLE_LIT
 %token <string> STRING_LIT
@@ -194,6 +195,8 @@ stmt:
   | LBRACE stmts RBRACE                               { Block($2) }
   | stmt_cond                                         { $1 }
   | stmt_iter                                         { $1 }
+  | BREAK PUNC_SEMI                                        { Break }
+  | CONTINUE PUNC_SEMI                                     { Continue }
 
 stmt_iter:
   FLOW_FOR LPAREN TYPE_INT ID LOOP_FROM INT_LIT LOOP_TO INT_LIT LOOP_BY

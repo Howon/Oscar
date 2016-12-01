@@ -24,8 +24,6 @@ type message = {
     m_formals: formal list;
 }
 
-type field = Field of types * string
-
 type actor_type = Actor_t of string
 
 type pool_type = Pool_t of actor_type * int

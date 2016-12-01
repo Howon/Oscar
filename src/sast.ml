@@ -5,12 +5,12 @@ type sexpr =
   | SUnop of u_op * sexpr * types
   | SId of string * types
   | SAssign of string * expr * types
-  | Sint_Lit of int
+  | SInt_Lit of int
   | SDouble_Lit of float
   | SChar_Lit of char
   | SString_Lit of string
   | SBool_Lit of bool
-  | SList_Lit of sexpr list * types
+  | SList_Lit of types * sexpr list
   | SSet_Lit of types * sexpr list
   | SMap_Lit of types * types * (sexpr * sexpr) list
   | STuple_Lit of types list * sexpr list
@@ -19,13 +19,12 @@ type sexpr =
   | SActor_comm of message * actor_op * actor_type
   | SNoexpr
 
-type sstmt =
+and sstmt =
     SBlock of stmt list
   | SExpr of sexpr * types
   | SReturn of sexpr * types
-  | Mut of string * types
-  | SMutdecl of string * types * sexpr
-  | SVedcl of string * types * sexpr
+  | SVedcl of val_decl
+  | SMutdecl of mvar_decl
   | SIf of sexpr * sstmt * sexpr
   | SFor of sexpr * sexpr * sexpr * sstmt
   | SWhile of sexpr * sstmt
@@ -34,36 +33,36 @@ type sstmt =
   | SBreak
   | SContinue
 
-type slambda = {
-  formals: formal list;
-  return_t: types;
-  body: sstmt list;
+and slambda = {
+  sl_formals: formal list;
+  sl_return_t: types;
+  sl_body: sstmt list;
 }
 
-type smessage = {
-  name: string;
-  formals: formal list;
+and smessage = {
+  sm_name: string;
+  sm_formals: formal list;
 }
 
-type spattern = {
+and spattern = {
   message_id: string;
   message_formals: formal list;
   stmts: sstmt list;
 }
 
-type sfunc = {
-  name: string;
-  formals: formal list;
-  return_t: types;
-  body: sstmt list;
+and sfunc = {
+  sf_name: string;
+  sf_formals: formal list;
+  sf_return_t: types;
+  sf_body: sstmt list;
 }
 
-type sactor = {
-  name: string;
-  formals: formal list;
-  body: sstmt list;
-  functions: sfunc list;
-  receive: spattern list;
+and sactor = {
+  sa_name: string;
+  sa_formals: formal list;
+  sa_body: sstmt list;
+  sa_functions: sfunc list;
+  sa_receive: spattern list;
 }
 
 type sprogram = smessage list * sactor list * sfunc list
