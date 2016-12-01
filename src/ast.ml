@@ -17,18 +17,6 @@ type types = Int_t | Bool_t | Double_t | Char_t | Unit_t |  String_t
   | Map_t of types * types
   | Tuple_t of types list
 
-(* Commenting out optional types for now *)
-(* 
-type opt_type = Maybe_t | Some_t
-
-type optional_rec = {
-    type_: opt_type;
-    param: types;
-}
-
-type optional = Optional_t of optional_rec | None_t 
-*)
-
 type formal = string * types
 
 type message = {
@@ -63,13 +51,24 @@ type expr =
   | Actor_comm of message * actor_op * actor_type
   | Noexpr
 
+and val_decl = {
+    v_name : string;
+    v_type : types;
+    v_init : expr;
+}
+
+and mvar_decl = {
+    mv_name : string;
+    mv_type : types;
+    mv_init : expr;
+}
+
 and stmt =
     Block of stmt list
   | Expr of expr
   | Return of expr
-  | Mut of string * types
-  | Mutdecl of string * types * expr
-  | Vdecl of string * types * expr
+  | Vdecl of val_decl
+  | Mutdecl of mvar_decl
   | If of expr * stmt list * stmt list
   | For of string * int * int * int * stmt list
   | While of expr * stmt list

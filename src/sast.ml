@@ -1,7 +1,7 @@
 open Ast
 
 type sexpr =
-  SBinop of sexpr * bin_op * sexpr * types
+    SBinop of sexpr * bin_op * sexpr * types
   | SUnop of u_op * sexpr * types
   | SId of string * types
   | SAssign of string * expr * types
@@ -11,19 +11,34 @@ type sexpr =
   | SString_Lit of string
   | SBool_Lit of bool
   | SList_Lit of sexpr list * types
+  | SSet_Lit of types * sexpr list
+  | SMap_Lit of types * types * (sexpr * sexpr) list
+  | STuple_Lit of types list * sexpr list
+  | SLambda of slambda
   | SCall of string * sexpr list * types
   | SActor_comm of message * actor_op * actor_type
   | SNoexpr
 
 type sstmt =
-  SBlock of stmt list
+    SBlock of stmt list
   | SExpr of sexpr * types
   | SReturn of sexpr * types
+  | Mut of string * types
+  | SMutdecl of string * types * sexpr
+  | SVedcl of string * types * sexpr
   | SIf of sexpr * sstmt * sexpr
   | SFor of sexpr * sexpr * sexpr * sstmt
   | SWhile of sexpr * sstmt
+  | SSpawn_act of string * string * string * sexpr list
+  | SSpawn_pool of string * string * string * sexpr list
   | SBreak
   | SContinue
+
+type slambda = {
+  formals: formal list;
+  return_t: types;
+  body: sstmt list;
+}
 
 type smessage = {
   name: string;
@@ -49,12 +64,6 @@ type sactor = {
   body: sstmt list;
   functions: sfunc list;
   receive: spattern list;
-}
-
-type slambda = {
-  formals: formal list;
-  return_t: types;
-  body: sstmt list;
 }
 
 type sprogram = smessage list * sactor list * sfunc list

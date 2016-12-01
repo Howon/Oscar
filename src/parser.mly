@@ -150,8 +150,12 @@ pattern:
 
 mut_vdecl:
 /* nothing */ { Continue }
-  | MUTABLE typ ID { Mut($3, $2) }
-  | MUTABLE typ ID ASSIGN expr { Mutdecl($3, $2, $5) }
+  | MUTABLE typ ID { Mutdecl({ mv_name = $3;
+                               mv_type = $2;
+                               mv_init = Noexpr}) }
+  | MUTABLE typ ID ASSIGN expr { Mutdecl({ mv_name = $3;
+                                           mv_type = $2;
+                                           mv_init = $5}) }
 
 actor_spawn:
   TYPE_ACTOR LANGLE ID RANGLE ID ASSIGN ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE
@@ -181,7 +185,9 @@ stmt_list:
 
 stmt:
   expr PUNC_SEMI                                      { Expr $1 }
-  | typ ID ASSIGN expr PUNC_SEMI                      { Vdecl($2, $1, $4) }
+  | typ ID ASSIGN expr PUNC_SEMI                      { Vdecl({ v_name = $2;
+                                                                v_type = $1;
+                                                                v_init = $4}) }
   | actor_spawn PUNC_SEMI                             { $1 }
   | RETURN PUNC_SEMI                                  { Return Noexpr }
   | RETURN expr PUNC_SEMI                             { Return $2 }

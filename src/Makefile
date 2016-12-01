@@ -3,7 +3,7 @@ TARFILES = Makefile scanner.mll parser.mly ast.mli oscar.ml
 
 # More detailed: build using ocamlc/ocamlopt + ocamlfind to locate LLVM
 
-OBJS = ast.cmx codegen.cmx parser.cmx scanner.cmx semant.cmx oscar.cmx
+OBJS = ast.cmx codegen.cmx parser.cmx scanner.cmx oscar.cmx
 
 oscar : $(OBJS)
 	ocamlfind ocamlopt -linkpkg -package llvm -package llvm.analysis $(OBJS) -o oscar
@@ -35,12 +35,10 @@ ast.cmo :
 ast.cmx :
 codegen.cmo : ast.cmo
 codegen.cmx : ast.cmx
-oscar.cmo : semant.cmo scanner.cmo parser.cmi codegen.cmo ast.cmo
-oscar.cmx : semant.cmx scanner.cmx parser.cmx codegen.cmx ast.cmx
+oscar.cmo : scanner.cmo parser.cmi codegen.cmo ast.cmo
+oscar.cmx : scanner.cmx parser.cmx codegen.cmx ast.cmx
 parser.cmo : ast.cmo parser.cmi
 parser.cmx : ast.cmx parser.cmi
 scanner.cmo : parser.cmi
 scanner.cmx : parser.cmx
-semant.cmo : ast.cmo
-semant.cmx : ast.cmx
 parser.cmi : ast.cmo
