@@ -78,19 +78,19 @@ let string_of_message message =
 (* Print Expressions BRUG*)
 
 let rec string_of_expr = function
-    Binop(e1, o, e2)	        -> "(" ^
+    Binop(e1, o, e2)          -> "(" ^
                                   (string_of_expr e1) ^ " " ^
                                   (string_of_binop o) ^ " " ^
-							                    (string_of_expr e2)
+                                  (string_of_expr e2)
                                   ^ ")"
-  | Unop(o, e)                -> (string_of_expr e) ^ (string_of_uop o)
+  | Unop(o, e)                -> (string_of_uop o) ^ (string_of_expr e)
   | Id(s)                     -> s
   | Assign(v, e)              -> v ^ " = " ^ string_of_expr e
   | Access(v, e)              -> v ^ "[" ^ string_of_expr e ^ "]"
-  | Int_Lit(i)			          -> string_of_int i
+  | Int_Lit(i)                -> string_of_int i
   | Double_Lit(f)             -> string_of_float f
   | Char_Lit(c)               -> Char.escaped c
-  | String_Lit(s)		          -> s
+  | String_Lit(s)             -> s
   | Bool_Lit(true)            -> "true"
   | Bool_Lit(false)           -> "false"
   | Unit_Lit(u)               -> "unit"
@@ -108,7 +108,7 @@ let rec string_of_expr = function
   | Call(s, exprs)            -> s ^ "(" ^ string_of_exprs exprs ^ ")"
   | Actor_comm(m,o,a)         -> "(" ^ (string_of_message m) ^ " " ^
                                   (string_of_actor_op o) ^ " " ^
-							                    (string_of_actor_type a) ^ ")"
+                                  (string_of_actor_type a) ^ ")"
   | Noexpr                    -> ""
 
 and string_of_exprs exprs =
@@ -190,7 +190,7 @@ let string_of_actor actor =
 let string_of_program (messages, actors, funcs) =
   String.concat "\n" (List.map string_of_message messages) ^ "\n\n" ^
     String.concat "\n\n" (List.map string_of_actor actors) ^ "\n\n" ^
-	  String.concat "\n\n" (List.map string_of_func funcs)
+      String.concat "\n\n" (List.map string_of_func funcs)
 
 (* Words That Do Stuff *)
 
