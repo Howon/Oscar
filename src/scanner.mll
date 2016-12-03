@@ -91,6 +91,7 @@ rule token = parse
   | "actor"               { TYPE_ACTOR }
   | "pool"                { TYPE_POOL }
   | "def"                 { TYPE_FUNC }
+  | "lambda"              { TYPE_LAMBDA }
 
   (* literals *)
   | digit+ as lxm { INT_LIT(int_of_string lxm) }

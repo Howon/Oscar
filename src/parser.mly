@@ -13,7 +13,7 @@
 %token MUTABLE
 %token TYPE_INT TYPE_DOUBLE TYPE_CHAR TYPE_BOOL TYPE_UNIT TYPE_STR
 %token TYPE_LIST TYPE_SET TYPE_MAP
-%token TYPE_MESSAGE TYPE_ACTOR TYPE_POOL TYPE_FUNC
+%token TYPE_MESSAGE TYPE_ACTOR TYPE_POOL TYPE_FUNC TYPE_LAMBDA
 %token BREAK CONTINUE
 %token <int> INT_LIT
 %token <float> DOUBLE_LIT
@@ -106,10 +106,20 @@ formal_list:
   | formal_list PUNC_COMMA ID FUNC_ARG_TYPE typ   { ($3, $5) :: $1 }
 
 /* primative types */
+
+typ_opt:
+  /* nothing */ { [] }
+  | typ_list    { List.rev $1 }
+
+typ_list:
+  typ                       { [$1] }
+  | typ_list PUNC_COMMA typ { $3 :: $1 }
+
 typ:
   simple_typ    { $1 }
   | cont_typ    { $1 }
   | actor_typ   { $1 }
+  | lambda_typ  { $1 }
 
 simple_typ:
     TYPE_INT      { Int_t }
@@ -127,6 +137,9 @@ cont_typ:
 actor_typ:
   TYPE_ACTOR LANGLE ID RANGLE   { Actor_t($3) }
   | TYPE_POOL LANGLE ID RANGLE  { Pool_t($3) }
+
+lambda_typ:
+  TYPE_LAMBDA LPAREN typ_opt RPAREN FUNC_RET_TYPE typ { Lambda_t($3, $6) }
 
 /* for pattern matching with receive */
 receive:
