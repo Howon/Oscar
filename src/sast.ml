@@ -1,23 +1,22 @@
 open Ast
 
 type sexpr =
-    SBinop of sexpr * bin_op * sexpr * types
-  | SUnop of u_op * sexpr * types
-  | SId of string * types
-  | SAssign of string * expr * types
+    SBinop of sexpr * bin_op * sexpr
+  | SUop of u_op * sexpr
+  | SId of string
   | SInt_Lit of int
   | SDouble_Lit of float
   | SChar_Lit of char
   | SString_Lit of string
   | SBool_Lit of bool
+  | SUnit_Lit of unit
   | SList_Lit of types * sexpr list
   | SSet_Lit of types * sexpr list
   | SMap_Lit of types * types * (sexpr * sexpr) list
-  | STuple_Lit of types list * sexpr list
   | SLambda of slambda
-  | SCall of string * sexpr list * types
+  | SCall of string * t_expr list
   | SActor_comm of message * actor_op * actor_type
-  | SNoexpr
+  | SNoexpr and t_expr = sexpr * types
 
 and sstmt =
     SBlock of stmt list

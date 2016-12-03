@@ -3,7 +3,7 @@ type bin_op =
   | Mod | Equal | Neq | Less
   | Leq | Greater | Geq | And
   | Or | Bit_And | Bit_Or | Bit_Xor
-  | Bit_RShift | Bit_LShift
+  | Bit_RShift | Bit_LShift | Assign | Access
 
 type u_op = Not | Neg
 
@@ -30,10 +30,8 @@ type pool_type = Pool_t of actor_type * int
 
 type expr =
     Binop of expr * bin_op * expr
-  | Unop of u_op * expr
+  | Uop of u_op * expr
   | Id of string
-  | Assign of string * expr
-  | Access of string * expr
   | Int_Lit of int
   | Double_Lit of float
   | Char_Lit of char
@@ -47,6 +45,7 @@ type expr =
   | Lambda of lambda
   | Call of string * expr list
   | Actor_comm of message * actor_op * actor_type
+  | Pool_broadcast of message * actor_op * pool_type
   | Noexpr
 
 and val_decl = {

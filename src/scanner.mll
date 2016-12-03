@@ -87,7 +87,6 @@ rule token = parse
   | "list"                { TYPE_LIST }
   | "set"                 { TYPE_SET }
   | "map"                 { TYPE_MAP }
-  | "tup"                 { TYPE_TUPLE }
   | "message"             { TYPE_MESSAGE }
   | "actor"               { TYPE_ACTOR }
   | "pool"                { TYPE_POOL }

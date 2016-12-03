@@ -12,7 +12,7 @@
 %token ACT_SENDER ACT_DIE ACT_SPAWN ACT_RECEIVE ACT_SEND ACT_BROADCAST
 %token MUTABLE
 %token TYPE_INT TYPE_DOUBLE TYPE_CHAR TYPE_BOOL TYPE_UNIT TYPE_STR
-%token TYPE_LIST TYPE_SET TYPE_MAP TYPE_TUPLE
+%token TYPE_LIST TYPE_SET TYPE_MAP
 %token TYPE_MESSAGE TYPE_ACTOR TYPE_POOL TYPE_FUNC
 %token BREAK CONTINUE
 %token <int> INT_LIT
@@ -92,7 +92,7 @@ function_list:
   | function_list fdecl       { $2::$1 }
 
 fdecl:
-  | TYPE_FUNC ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
+    TYPE_FUNC ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
     ASSIGN LBRACE stmts RBRACE
       { { f_name = $2; f_formals = $4;
       f_return_t = $7; f_body = $10 } }
@@ -126,9 +126,8 @@ simple_typ:
   | TYPE_UNIT     { Unit_t }
 
 cont_typ:
-  TYPE_STR      { String_t }
+    TYPE_STR      { String_t }
   | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE { Map_t($3, $5) }
-  | TYPE_TUPLE LANGLE typ_opt RANGLE { Tuple_t($3) }
   | TYPE_SET LANGLE typ RANGLE { Set_t($3) }
   | TYPE_LIST LANGLE typ RANGLE { List_t($3) }
 
@@ -225,8 +224,6 @@ cont_lit:
         LBRACKET actuals_opt RBRACKET             { Set_Lit($3, $6) }
   | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE
         LBRACKET map_opt RBRACKET                 { Map_Lit($3, $5, $8) }
-  | TYPE_TUPLE LANGLE typ_opt RANGLE
-        LPAREN actuals_opt RPAREN                 { Tuple_Lit($3, $6) }
 
 expr:
   ID                                              { Id($1) }
@@ -255,18 +252,18 @@ expr:
   | expr BITWISE_AND    expr                      { Binop($1, Bit_And, $3) }
   | expr BITWISE_OR     expr                      { Binop($1, Bit_Or, $3) }
   | expr BITWISE_XOR    expr                      { Binop($1, Bit_Xor, $3) }
-  | expr BITWISE_RIGHT  expr                      { Binop($1, Bit_RShift, $3)}
-  | expr BITWISE_LEFT   expr                      { Binop($1, Bit_LShift, $3)}
-  | ARITH_MINUS expr %prec NEG                    { Unop(Neg, $2) }
-  | LOGIC_NOT expr                                { Unop(Not, $2) }
+  | expr BITWISE_RIGHT  expr                      { Binop($1, Bit_RShift, $3) }
+  | expr BITWISE_LEFT   expr                      { Binop($1, Bit_LShift, $3) }
+  | ARITH_MINUS expr %prec NEG                    { Uop(Neg, $2) }
+  | LOGIC_NOT expr                                { Uop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                  { Call($1, $3) }
   | LPAREN expr RPAREN                            { $2 }
   /* TODO: These need real actions, and to be put in the AST! */
   | ID LPAREN actuals_opt RPAREN ACT_SEND ID      { Noexpr }
   | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { Noexpr }
   | lambda                                        { $1 }
-  | ID ASSIGN expr                                { Assign($1, $3) }
-  | ID LBRACKET expr RBRACKET                     { Access($1, $3) }
+  | ID ASSIGN expr                                { Binop(Id($1), Assign, $3) }
+  | ID LBRACKET expr RBRACKET                     { Binop(Id($1), Access, $3) }
 
 lambda:
   LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
@@ -277,5 +274,5 @@ actuals_opt:
   | actuals_list  { List.rev $1 }
 
 actuals_list:
-  expr                            { [$1] }
+    expr                          { [$1] }
   | actuals_list PUNC_COMMA expr  { $3 :: $1 }
