@@ -10,8 +10,8 @@ type sexpr =
   | SList_Lit of types * sexpr list
   | SSet_Lit of types * sexpr list
   | SMap_Lit of types * types * (sexpr * sexpr) list
-  | SActor_Lit of types * sexpr list
-  | SPool_Lit of types * sexpr list * int
+  | SActor_Lit of string * (sexpr list)
+  | SPool_Lit of string * (sexpr list) * int
   | SBinop of sexpr * bin_op * sexpr
   | SUop of u_op * sexpr
   | SId of string
