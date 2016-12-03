@@ -105,14 +105,6 @@ formal_list:
   ID FUNC_ARG_TYPE typ                            { [($1, $3)] }
   | formal_list PUNC_COMMA ID FUNC_ARG_TYPE typ   { ($3, $5) :: $1 }
 
-typ_opt:
-  /* nothing */     { [] }
-  | typ_list        { List.rev $1 }
-
-typ_list:
-  | typ                       { [$1] }
-  | typ_list PUNC_COMMA typ   { $3 :: $1 }
-
 /* primative types */
 typ:
   simple_typ    { $1 }
@@ -192,6 +184,10 @@ stmt:
   | LBRACE stmts RBRACE           { Block($2) }
   | stmt_cond                     { $1 }
   | stmt_iter                     { $1 }
+  | ID LPAREN actuals_opt RPAREN ACT_SEND ID PUNC_SEMI
+                                  { Actor_send(Id($1), $3, Id($6)) }
+  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID PUNC_SEMI
+                                  { Pool_send(Id($1), $3, Id($6)) }
   | BREAK PUNC_SEMI               { Break }
   | CONTINUE PUNC_SEMI            { Continue }
 
@@ -225,9 +221,9 @@ cont_lit:
 
 actor_lit:
   ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE LPAREN actuals_opt RPAREN
-                                    { Actor_Lit($4, $7) }
+                                    { Actor_Lit(Id($4), $7) }
   | ACT_SPAWN TYPE_POOL LANGLE ID RANGLE LPAREN LBRACE actuals_opt RBRACE
-      PUNC_COMMA simple_typ RPAREN  { Pool_Lit($4, $8, $11) }
+      PUNC_COMMA expr RPAREN        { Pool_Lit(Id($4), $8, $11) }
 
 expr:
   ID                                              { Id($1) }
@@ -261,10 +257,8 @@ expr:
   | expr BITWISE_LEFT   expr                      { Binop($1, Bit_LShift, $3) }
   | ARITH_MINUS expr %prec NEG                    { Uop(Neg, $2) }
   | LOGIC_NOT expr                                { Uop(Not, $2) }
-  | ID LPAREN actuals_opt RPAREN                  { Call($1, $3) }
+  | ID LPAREN actuals_opt RPAREN                  { Call(Id($1), $3) }
   | LPAREN expr RPAREN                            { $2 }
-  | ID LPAREN actuals_opt RPAREN ACT_SEND ID      { Actor_send($1, $3, $6) }
-  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { Actor_broad($1, $3, $6) }
   | lambda                                        { $1 }
   | ID ASSIGN expr                                { Binop(Id($1), Assign, $3) }
   | ID LBRACKET expr RBRACKET                     { Binop(Id($1), Access, $3) }

@@ -89,11 +89,11 @@ let rec str_expr = function
   | Map_Lit(kt, vt, m_exprs)  -> "map<" ^ (str_types kt) ^ ", " ^
                                      (str_types vt) ^ ">[" ^
                                      (str_kvs m_exprs) ^ "]"
-  | Actor_Lit(at, exprs)      -> "actor<" ^ at ^ ">" ^ str_exprs exprs
-  | Pool_Lit(at, exprs, num)  -> "pool<" ^ at ^ ">" ^ (str_exprs exprs) ^
-                                     (str_types num)
+  | Actor_Lit(at, exprs)      -> "actor<" ^ str_expr at ^ ">" ^ str_exprs exprs
+  | Pool_Lit(at, exprs, num)  -> "pool<" ^ str_expr at ^ ">" ^ (str_exprs exprs) ^
+                                     (str_expr num)
   | Lambda(lambda)            -> (str_lambda lambda)
-  | Call(s, exprs)            -> s ^ "(" ^ str_exprs exprs ^ ")"
+  | Call(s, exprs)            -> str_expr s ^ "(" ^ str_exprs exprs ^ ")"
   | Noexpr                    -> ""
 
 and str_exprs exprs =
@@ -117,21 +117,21 @@ and str_stmt = function
   | Vdecl(v)                  -> (str_types v.v_type) ^ " " ^ v.v_name ^
                                  " = " ^ (str_expr v.v_init) ^ ";"
   | If(e, s1, s2)             -> "if (" ^ str_expr e ^ ") {\n" ^
-                                     str_stmts s1 ^ "\n} else {\n" ^
-                                     str_stmts s2 ^ "\n}"
+                                    str_stmts s1 ^ "\n} else {\n" ^
+                                    str_stmts s2 ^ "\n}"
   | For(v, f1, f2, f3, stmts) -> "for (int " ^ v ^ " <- " ^
-                                     string_of_int f1 ^ " to " ^
-                                     string_of_int f2 ^ " by " ^
-                                     string_of_int f3 ^ ") {\n" ^
-                                     str_stmts stmts ^ "\n}"
+                                    string_of_int f1 ^ " to " ^
+                                    string_of_int f2 ^ " by " ^
+                                    string_of_int f3 ^ ") {\n" ^
+                                    str_stmts stmts ^ "\n}"
   | While(e, stmts)           -> "while (" ^ (str_expr e) ^ ") {\n" ^
-                                     str_stmts stmts ^ "\n}"
+                                    str_stmts stmts ^ "\n}"
   | Break                     -> "break;"
   | Continue                  -> "continue;"
-  | Actor_send(m, expr)       -> (str_message m) ^ " |> " ^
-                                     str_expr expr
-  | Pool_send(m, expr)        -> (str_message m) ^ " |>> " ^
-                                     str_expr expr
+  | Actor_send(m, exprs, a)   -> (str_expr m) ^ "(" ^ str_exprs exprs ^
+                                    ") |> " ^ str_expr a
+  | Pool_send(m, exprs, p)    -> (str_expr m) ^ "(" ^ str_exprs exprs ^
+                                    ") |>> " ^ str_expr p
 
 and str_stmts stmts =
   String.concat "\n" (List.map str_stmt stmts)
@@ -171,3 +171,8 @@ let str_program (messages, actors, funcs) =
     String.concat "\n\n" (List.map str_actor actors) ^ "\n\n" ^
       String.concat "\n\n" (List.map str_func funcs)
 
+let _ =
+  let lexbuf = Lexing.from_channel stdin in
+  let program = Parser.program Scanner.token lexbuf in
+  let result = str_program program in
+  print_endline result

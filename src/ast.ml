@@ -32,13 +32,13 @@ type expr =
   | List_Lit of types * expr list
   | Set_Lit of types * expr list
   | Map_Lit of types * types * (expr * expr) list
-  | Actor_Lit of string * (expr list)
-  | Pool_Lit of string * (expr list) * expr
+  | Actor_Lit of expr * (expr list)
+  | Pool_Lit of expr * (expr list) * expr
   | Binop of expr * bin_op * expr
   | Uop of u_op * expr
   | Id of string
   | Lambda of lambda
-  | Call of string * expr list
+  | Call of expr * expr list
   | Noexpr
 
 and val_decl = {
@@ -64,8 +64,8 @@ and stmt =
   | While of expr * stmt list
   | Break
   | Continue
-  | Actor_send of message * (expr list) * expr
-  | Pool_send of message * (expr list) * expr
+  | Actor_send of expr * (expr list) * expr
+  | Pool_send of expr * (expr list) * expr
 
 and lambda = {
   l_formals: formal list;
