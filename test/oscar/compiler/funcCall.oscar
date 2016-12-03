@@ -1,0 +1,7 @@
+def foo() => int = {
+	return 17;
+}
+
+def main() => unit = {
+	println(foo());
+}
