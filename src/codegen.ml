@@ -38,6 +38,31 @@ let translate (messages, actors, functions) =
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
 
+
+    (* Construct the function's "locals": formal arguments and locally
+       declared variables.  Allocate each on the stack, initialize their
+       value, if appropriate, and remember their values in the "locals" map *)
+    (* let local_vars =
+      let add_formal m (n, t) p = L.set_value_name n p;
+    let local = L.build_alloca (ltype_of_typ t) n builder in
+      ignore (L.build_store p local builder);
+    StringMap.add n local m in *)
+
+(*     let add_local m (t, n) =
+      let local_var = L.build_alloca (ltype_of_typ t) n builder in
+    StringMap.add n local_var m in
+ *)
+    (* let formals = List.fold_left2 add_formal StringMap.empty func.A.f_formals
+      (Array.to_list (L.params the_function)) in *)
+      (* todo: *)
+    (* List.fold_left add_local formals func.A.f_locals in *)
+
+    (* Return the value for a variable or formal argument *)
+    (* let lookup n = 
+      try StringMap.find n local_vars with 
+          | Not_found -> raise (Failure ("undefined local variable: " ^ n))
+    in *)
+
     (* Construct code for an expression; return its value *)
     let rec expr builder = function
         A.Int_Lit(i) -> L.const_int i32_t i
@@ -61,7 +86,7 @@ let translate (messages, actors, functions) =
             | A.Geq     -> L.build_icmp L.Icmp.Sge
             | A.And     -> L.build_and
             | A.Or      -> L.build_or
-            (* add bitwise ops *)
+            (* TODO: add bitwise ops *)
           ) e1' e2' "tmp" builder
       | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
       | A.Call ("println", el) -> build_print_call el builder
@@ -84,6 +109,8 @@ let translate (messages, actors, functions) =
         | A.String_Lit(_)   -> A.String_t
         | A.Binop(e1, _, _)  -> map_param_to_type e1
                                   (* temp fix, grabs type of left arg *)
+        | A.Call(_, _) -> A.Int_t
+        (* todo: this assumes type is int; should grab type from semantic analysis *)
       in
 
       let map_type_to_string = function
@@ -125,6 +152,10 @@ let translate (messages, actors, functions) =
               A.Unit_t -> L.build_ret_void builder
             | _ -> L.build_ret (expr builder e) builder
           ); builder
+      (* todo: ??? *)
+      (* | A.Local(t, s, e) -> 
+          L.build_alloca (ltype_of_typ t) s builder in
+          ignore(L.build_store (expr builder e) local builder) *)
     in
 
     (* Build the code for each statement in the function *)
