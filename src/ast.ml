@@ -64,8 +64,8 @@ and stmt =
   | While of expr * stmt
   | Break
   | Continue
-  | Actor_send of message * expr
-  | Pool_send of message * expr
+  | Actor_send of message * (expr list) * expr
+  | Pool_send of message * (expr list) * expr
 
 and lambda = {
   l_formals: formal list;

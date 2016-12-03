@@ -116,20 +116,25 @@ typ_list:
 /* primative types */
 typ:
   simple_typ    { $1 }
-  | cont_typ   { $1 }
+  | cont_typ    { $1 }
+  | actor_typ   { $1 }
 
 simple_typ:
-    TYPE_INT       { Int_t }
+    TYPE_INT      { Int_t }
   | TYPE_BOOL     { Bool_t }
   | TYPE_DOUBLE   { Double_t }
   | TYPE_CHAR     { Char_t }
   | TYPE_UNIT     { Unit_t }
 
 cont_typ:
-    TYPE_STR      { String_t }
+    TYPE_STR                                  { String_t }
   | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE { Map_t($3, $5) }
-  | TYPE_SET LANGLE typ RANGLE { Set_t($3) }
-  | TYPE_LIST LANGLE typ RANGLE { List_t($3) }
+  | TYPE_SET LANGLE typ RANGLE                { Set_t($3) }
+  | TYPE_LIST LANGLE typ RANGLE               { List_t($3) }
+
+actor_typ:
+  TYPE_ACTOR LANGLE ID RANGLE   { Actor_t($3) }
+  | TYPE_POOL LANGLE ID RANGLE  { Pool_t($3) }
 
 /* for pattern matching with receive */
 receive:
@@ -156,6 +161,19 @@ mut_vdecl:
   | MUTABLE typ ID ASSIGN expr  { Mutdecl({ mv_name = $3;
                                             mv_type = $2;
                                             mv_init = $5}) }
+
+actor_stmt:
+  stmt                  { $1 }
+  | mut_vdecl PUNC_SEMI { $1 }
+
+actor_stmt_opt:
+  /* nothing */     { [] }
+  | actor_stmt_list { List.rev $1 }
+
+actor_stmt_list:
+  actor_stmt                    { [$1] }
+  | actor_stmt_list actor_stmt  { $2 :: $1 }
+
 stmts:
   /* nothing */       { [] }
   | stmt_list         { List.rev $1 }
@@ -244,6 +262,8 @@ expr:
   | LOGIC_NOT expr                                { Uop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                  { Call(Id($1), $3) }
   | LPAREN expr RPAREN                            { $2 }
+  | ID LPAREN actuals_opt RPAREN ACT_SEND ID      { Actor_send($1, $3, $6) }
+  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { Actor_broad($1, $3, $6) }
   | lambda                                        { $1 }
   | expr ASSIGN expr                              { Binop($1, Assign, $3) }
   | ID LBRACKET expr RBRACKET                     { Binop(Id($1), Access, $3) }
