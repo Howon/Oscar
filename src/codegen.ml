@@ -13,6 +13,7 @@ let translate (messages, actors, functions) =
 
   let ltype_of_typ = function
     | A.Unit_t -> void_t
+    | A.Int_t -> i32_t
   in
 
   (* Declare print(), which the print built-in function will call *)
