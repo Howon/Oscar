@@ -260,7 +260,7 @@ expr:
   | ID LPAREN actuals_opt RPAREN                  { Call(Id($1), $3) }
   | LPAREN expr RPAREN                            { $2 }
   | lambda                                        { $1 }
-  | ID ASSIGN expr                                { Binop(Id($1), Assign, $3) }
+  | expr ASSIGN expr                              { Binop($1, Assign, $3) }
   | ID LBRACKET expr RBRACKET                     { Binop(Id($1), Access, $3) }
 
 lambda:

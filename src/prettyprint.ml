@@ -69,16 +69,16 @@ let str_message message =
 (* Print Expressions BRUG*)
 
 let rec str_expr = function
-    Binop(e1, o, e2)          -> "(" ^ (str_expr e1) ^ " " ^ (match o with
+    Binop(e1, o, e2)          -> "(" ^ (str_expr e1) ^ (match o with
                                      Access -> "[" ^ (str_expr e2) ^ "]"
-                                   | _ -> (str_binop o) ^ " " ^ (str_expr e2)) ^
+                                   | _ -> " " ^ (str_binop o) ^ " " ^ (str_expr e2)) ^
                                    ")"
   | Uop(o, e)                 -> (str_uop o) ^ (str_expr e)
   | Id(s)                     -> s
   | Int_Lit(i)                -> string_of_int i
   | Double_Lit(f)             -> string_of_float f
-  | Char_Lit(c)               -> Char.escaped c
-  | String_Lit(s)             -> s
+  | Char_Lit(c)               -> "\'" ^ Char.escaped c ^ "\'"
+  | String_Lit(s)             -> "\"" ^ s ^ "\""
   | Bool_Lit(true)            -> "true"
   | Bool_Lit(false)           -> "false"
   | Unit_Lit(u)               -> "unit"
@@ -112,8 +112,9 @@ and str_stmt = function
   | Expr(expr)                -> str_expr expr ^ ";"
   | Return(expr)              -> "return " ^ str_expr expr ^ ";"
   | Mutdecl(mv)               -> "mut " ^ (str_types mv.mv_type) ^
-                                    " " ^ mv.mv_name ^ " = " ^
-                                    (str_expr mv.mv_init) ^ ";"
+                                    " " ^ mv.mv_name ^ (match mv.mv_init with
+                                    Noexpr -> ""
+                                    | _ -> " = " ^ (str_expr mv.mv_init)) ^ ";"
   | Vdecl(v)                  -> (str_types v.v_type) ^ " " ^ v.v_name ^
                                  " = " ^ (str_expr v.v_init) ^ ";"
   | If(e, s1, s2)             -> "if (" ^ str_expr e ^ ") {\n" ^
@@ -161,10 +162,10 @@ let str_func func =
 
 let str_actor actor =
   "actor " ^ actor.a_name ^ "(" ^ str_formals actor.a_formals ^
-  ") {\n  " ^ str_stmts actor.a_body ^ "\n\n  " ^
-  String.concat "\n\n  " (List.map str_func actor.a_functions) ^
-  "\n\n  receive {\n    " ^ String.concat "\n    "
-  (List.map str_pattern actor.a_receive) ^ "\n  }\n}"
+  ") {\n" ^ str_stmts actor.a_body ^ "\n\n" ^
+  String.concat "\n\n" (List.map str_func actor.a_functions) ^
+  "\n\nreceive {\n" ^ String.concat "\n"
+  (List.map str_pattern actor.a_receive) ^ "\n}\n}"
 
 let str_program (messages, actors, funcs) =
   String.concat "\n" (List.map str_message messages) ^ "\n\n" ^
