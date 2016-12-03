@@ -108,7 +108,7 @@ and str_kvs kvs =
 (* Print Statements BRUG*)
 
 and str_stmt = function
-    Block(stmts)              -> "{\n" ^ str_stmts stmts ^ "\n}"
+    Block(stmts)              -> "{\n" ^ str_stmts (Block(stmts)) ^ "\n}"
   | Expr(expr)                -> str_expr expr ^ ";"
   | Return(expr)              -> "return " ^ str_expr expr ^ ";"
   | Mutdecl(mv)               -> "mut " ^ (str_types mv.mv_type) ^
@@ -117,16 +117,15 @@ and str_stmt = function
                                     | _ -> " = " ^ (str_expr mv.mv_init)) ^ ";"
   | Vdecl(v)                  -> (str_types v.v_type) ^ " " ^ v.v_name ^
                                  " = " ^ (str_expr v.v_init) ^ ";"
-  | If(e, s1, s2)             -> "if (" ^ str_expr e ^ ") {\n" ^
-                                     str_stmt s1 ^ "\n} else {\n" ^
-                                     str_stmt s2 ^ "\n}"
-  | For(s, f1, f2, f3, stmts) -> "for (mut " ^ (str_stmt s) ^ " <- " ^
+  | If(e, s1, s2)             -> "if (" ^ str_expr e ^ ") " ^
+                                     str_stmt s1 ^ " else " ^
+                                     str_stmt s2
+  | For(s1, f1, f2, f3, s2)   -> "for (mut " ^ (str_stmt s1) ^ " <- " ^
                                      (str_expr f1) ^ " to " ^
                                      (str_expr f2) ^ " by " ^
-                                     (str_expr f3) ^ ") {\n" ^
-                                     (str_stmt stmts) ^ "\n}"
-  | While(e, stmts)           -> "while (" ^ (str_expr e) ^ ") {\n" ^
-                                     str_stmt stmts ^ "\n}"
+                                     (str_expr f3) ^ ") " ^ (str_stmt s2)
+  | While(e, s)               -> "while (" ^ (str_expr e) ^ ") " ^
+                                     str_stmt s
   | Break                     -> "break;"
   | Continue                  -> "continue;"
   | Actor_send(m, exprs, a)   -> (str_expr m) ^ "(" ^ str_exprs exprs ^
@@ -134,38 +133,33 @@ and str_stmt = function
   | Pool_send(m, exprs, p)    -> (str_expr m) ^ "(" ^ str_exprs exprs ^
                                     ") |>> " ^ str_expr p
 
-and str_stmts stmts =
-  String.concat "\n" (List.map str_stmt stmts)
-
+and str_stmts = function
+  Block(stmts) -> String.concat "\n" (List.map str_stmt stmts)
+  | _ -> ""
 
 (* Print Lambda Functions BRUG*)
 
 and str_lambda lambda =
   "(" ^ str_formals lambda.l_formals ^ ") => " ^ str_types
-    lambda.l_return_t ^ " = {\n" ^ str_stmt lambda.l_body ^ "\n}"
+    lambda.l_return_t ^ " = " ^ str_stmt lambda.l_body
 
 (* Print Patterns BRUG*)
 
 let str_pattern p =
   "| " ^ p.p_message_id ^ "(" ^ str_formals p.p_message_formals
-    ^ ") => {\n" ^ str_stmt p.p_body ^ "\n      }"
+    ^ ") => " ^ str_stmt p.p_body
 
 (* Print Functions BRUG*)
 
 let str_func func =
   "def " ^ func.f_name ^ "(" ^ str_formals func.f_formals ^ ") => " ^
-    str_types func.f_return_t ^ " = {\n" ^
-    str_stmt func.f_body ^ "\n}"
+    str_types func.f_return_t ^ " = " ^ str_stmt func.f_body
 
 (* Print Actor BRUG*)
 
 let str_actor actor =
   "actor " ^ actor.a_name ^ "(" ^ str_formals actor.a_formals ^
-<<<<<<< HEAD
-  ") {\n" ^ str_stmt actor.a_body ^ "\n\n" ^
-=======
   ") {\n" ^ str_stmts actor.a_body ^ "\n\n" ^
->>>>>>> c60231568a3d07fbf1d66d3f1a9ff8d1018cdd56
   String.concat "\n\n" (List.map str_func actor.a_functions) ^
   "\n\nreceive {\n" ^ String.concat "\n"
   (List.map str_pattern actor.a_receive) ^ "\n}\n}"
