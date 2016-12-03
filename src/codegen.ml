@@ -13,6 +13,8 @@ let translate (messages, actors, functions) =
   and void_t = L.void_type context in
 
   let ltype_of_typ = function
+      A.Int_t -> i32_t
+    | A.Bool_t -> i1_t
     | A.Unit_t -> void_t
   in
 
@@ -36,6 +38,31 @@ let translate (messages, actors, functions) =
     let (the_function, _) = StringMap.find func.A.f_name function_decls in
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
+
+
+    (* Construct the function's "locals": formal arguments and locally
+       declared variables.  Allocate each on the stack, initialize their
+       value, if appropriate, and remember their values in the "locals" map *)
+    (* let local_vars =
+      let add_formal m (n, t) p = L.set_value_name n p;
+    let local = L.build_alloca (ltype_of_typ t) n builder in
+      ignore (L.build_store p local builder);
+    StringMap.add n local m in *)
+
+(*     let add_local m (t, n) =
+      let local_var = L.build_alloca (ltype_of_typ t) n builder in
+    StringMap.add n local_var m in
+ *)
+    (* let formals = List.fold_left2 add_formal StringMap.empty func.A.f_formals
+      (Array.to_list (L.params the_function)) in *)
+      (* todo: *)
+    (* List.fold_left add_local formals func.A.f_locals in *)
+
+    (* Return the value for a variable or formal argument *)
+    (* let lookup n = 
+      try StringMap.find n local_vars with 
+          | Not_found -> raise (Failure ("undefined local variable: " ^ n))
+    in *)
 
     (* Construct code for an expression; return its value *)
     let rec expr builder = function
@@ -63,9 +90,25 @@ let translate (messages, actors, functions) =
             | A.Geq     -> L.build_icmp L.Icmp.Sge
             | A.And     -> L.build_and
             | A.Or      -> L.build_or
-            (* add bitwise ops *)
+            (* TODO: add bitwise ops *)
           ) e1' e2' "tmp" builder
+      | A.Uop(op, e) ->
+        let e' = expr builder e in
+          (match op with
+              A.Neg -> L.const_neg
+            | A.Not -> L.const_not
+          ) e'
+      | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
       | A.Call ("println", el) -> build_print_call el builder
+      | A.Call (f, act) ->
+          let (fdef, fdecl) = StringMap.find f function_decls in
+          let actuals = List.rev (List.map (expr builder) (List.rev act)) in
+          let result = (
+            match fdecl.A.f_return_t with 
+                A.Unit_t -> ""
+              | _ -> f ^ "_result"
+            ) in
+          L.build_call fdef (Array.of_list actuals) result builder
 
     (* Takes a list of expressions and builds the correct print call *)
     and build_print_call el builder =
@@ -86,6 +129,9 @@ let translate (messages, actors, functions) =
         | A.String_Lit(_)   -> A.String_t
         | A.Binop(e1, _, _) -> map_param_to_type e1
                                   (* temp fix, grabs type of left arg *)
+        | A.Uop(_, e)      -> map_param_to_type e
+        | A.Call(_, _)      -> A.Int_t
+        (* todo: this assumes type is int; should grab type from semantic analysis *)
       in
 
       (* type to string used to print *)
@@ -123,14 +169,26 @@ let translate (messages, actors, functions) =
     let rec stmt builder = function
         A.Expr e -> ignore (expr builder e); builder
       | A.Block sl -> List.fold_left stmt builder sl
+      | A.Return e -> ignore(
+          match func.A.f_return_t with
+              A.Unit_t -> L.build_ret_void builder
+            | _ -> L.build_ret (expr builder e) builder
+          ); builder
+      (* todo: ??? *)
+      (* | A.Local(t, s, e) -> 
+          L.build_alloca (ltype_of_typ t) s builder in
+          ignore(L.build_store (expr builder e) local builder) *)
     in
 
     (* Build the code for each statement in the function *)
     let builder = stmt builder (A.Block func.A.f_body) in
 
     (* Add a return if the last block falls off the end *)
-    add_terminal builder (match func.A.f_return_t with
-      | A.Unit_t -> L.build_ret_void)
+    add_terminal builder (
+      match func.A.f_return_t with
+          A.Unit_t -> L.build_ret_void
+        | t -> L.build_ret (L.const_int (ltype_of_typ t) 0)
+    )
   in
 
   List.iter build_function_body functions;
