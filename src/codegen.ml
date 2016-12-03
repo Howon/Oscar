@@ -12,8 +12,9 @@ let translate (messages, actors, functions) =
   and void_t = L.void_type context in
 
   let ltype_of_typ = function
+      A.Int_t -> i32_t
+    | A.Bool_t -> i1_t
     | A.Unit_t -> void_t
-    | A.Int_t -> i32_t
   in
 
   (* Declare print(), which the print built-in function will call *)
@@ -40,7 +41,7 @@ let translate (messages, actors, functions) =
     (* Construct code for an expression; return its value *)
     let rec expr builder = function
         A.Int_Lit(i) -> L.const_int i32_t i
-     (* | A.Bool_Lit b -> L.const_int i1_t (if b then 1 else 0) *)
+      | A.Bool_Lit b -> L.const_int i1_t (if b then 1 else 0)
       | A.Noexpr -> L.const_int i32_t 0
       (* | A.Id s -> L.build_load (lookup s) s builder *)
       | A.Binop(e1, op, e2) ->
@@ -64,6 +65,15 @@ let translate (messages, actors, functions) =
           ) e1' e2' "tmp" builder
       | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
       | A.Call ("println", el) -> build_print_call el builder
+      | A.Call (f, act) ->
+          let (fdef, fdecl) = StringMap.find f function_decls in
+          let actuals = List.rev (List.map (expr builder) (List.rev act)) in
+          let result = (
+            match fdecl.A.f_return_t with 
+                A.Unit_t -> ""
+              | _ -> f ^ "_result"
+            ) in
+          L.build_call fdef (Array.of_list actuals) result builder
 
     (* Takes a list of expressions and builds the correct print call *)
     and build_print_call el builder =
@@ -110,14 +120,22 @@ let translate (messages, actors, functions) =
     let rec stmt builder = function
         A.Expr e -> ignore (expr builder e); builder
       | A.Block sl -> List.fold_left stmt builder sl
+      | A.Return e -> ignore(
+          match func.A.f_return_t with
+              A.Unit_t -> L.build_ret_void builder
+            | _ -> L.build_ret (expr builder e) builder
+          ); builder
     in
 
     (* Build the code for each statement in the function *)
     let builder = stmt builder (A.Block func.A.f_body) in
 
     (* Add a return if the last block falls off the end *)
-    add_terminal builder (match func.A.f_return_t with
-      | A.Unit_t -> L.build_ret_void)
+    add_terminal builder (
+      match func.A.f_return_t with
+          A.Unit_t -> L.build_ret_void
+        | t -> L.build_ret (L.const_int (ltype_of_typ t) 0)
+    )
   in
 
   List.iter build_function_body functions;
