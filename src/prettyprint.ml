@@ -91,9 +91,9 @@ let rec str_expr = function
                                      (str_kvs m_exprs) ^ "]"
   | Actor_Lit(at, exprs)      -> "actor<" ^ at ^ ">" ^ str_exprs exprs
   | Pool_Lit(at, exprs, num)  -> "pool<" ^ at ^ ">" ^ (str_exprs exprs) ^
-                                     (str_types num)
+                                     (str_expr num)
   | Lambda(lambda)            -> (str_lambda lambda)
-  | Call(s, exprs)            -> s ^ "(" ^ str_exprs exprs ^ ")"
+  | Call(fn, exprs)           -> (str_expr fn) ^ "(" ^ str_exprs exprs ^ ")"
   | Noexpr                    -> ""
 
 and str_exprs exprs =
@@ -117,15 +117,15 @@ and str_stmt = function
   | Vdecl(v)                  -> (str_types v.v_type) ^ " " ^ v.v_name ^
                                  " = " ^ (str_expr v.v_init) ^ ";"
   | If(e, s1, s2)             -> "if (" ^ str_expr e ^ ") {\n" ^
-                                     str_stmts s1 ^ "\n} else {\n" ^
-                                     str_stmts s2 ^ "\n}"
-  | For(v, f1, f2, f3, stmts) -> "for (int " ^ v ^ " <- " ^
-                                     string_of_int f1 ^ " to " ^
-                                     string_of_int f2 ^ " by " ^
-                                     string_of_int f3 ^ ") {\n" ^
-                                     str_stmts stmts ^ "\n}"
+                                     str_stmt s1 ^ "\n} else {\n" ^
+                                     str_stmt s2 ^ "\n}"
+  | For(s, f1, f2, f3, stmts) -> "for (mut " ^ (str_stmt s) ^ " <- " ^
+                                     (str_expr f1) ^ " to " ^
+                                     (str_expr f2) ^ " by " ^
+                                     (str_expr f3) ^ ") {\n" ^
+                                     (str_stmt stmts) ^ "\n}"
   | While(e, stmts)           -> "while (" ^ (str_expr e) ^ ") {\n" ^
-                                     str_stmts stmts ^ "\n}"
+                                     str_stmt stmts ^ "\n}"
   | Break                     -> "break;"
   | Continue                  -> "continue;"
   | Actor_send(m, expr)       -> (str_message m) ^ " |> " ^
@@ -141,27 +141,26 @@ and str_stmts stmts =
 
 and str_lambda lambda =
   "(" ^ str_formals lambda.l_formals ^ ") => " ^ str_types
-    lambda.l_return_t ^ " = {\n" ^ str_stmts lambda.l_body ^ "\n}"
+    lambda.l_return_t ^ " = {\n" ^ str_stmt lambda.l_body ^ "\n}"
 
 (* Print Patterns BRUG*)
 
 let str_pattern p =
   "| " ^ p.p_message_id ^ "(" ^ str_formals p.p_message_formals
-    ^ ") => {\n        " ^ String.concat "\n        "
-    (List.map str_stmt p.p_stmts) ^ "\n      }"
+    ^ ") => {\n" ^ str_stmt p.p_body ^ "\n      }"
 
 (* Print Functions BRUG*)
 
 let str_func func =
   "def " ^ func.f_name ^ "(" ^ str_formals func.f_formals ^ ") => " ^
     str_types func.f_return_t ^ " = {\n" ^
-    str_stmts func.f_body ^ "\n}"
+    str_stmt func.f_body ^ "\n}"
 
 (* Print Actor BRUG*)
 
 let str_actor actor =
   "actor " ^ actor.a_name ^ "(" ^ str_formals actor.a_formals ^
-  ") {\n  " ^ str_stmts actor.a_body ^ "\n\n  " ^
+  ") {\n  " ^ str_stmt actor.a_body ^ "\n\n  " ^
   String.concat "\n\n  " (List.map str_func actor.a_functions) ^
   "\n\n  receive {\n    " ^ String.concat "\n    "
   (List.map str_pattern actor.a_receive) ^ "\n  }\n}"

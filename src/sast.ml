@@ -11,22 +11,36 @@ type sexpr =
   | SSet_Lit of types * sexpr list
   | SMap_Lit of types * types * (sexpr * sexpr) list
   | SActor_Lit of string * (sexpr list)
-  | SPool_Lit of string * (sexpr list) * int
+  | SPool_Lit of string * (sexpr list) * sexpr
   | SBinop of sexpr * bin_op * sexpr
   | SUop of u_op * sexpr
   | SId of string
   | SLambda of slambda
-  | SCall of string * t_expr list
-  | SNoexpr and t_expr = sexpr * types
+  | SCall of sexpr * t_expr list
+  | SNoexpr
+
+and t_expr = sexpr * types
+
+and sval_decl = {
+    sv_name : string;
+    sv_type : types;
+    sv_init : sexpr;
+}
+
+and smvar_decl = {
+    smv_name : string;
+    smv_type : types;
+    smv_init : sexpr;
+}
 
 and sstmt =
     SBlock of stmt list
-  | SExpr of sexpr * types
-  | SReturn of sexpr * types
-  | SVedcl of val_decl
-  | SMutdecl of mvar_decl
-  | SIf of sexpr * sstmt * sexpr
-  | SFor of sexpr * sexpr * sexpr * sstmt
+  | SExpr of sexpr
+  | SReturn of sexpr
+  | SVdecl of sval_decl
+  | SMutdecl of smvar_decl
+  | SIf of sexpr * (sstmt list) * (sstmt list)
+  | SFor of sstmt * sexpr * sexpr * sexpr * sstmt
   | SWhile of sexpr * sstmt
   | SSpawn_act of string * string * string * sexpr list
   | SSpawn_pool of string * string * string * sexpr list

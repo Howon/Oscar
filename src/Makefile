@@ -8,9 +8,6 @@ OBJS = ast.cmx codegen.cmx parser.cmx scanner.cmx analyzer.cmo exception.cmo osc
 oscar : $(OBJS)
 	ocamlfind ocamlopt -linkpkg -package llvm -package llvm.analysis $(OBJS) -o oscar
 
-prettyprint : ast.cmo parser.cmo scanner.cmo prettyprint.cmo
-	ocamlc -o prettyprint ast.cmo parser.cmo scanner.cmo prettyprint.cmo
-
 scanner.ml : scanner.mll
 	ocamllex scanner.mll
 
@@ -42,6 +39,8 @@ parser.cmo : ast.cmo parser.cmi
 parser.cmx : ast.cmx parser.cmi
 scanner.cmo : parser.cmi
 scanner.cmx : parser.cmx
-analyzer.cmo: ast.cmo sast.cmo exception.cmo
-analyzer.cmx: ast.cmx sast.cmx exception.cmx
+prettyprint.cmo : ast.cmo scanner.cmo parser.cmi
+prettyprint.cmx : ast.cmx scanner.cmx parser.cmx
+analyzer.cmo: ast.cmo sast.cmo exception.cmo prettyprint.cmo
+analyzer.cmx: ast.cmx sast.cmx exception.cmx prettyprint.cmx
 parser.cmi : ast.cmo

@@ -62,7 +62,7 @@ let translate (messages, actors, functions) =
             (* add bitwise ops *)
           ) e1' e2' "tmp" builder
       | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
-      | A.Call ("println", el) -> build_print_call el builder
+      | A.Call(Id("println"), el) -> build_print_call el builder
 
     (* Takes a list of expressions and builds the correct print call *)
     and build_print_call el builder =
@@ -112,7 +112,7 @@ let translate (messages, actors, functions) =
     in
 
     (* Build the code for each statement in the function *)
-    let builder = stmt builder (A.Block func.A.f_body) in
+    let builder = stmt builder func.A.f_body in
 
     (* Add a return if the last block falls off the end *)
     add_terminal builder (match func.A.f_return_t with

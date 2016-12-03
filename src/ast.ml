@@ -33,12 +33,12 @@ type expr =
   | Set_Lit of types * expr list
   | Map_Lit of types * types * (expr * expr) list
   | Actor_Lit of string * (expr list)
-  | Pool_Lit of string * (expr list) * types
+  | Pool_Lit of string * (expr list) * expr
   | Binop of expr * bin_op * expr
   | Uop of u_op * expr
   | Id of string
   | Lambda of lambda
-  | Call of string * expr list
+  | Call of expr * expr list
   | Noexpr
 
 and val_decl = {
@@ -59,9 +59,9 @@ and stmt =
   | Return of expr
   | Vdecl of val_decl
   | Mutdecl of mvar_decl
-  | If of expr * stmt list * stmt list
-  | For of string * int * int * int * stmt list
-  | While of expr * stmt list
+  | If of expr * stmt * stmt
+  | For of stmt * expr * expr * expr * stmt
+  | While of expr * stmt
   | Break
   | Continue
   | Actor_send of message * expr
@@ -70,26 +70,26 @@ and stmt =
 and lambda = {
   l_formals: formal list;
   l_return_t: types;
-  l_body: stmt list;
+  l_body: stmt;
 }
 
 and pattern = {
   p_message_id: string;
   p_message_formals: formal list;
-  p_stmts: stmt list;
+  p_body: stmt;
 }
 
 and func = {
   f_name: string;
   f_formals: formal list;
   f_return_t: types;
-  f_body: stmt list;
+  f_body: stmt;
 }
 
 and actor = {
   a_name: string;
   a_formals: formal list;
-  a_body: stmt list;
+  a_body: stmt;
   a_functions: func list;
   a_receive: pattern list;
 }
