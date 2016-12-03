@@ -161,7 +161,11 @@ let str_func func =
 
 let str_actor actor =
   "actor " ^ actor.a_name ^ "(" ^ str_formals actor.a_formals ^
+<<<<<<< HEAD
   ") {\n" ^ str_stmt actor.a_body ^ "\n\n" ^
+=======
+  ") {\n" ^ str_stmts actor.a_body ^ "\n\n" ^
+>>>>>>> c60231568a3d07fbf1d66d3f1a9ff8d1018cdd56
   String.concat "\n\n" (List.map str_func actor.a_functions) ^
   "\n\nreceive {\n" ^ String.concat "\n"
   (List.map str_pattern actor.a_receive) ^ "\n}\n}"
