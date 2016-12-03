@@ -10,6 +10,6 @@ def f3(num: int) => int = {
   return num - 20;
 }
 
-def main() => unit => {
-  println(f1(f2(f3(20))));
+def main() => unit = {
+    println(f1(f2(f3(20))));
 }

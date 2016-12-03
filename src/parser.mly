@@ -159,9 +159,9 @@ mut_vdecl:
 
 actor_spawn:
   TYPE_ACTOR LANGLE ID RANGLE ID ASSIGN ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE
-      LPAREN actuals_opt RPAREN       { Spawn_act($3, $5, $10, $13) }
+      LPAREN actuals_opt RPAREN       { Actor_Lit($10, $13) }
   | TYPE_POOL LANGLE ID RANGLE ID ASSIGN ACT_SPAWN TYPE_POOL LANGLE ID RANGLE
-      LPAREN actuals_opt RPAREN       { Spawn_pool($3, $5, $10, $13) }
+      LPAREN actuals_opt simple_typ RPAREN       { Pool_Lit($10, $13, $14) }
 
 actor_stmt:
   stmt                  { $1 }
@@ -184,18 +184,17 @@ stmt_list:
   | stmt_list stmt    { $2 :: $1 }
 
 stmt:
-  expr PUNC_SEMI                                      { Expr $1 }
-  | typ ID ASSIGN expr PUNC_SEMI                      { Vdecl({ v_name = $2;
-                                                                v_type = $1;
-                                                                v_init = $4}) }
-  | actor_spawn PUNC_SEMI                             { $1 }
-  | RETURN PUNC_SEMI                                  { Return Noexpr }
-  | RETURN expr PUNC_SEMI                             { Return $2 }
-  | LBRACE stmts RBRACE                               { Block($2) }
-  | stmt_cond                                         { $1 }
-  | stmt_iter                                         { $1 }
-  | BREAK PUNC_SEMI                                        { Break }
-  | CONTINUE PUNC_SEMI                                     { Continue }
+  expr PUNC_SEMI                  { Expr $1 }
+  | typ ID ASSIGN expr PUNC_SEMI  { Vdecl({ v_name = $2;
+                                      v_type = $1;
+                                      v_init = $4}) }
+  | RETURN PUNC_SEMI              { Return Noexpr }
+  | RETURN expr PUNC_SEMI         { Return $2 }
+  | LBRACE stmts RBRACE           { Block($2) }
+  | stmt_cond                     { $1 }
+  | stmt_iter                     { $1 }
+  | BREAK PUNC_SEMI               { Break }
+  | CONTINUE PUNC_SEMI            { Continue }
 
 stmt_iter:
   FLOW_FOR LPAREN TYPE_INT ID LOOP_FROM INT_LIT LOOP_TO INT_LIT LOOP_BY

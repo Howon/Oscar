@@ -1,1 +1,5 @@
-exception Duplicate_Decl
+exception Duplicate_decl
+exception Type_mismatch
+exception Actor_err
+exception Pool_err
+exception Invalid_equality

@@ -1,5 +1,6 @@
 *~
 oscar
+prettyprint
 parser.ml
 parser.mli
 scanner.ml

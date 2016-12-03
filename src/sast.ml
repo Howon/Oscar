@@ -1,10 +1,7 @@
 open Ast
 
 type sexpr =
-    SBinop of sexpr * bin_op * sexpr
-  | SUop of u_op * sexpr
-  | SId of string
-  | SInt_Lit of int
+    SInt_Lit of int
   | SDouble_Lit of float
   | SChar_Lit of char
   | SString_Lit of string
@@ -13,9 +10,13 @@ type sexpr =
   | SList_Lit of types * sexpr list
   | SSet_Lit of types * sexpr list
   | SMap_Lit of types * types * (sexpr * sexpr) list
+  | SActor_Lit of types * sexpr list
+  | SPool_Lit of types * sexpr list * int
+  | SBinop of sexpr * bin_op * sexpr
+  | SUop of u_op * sexpr
+  | SId of string
   | SLambda of slambda
   | SCall of string * t_expr list
-  | SActor_comm of message * actor_op * actor_type
   | SNoexpr and t_expr = sexpr * types
 
 and sstmt =
@@ -31,6 +32,8 @@ and sstmt =
   | SSpawn_pool of string * string * string * sexpr list
   | SBreak
   | SContinue
+  | SActor_send of message * sexpr
+  | SPool_send of message * sexpr
 
 and slambda = {
   sl_formals: formal list;

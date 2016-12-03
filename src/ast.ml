@@ -7,15 +7,13 @@ type bin_op =
 
 type u_op = Not | Neg
 
-type actor_op =
-    Actor_send
-  | Actor_broadcast
-
-type types = Int_t | Bool_t | Double_t | Char_t | Unit_t |  String_t
+type types = Int_t | Bool_t | Double_t | Char_t | Unit_t | String_t
+  | Lambda_t of (types list) * types
   | List_t of types
   | Set_t of types
   | Map_t of types * types
-  | Tuple_t of types list
+  | Actor_t of string
+  | Pool_t of string
 
 type formal = string * types
 
@@ -24,15 +22,8 @@ type message = {
     m_formals: formal list;
 }
 
-type actor_type = Actor_t of string
-
-type pool_type = Pool_t of actor_type * int
-
 type expr =
-    Binop of expr * bin_op * expr
-  | Uop of u_op * expr
-  | Id of string
-  | Int_Lit of int
+    Int_Lit of int
   | Double_Lit of float
   | Char_Lit of char
   | String_Lit of string
@@ -41,11 +32,13 @@ type expr =
   | List_Lit of types * expr list
   | Set_Lit of types * expr list
   | Map_Lit of types * types * (expr * expr) list
-  | Tuple_Lit of types list * expr list
+  | Actor_Lit of string * (expr list)
+  | Pool_Lit of string * (expr list) * types
+  | Binop of expr * bin_op * expr
+  | Uop of u_op * expr
+  | Id of string
   | Lambda of lambda
   | Call of string * expr list
-  | Actor_comm of message * actor_op * actor_type
-  | Pool_broadcast of message * actor_op * pool_type
   | Noexpr
 
 and val_decl = {
@@ -69,10 +62,10 @@ and stmt =
   | If of expr * stmt list * stmt list
   | For of string * int * int * int * stmt list
   | While of expr * stmt list
-  | Spawn_act of string * string * string * expr list
-  | Spawn_pool of string * string * string * expr list
   | Break
   | Continue
+  | Actor_send of message * expr
+  | Pool_send of message * expr
 
 and lambda = {
   l_formals: formal list;
