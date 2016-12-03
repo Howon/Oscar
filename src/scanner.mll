@@ -65,8 +65,6 @@ rule token = parse
   | "<-"                  { LOOP_FROM }
 
   (* actors *)
-  | "sender"              { ACT_SENDER }
-  | "die"                 { ACT_DIE }
   | "spawn"               { ACT_SPAWN }
   | "receive"             { ACT_RECEIVE }
   | "|>"                  { ACT_SEND }
