@@ -35,6 +35,21 @@ let translate (messages, actors, functions) =
 
   (* Fill in the body of the given function *)
   let build_function_body func =
+
+          (* params to types *)
+    let rec map_param_to_type = function
+        A.Int_Lit(_)      -> A.Int_t
+      | A.Bool_Lit(_)     -> A.Bool_t
+      | A.Double_Lit(_)   -> A.Double_t
+      | A.Char_Lit(_)     -> A.Char_t
+      | A.String_Lit(_)   -> A.String_t
+      | A.Binop(e1, _, _) -> map_param_to_type e1
+                                (* temp fix, grabs type of left arg *)
+      | A.Uop(_, e)      -> map_param_to_type e
+      | A.Call(_, _)      -> A.Int_t
+      (* todo: this assumes type is int; should grab type from semantic analysis *)
+    in
+      
     let (the_function, _) = StringMap.find func.A.f_name function_decls in
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
@@ -95,7 +110,9 @@ let translate (messages, actors, functions) =
       | A.Uop(op, e) ->
         let e' = expr builder e in
           (match op with
-              A.Neg -> L.const_neg
+              A.Neg -> (match (map_param_to_type e) with
+                  A.Int_t -> L.const_neg
+                | A.Double_t -> L.const_fneg)
             | A.Not -> L.const_not
           ) e'
       | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
@@ -119,20 +136,6 @@ let translate (messages, actors, functions) =
           A.Bool_Lit(b) -> expr builder (A.String_Lit(if b then "true" else "false"))
         | e -> expr builder e
       in 
-
-      (* params to types *)
-      let rec map_param_to_type = function
-          A.Int_Lit(_)      -> A.Int_t
-        | A.Bool_Lit(_)     -> A.Bool_t
-        | A.Double_Lit(_)   -> A.Double_t
-        | A.Char_Lit(_)     -> A.Char_t
-        | A.String_Lit(_)   -> A.String_t
-        | A.Binop(e1, _, _) -> map_param_to_type e1
-                                  (* temp fix, grabs type of left arg *)
-        | A.Uop(_, e)      -> map_param_to_type e
-        | A.Call(_, _)      -> A.Int_t
-        (* todo: this assumes type is int; should grab type from semantic analysis *)
-      in
 
       (* type to string used to print *)
       let map_type_to_string = function
