@@ -88,6 +88,12 @@ let translate (messages, actors, functions) =
             | A.Or      -> L.build_or
             (* TODO: add bitwise ops *)
           ) e1' e2' "tmp" builder
+      | A.Unop(op, e) ->
+        let e' = expr builder e in
+          (match op with
+              A.Neg -> L.const_neg
+            | A.Not -> L.const_not
+          ) e'
       | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
       | A.Call ("println", el) -> build_print_call el builder
       | A.Call (f, act) ->
@@ -107,9 +113,10 @@ let translate (messages, actors, functions) =
           A.Int_Lit(_)      -> A.Int_t
         | A.Double_Lit(_)   -> A.Double_t
         | A.String_Lit(_)   -> A.String_t
-        | A.Binop(e1, _, _)  -> map_param_to_type e1
+        | A.Binop(e1, _, _) -> map_param_to_type e1
                                   (* temp fix, grabs type of left arg *)
-        | A.Call(_, _) -> A.Int_t
+        | A.Unop(_, e)      -> map_param_to_type e
+        | A.Call(_, _)      -> A.Int_t
         (* todo: this assumes type is int; should grab type from semantic analysis *)
       in
 
