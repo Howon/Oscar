@@ -9,6 +9,7 @@ let translate (messages, actors, functions) =
   and i32_t  = L.i32_type  context
   and i8_t   = L.i8_type   context
   and i1_t   = L.i1_type   context
+  and f_t    = L.double_type context
   and void_t = L.void_type context in
 
   let ltype_of_typ = function
@@ -39,7 +40,10 @@ let translate (messages, actors, functions) =
     (* Construct code for an expression; return its value *)
     let rec expr builder = function
         A.Int_Lit(i) -> L.const_int i32_t i
-     (* | A.Bool_Lit b -> L.const_int i1_t (if b then 1 else 0) *)
+      | A.Bool_Lit(b) -> L.const_int i1_t (if b then 1 else 0)
+      | A.Double_Lit(d) -> L.const_float f_t d
+      | A.Char_Lit(c) -> L.const_int i8_t (Char.code c)
+      | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
       | A.Noexpr -> L.const_int i32_t 0
       (* | A.Id s -> L.build_load (lookup s) s builder *)
       | A.Binop(e1, op, e2) ->
@@ -61,30 +65,40 @@ let translate (messages, actors, functions) =
             | A.Or      -> L.build_or
             (* add bitwise ops *)
           ) e1' e2' "tmp" builder
-      | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
       | A.Call ("println", el) -> build_print_call el builder
 
     (* Takes a list of expressions and builds the correct print call *)
     and build_print_call el builder =
 
+      (* special expression matcher that turns bools into strings,
+          but leaves everything else normal *)
+      let expr_with_bool_string builder = function 
+          A.Bool_Lit(b) -> expr builder (A.String_Lit(if b then "true" else "false"))
+        | e -> expr builder e
+      in 
+
+      (* params to types *)
       let rec map_param_to_type = function
           A.Int_Lit(_)      -> A.Int_t
+        | A.Bool_Lit(_)     -> A.Bool_t
         | A.Double_Lit(_)   -> A.Double_t
+        | A.Char_Lit(_)     -> A.Char_t
         | A.String_Lit(_)   -> A.String_t
-        | A.Binop(e1, _, _)  -> map_param_to_type e1
+        | A.Binop(e1, _, _) -> map_param_to_type e1
                                   (* temp fix, grabs type of left arg *)
       in
 
+      (* type to string used to print *)
       let map_type_to_string = function
           A.Int_t           -> "%d"
-       (*  | A.Bool_Lit          -> "%s" *)
+        | A.Bool_t          -> "%s"
         | A.Double_t        -> "%f"
-       (* | A.Char_Lit          -> "%c" *)
+        | A.Char_t          -> "%c"
         | A.String_t        -> "%s"
 
       in
 
-      let params = List.map (expr builder) el in
+      let params = List.map (expr_with_bool_string builder) el in
       let param_types = List.map map_param_to_type el in
 
       let const_str = List.fold_left
