@@ -33,7 +33,7 @@ type expr =
   | Set_Lit of types * expr list
   | Map_Lit of types * types * (expr * expr) list
   | Actor_Lit of string * (expr list)
-  | Pool_Lit of string * (expr list) * types
+  | Pool_Lit of string * (expr list) * expr
   | Binop of expr * bin_op * expr
   | Uop of u_op * expr
   | Id of string
@@ -64,8 +64,8 @@ and stmt =
   | While of expr * stmt list
   | Break
   | Continue
-  | Actor_send of message * expr
-  | Pool_send of message * expr
+  | Actor_send of message * (expr list) * expr
+  | Pool_send of message * (expr list) * expr
 
 and lambda = {
   l_formals: formal list;

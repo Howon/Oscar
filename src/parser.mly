@@ -59,7 +59,7 @@ message_list:
   | message_list message_decl { $2::$1 }
 
 message_decl:
-  TYPE_MESSAGE ID LPAREN formals_opt RPAREN   { { m_name = $2; m_formals = $4 } }
+  TYPE_MESSAGE ID LPAREN formals_opt RPAREN { { m_name = $2; m_formals = $4 } }
 
 /**********
 ACTORS
@@ -116,20 +116,25 @@ typ_list:
 /* primative types */
 typ:
   simple_typ    { $1 }
-  | cont_typ   { $1 }
+  | cont_typ    { $1 }
+  | actor_typ   { $1 }
 
 simple_typ:
-    TYPE_INT       { Int_t }
+    TYPE_INT      { Int_t }
   | TYPE_BOOL     { Bool_t }
   | TYPE_DOUBLE   { Double_t }
   | TYPE_CHAR     { Char_t }
   | TYPE_UNIT     { Unit_t }
 
 cont_typ:
-    TYPE_STR      { String_t }
+    TYPE_STR                                  { String_t }
   | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE { Map_t($3, $5) }
-  | TYPE_SET LANGLE typ RANGLE { Set_t($3) }
-  | TYPE_LIST LANGLE typ RANGLE { List_t($3) }
+  | TYPE_SET LANGLE typ RANGLE                { Set_t($3) }
+  | TYPE_LIST LANGLE typ RANGLE               { List_t($3) }
+
+actor_typ:
+  TYPE_ACTOR LANGLE ID RANGLE   { Actor_t($3) }
+  | TYPE_POOL LANGLE ID RANGLE  { Pool_t($3) }
 
 /* for pattern matching with receive */
 receive:
@@ -149,19 +154,13 @@ pattern:
             { { p_message_id = $2; p_message_formals = $4; p_stmts = $8; } }
 
 mut_vdecl:
-/* nothing */ { Continue }
-  | MUTABLE typ ID { Mutdecl({ mv_name = $3;
-                               mv_type = $2;
-                               mv_init = Noexpr}) }
-  | MUTABLE typ ID ASSIGN expr { Mutdecl({ mv_name = $3;
-                                           mv_type = $2;
-                                           mv_init = $5}) }
-
-actor_spawn:
-  TYPE_ACTOR LANGLE ID RANGLE ID ASSIGN ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE
-      LPAREN actuals_opt RPAREN       { Actor_Lit($10, $13) }
-  | TYPE_POOL LANGLE ID RANGLE ID ASSIGN ACT_SPAWN TYPE_POOL LANGLE ID RANGLE
-      LPAREN actuals_opt simple_typ RPAREN       { Pool_Lit($10, $13, $14) }
+/* nothing */                   { Continue }
+  | MUTABLE typ ID              { Mutdecl({ mv_name = $3;
+                                            mv_type = $2;
+                                            mv_init = Noexpr}) }
+  | MUTABLE typ ID ASSIGN expr  { Mutdecl({ mv_name = $3;
+                                            mv_type = $2;
+                                            mv_init = $5}) }
 
 actor_stmt:
   stmt                  { $1 }
@@ -180,7 +179,7 @@ stmts:
   | stmt_list         { List.rev $1 }
 
 stmt_list:
-  stmt       { [$1] }
+  stmt                { [$1] }
   | stmt_list stmt    { $2 :: $1 }
 
 stmt:
@@ -204,7 +203,7 @@ stmt_iter:
 
 stmt_cond:
   FLOW_IF LPAREN expr RPAREN LBRACE stmts RBRACE %prec NOELSE
-        { If($3, $6, []) }
+                                      { If($3, $6, []) }
   | FLOW_IF LPAREN expr RPAREN LBRACE stmts RBRACE
         FLOW_ELSE LBRACE stmts RBRACE { If($3, $6, $10) }
 
@@ -224,6 +223,12 @@ cont_lit:
   | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE
         LBRACKET map_opt RBRACKET                 { Map_Lit($3, $5, $8) }
 
+actor_lit:
+  ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE LPAREN actuals_opt RPAREN
+                                    { Actor_Lit($4, $7) }
+  | ACT_SPAWN TYPE_POOL LANGLE ID RANGLE LPAREN LBRACE actuals_opt RBRACE
+      PUNC_COMMA simple_typ RPAREN  { Pool_Lit($4, $8, $11) }
+
 expr:
   ID                                              { Id($1) }
   | INT_LIT                                       { Int_Lit($1) }
@@ -235,6 +240,7 @@ expr:
   | LOGIC_TRUE                                    { Bool_Lit(true) }
   | LOGIC_FALSE                                   { Bool_Lit(false) }
   | cont_lit                                      { $1 }
+  | actor_lit                                     { $1 }
   | expr ARITH_PLUS     expr                      { Binop($1, Add, $3) }
   | expr ARITH_MINUS    expr                      { Binop($1, Sub, $3) }
   | expr ARITH_TIMES    expr                      { Binop($1, Mult, $3) }
@@ -257,21 +263,20 @@ expr:
   | LOGIC_NOT expr                                { Uop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                  { Call($1, $3) }
   | LPAREN expr RPAREN                            { $2 }
-  /* TODO: These need real actions, and to be put in the AST! */
-  | ID LPAREN actuals_opt RPAREN ACT_SEND ID      { Noexpr }
-  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { Noexpr }
+  | ID LPAREN actuals_opt RPAREN ACT_SEND ID      { Actor_send($1, $3, $6) }
+  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID { Actor_broad($1, $3, $6) }
   | lambda                                        { $1 }
   | ID ASSIGN expr                                { Binop(Id($1), Assign, $3) }
   | ID LBRACKET expr RBRACKET                     { Binop(Id($1), Access, $3) }
 
 lambda:
   LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
-        { Lambda({ l_formals = $2; l_return_t = $5; l_body = $8; }) }
+      { Lambda({ l_formals = $2; l_return_t = $5; l_body = $8; }) }
 
 actuals_opt:
   /* nothing */   { [] }
   | actuals_list  { List.rev $1 }
 
 actuals_list:
-    expr                          { [$1] }
+  expr                          { [$1] }
   | actuals_list PUNC_COMMA expr  { $3 :: $1 }
