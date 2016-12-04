@@ -6,15 +6,16 @@ message piApproximation(pi: double)
 
 
 actor Worker() {
-
   def genRange(start: int, end: int) => list<int> = {
-    return list<int>[start] + genRange(start + 1, end);
+    return listReverse(listPrepend(genRange(start + 1, end), list<int>[start]));
   }
 
   def calcPi(start: int, numElems: int) => double = {
     list<int> range = genRange(start, start + numElems);
-    reduce((x: int, y: int) => int = {x + y;},
-      listMap((i: int) => int = {4.0 * (1 - (i % 2) * 2) / (2 * i + 1);}, range));
+    
+    listReduce((x: int, y: int) => int = {return x + y;}, listMap((i: int) => int = {
+      return 4.0 * (1 - (i % 2) * 2) / (2 * i + 1);
+    }, range));
   }
 
   receive = {
@@ -22,15 +23,13 @@ actor Worker() {
         double pi = calcPi(start, numElems);
         result(pi) |> sender;
       }
-
   }
 }
 
 actor Listener() {
-
   receive = {
     | piApproximation(value: double) => {
-        print("value of pi is approximately :" + value);
+        println("value of pi is approximately :" + value);
         message<end>() |> sender;
     }
   }
