@@ -64,7 +64,7 @@ and str_formals formals =
 (* Print Messages BRUG*)
 
 and str_message message =
-  message.m_name ^ "(" ^ (str_formals message.m_formals) ^ ")"
+  "message " ^ message.m_name ^ "(" ^ (str_formals message.m_formals) ^ ")"
 
 
 (* Print Expressions BRUG*)
@@ -90,10 +90,10 @@ and str_expr = function
   | Map_Lit(kt, vt, m_exprs)  -> "map<" ^ (str_types kt) ^ ", " ^
                                     (str_types vt) ^ ">[" ^
                                     (str_kvs m_exprs) ^ "]"
-  | Actor_Lit(at, exprs)      -> "actor<" ^ str_expr at ^ ">(" ^
+  | Actor_Lit(at, exprs)      -> "spawn actor<" ^ str_expr at ^ ">(" ^
                                     (str_exprs exprs) ^ ")"
-  | Pool_Lit(at, exprs, num)  -> "pool<" ^ str_expr at ^ ">(" ^
-                                    (str_exprs exprs) ^ ", " ^
+  | Pool_Lit(at, exprs, num)  -> "spawn pool<" ^ str_expr at ^ ">({" ^
+                                    (str_exprs exprs) ^ "}, " ^
                                     (str_expr num) ^ ")"
   | Message_Lit(m, exprs)     -> "message<" ^ str_expr m ^ ">(" ^
                                     str_exprs exprs ^ ")"
@@ -122,9 +122,7 @@ and str_stmt = function
                                     | _ -> " = " ^ (str_expr mv.mv_init)) ^ ";"
   | Vdecl(v)                  -> (str_types v.v_type) ^ " " ^ v.v_name ^
                                  " = " ^ (str_expr v.v_init) ^ ";"
-  | If(e, s1, s2)             -> "if (" ^ str_expr e ^ ") " ^
-                                     str_stmt s1 ^ " else " ^
-                                     str_stmt s2
+  | If(e, s1, s2)             -> str_if e s1 s2
   | For(s1, f1, f2, f3, s2)   -> "for (mut " ^ (str_stmt s1) ^ " <- " ^
                                      (str_expr f1) ^ " to " ^
                                      (str_expr f2) ^ " by " ^
@@ -133,14 +131,19 @@ and str_stmt = function
                                      str_stmt s
   | Break                     -> "break;"
   | Continue                  -> "continue;"
-  | Actor_send(e, a)   -> (str_expr e) ^ " |> " ^ str_expr a
-  | Pool_send(e, p)    -> (str_expr e) ^ " |>> " ^ str_expr p
+  | Actor_send(e, a)   -> (str_expr e) ^ " |> " ^ str_expr a ^ ";"
+  | Pool_send(e, p)    -> (str_expr e) ^ " |>> " ^ str_expr p ^ ";"
 
 and str_stmts = function
   Block(stmts) -> String.concat "\n" (List.map str_stmt stmts)
   | _ -> ""
 
 (* Print Lambda Functions BRUG*)
+
+and str_if e s1 s2 =
+  "if (" ^ str_expr e ^ ") " ^ str_stmt s1 ^ (match s2 with
+    Expr(Noexpr) -> ""
+    | _    -> " else " ^ str_stmt s2)
 
 and str_lambda lambda =
   "(" ^ str_formals lambda.l_formals ^ ") => " ^ str_types
@@ -164,7 +167,7 @@ let str_actor actor =
   "actor " ^ actor.a_name ^ "(" ^ str_formals actor.a_formals ^
   ") {\n" ^ str_stmts actor.a_body ^ "\n\n" ^
   String.concat "\n\n" (List.map str_func actor.a_functions) ^
-  "\n\nreceive {\n" ^ String.concat "\n"
+  "\n\nreceive = {\n" ^ String.concat "\n"
   (List.map str_pattern actor.a_receive) ^ "\n}\n}"
 
 let str_program (messages, actors, funcs) =
