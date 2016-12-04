@@ -71,7 +71,7 @@ let translate (messages, actors, functions) =
           A.Int_Lit(_)      -> A.Int_t
         | A.Double_Lit(_)   -> A.Double_t
         | A.String_Lit(_)   -> A.String_t
-        | A.Binop(e1, _, _)  -> map_param_to_type e1
+        | A.Binop(e1, _, _) -> map_param_to_type e1
                                   (* temp fix, grabs type of left arg *)
       in
 

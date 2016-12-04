@@ -1,23 +1,34 @@
 open Ast
 
 type sexpr =
-    SInt_Lit of int
-  | SDouble_Lit of float
-  | SChar_Lit of char
-  | SString_Lit of string
-  | SBool_Lit of bool
-  | SUnit_Lit of unit
-  | SList_Lit of types * sexpr list
-  | SSet_Lit of types * sexpr list
-  | SMap_Lit of types * types * (sexpr * sexpr) list
-  | SActor_Lit of string * (sexpr list)
-  | SPool_Lit of string * (sexpr list) * sexpr
-  | SBinop of sexpr * bin_op * sexpr
-  | SUop of u_op * sexpr
-  | SId of string
-  | SLambda of slambda
-  | SCall of sexpr * t_expr list
+    SInt_Lit     of int
+  | SDouble_Lit  of float
+  | SChar_Lit    of char
+  | SString_Lit  of string
+  | SBool_Lit    of bool
+  | SUnit_Lit    of unit
+  | SList_Lit    of types * sexpr list
+  | SSet_Lit     of types * sexpr list
+  | SMap_Lit     of types * types * (sexpr * sexpr) list
+  | SActor_Lit   of sexpr * (sexpr list)
+  | SPool_Lit    of sexpr * (sexpr list) * sexpr
+  | SMessage_Lit of sexpr * (sexpr list)
+  | SBinop       of sexpr * bin_op * sexpr
+  | SUop         of u_op * sexpr
+  | SId          of string
+  | SLambda      of slambda
+  | SCall        of sexpr * (sexpr list)
   | SNoexpr
+
+and sstmt =
+    SBlock      of sstmt list
+  | SExpr       of sexpr
+  | SReturn     of sexpr
+  | SVdecl      of sval_decl
+  | SMutdecl    of smvar_decl
+  | SIf         of sexpr * sstmt * sstmt
+  | SActor_send of sexpr * sexpr
+  | SPool_send  of sexpr * sexpr
 
 and t_expr = sexpr * types
 
@@ -33,52 +44,36 @@ and smvar_decl = {
     smv_init : sexpr;
 }
 
-and sstmt =
-    SBlock of stmt list
-  | SExpr of sexpr
-  | SReturn of sexpr
-  | SVdecl of sval_decl
-  | SMutdecl of smvar_decl
-  | SIf of sexpr * (sstmt list) * (sstmt list)
-  | SFor of sstmt * sexpr * sexpr * sexpr * sstmt
-  | SWhile of sexpr * sstmt
-  | SSpawn_act of string * string * string * sexpr list
-  | SSpawn_pool of string * string * string * sexpr list
-  | SBreak
-  | SContinue
-  | SActor_send of message * sexpr
-  | SPool_send of message * sexpr
-
 and slambda = {
-  sl_formals: formal list;
-  sl_return_t: types;
-  sl_body: sstmt list;
+  sl_formals  : formal list;
+  sl_return_t : types;
+  sl_body     : sstmt;
 }
 
 and smessage = {
-  sm_name: string;
-  sm_formals: formal list;
+  sm_name    : string;
+  sm_formals : formal list;
 }
 
 and spattern = {
-  message_id: string;
-  message_formals: formal list;
-  stmts: sstmt list;
+  sp_smid      : string;
+  sp_smformals : formal list;
+  sp_body      : sstmt;
 }
 
 and sfunc = {
-  sf_name: string;
-  sf_formals: formal list;
-  sf_return_t: types;
-  sf_body: sstmt list;
+  sf_name     : string;
+  sf_formals  : formal list;
+  sf_return_t : types;
+  sf_body     : sstmt;
 }
 
 and sactor = {
-  sa_name: string;
-  sa_formals: formal list;
-  sa_body: sstmt list;
-  sa_functions: sfunc list;
-  sa_receive: spattern list;
+  sa_name      : string;
+  sa_formals   : formal list;
+  sa_body      : sstmt;
+  sa_functions : sfunc list;
+  sa_receive   : spattern list;
 }
 
 type sprogram = smessage list * sactor list * sfunc list

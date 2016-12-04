@@ -3,3 +3,4 @@ exception Type_mismatch
 exception Actor_err
 exception Pool_err
 exception Invalid_equality
+exception Invalid_scope of string

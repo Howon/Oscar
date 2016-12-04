@@ -58,15 +58,8 @@ rule token = parse
   (* flow control *)
   | "if"                  { FLOW_IF }
   | "else"                { FLOW_ELSE }
-  | "for"                 { FLOW_FOR }
-  | "while"               { FLOW_WHILE }
-  | "to"                  { LOOP_TO }
-  | "by"                  { LOOP_BY }
-  | "<-"                  { LOOP_FROM }
 
   (* actors *)
-  | "sender"              { ACT_SENDER }
-  | "die"                 { ACT_DIE }
   | "spawn"               { ACT_SPAWN }
   | "receive"             { ACT_RECEIVE }
   | "|>"                  { ACT_SEND }
@@ -91,6 +84,7 @@ rule token = parse
   | "actor"               { TYPE_ACTOR }
   | "pool"                { TYPE_POOL }
   | "def"                 { TYPE_FUNC }
+  | "lambda"              { TYPE_LAMBDA }
 
   (* literals *)
   | digit+ as lxm { INT_LIT(int_of_string lxm) }
@@ -104,4 +98,4 @@ rule token = parse
 
 and comment = parse
   | "*/" { token lexbuf }
-  | _    { token lexbuf }
+  | _    { comment lexbuf }
