@@ -15,25 +15,25 @@ actor Worker() {
     list<int> range = genRange(start, start + numElems);
     reduce((x: int, y: int) => int = {x + y;},
       listMap((i: int) => int = {4.0 * (1 - (i % 2) * 2) / (2 * i + 1);}, range));
-	}
+  }
 
   receive = {
     | work(start: int, numelems: int) => {
-				double pi = calcPi(start, numElems);
-				result(pi) |> sender;
+        double pi = calcPi(start, numElems);
+        result(pi) |> sender;
       }
 
-	}
+  }
 }
 
 actor Listener() {
 
-	receive = {
+  receive = {
     | piApproximation(value: double) => {
         print("value of pi is approximately :" + value);
         message<end>() |> sender;
     }
-	}
+  }
 }
 
 actor Master(numWorkers: int, numMsgs: int, numElems: int) {
