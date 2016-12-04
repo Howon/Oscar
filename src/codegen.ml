@@ -13,9 +13,10 @@ let translate (messages, actors, functions) =
   and void_t = L.void_type context in
 
   let ltype_of_typ = function
-      A.Int_t -> i32_t
-    | A.Bool_t -> i1_t
-    | A.Unit_t -> void_t
+      A.Int_t     -> i32_t
+    | A.Bool_t    -> i1_t
+    | A.Unit_t    -> void_t
+    | A.Double_t  -> f_t
   in
 
   (* Declare print(), which the print built-in function will call *)
