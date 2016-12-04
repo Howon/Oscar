@@ -72,8 +72,8 @@ and lambda = {
 }
 
 and pattern = {
-  p_mid      : string;
-  p_mformals : formal list;
+  p_mid       : string;
+  p_mformals  : formal list;
   p_body      : stmt;
 }
 
