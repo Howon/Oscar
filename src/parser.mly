@@ -271,7 +271,7 @@ expr:
   | ID LBRACKET expr RBRACKET                     { Binop(Id($1), Access, $3) }
 
 lambda:
-  LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmt RBRACE
+  LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
       { Lambda({ l_formals = $2; l_return_t = $5; l_body = $8; }) }
 
 actuals_opt:
