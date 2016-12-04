@@ -1,0 +1,4 @@
+def main() => unit = {
+	int x = 17;
+	x = 42;
+}
