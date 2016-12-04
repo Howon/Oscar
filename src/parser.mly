@@ -119,6 +119,7 @@ typ:
   | cont_typ    { $1 }
   | actor_typ   { $1 }
   | lambda_typ  { $1 }
+  | message_typ { $1 }
 
 simple_typ:
   TYPE_INT        { Int_t }
@@ -134,11 +135,14 @@ cont_typ:
   | TYPE_LIST LANGLE typ RANGLE               { List_t($3) }
 
 actor_typ:
-  TYPE_ACTOR LANGLE ID RANGLE   { Actor_t($3) }
-  | TYPE_POOL LANGLE ID RANGLE  { Pool_t($3) }
+  TYPE_ACTOR LANGLE ID RANGLE   { Actor_t(Id($3)) }
+  | TYPE_POOL LANGLE ID RANGLE  { Pool_t(Id($3)) }
 
 lambda_typ:
   TYPE_LAMBDA LPAREN typ_opt RPAREN FUNC_RET_TYPE typ { Lambda_t($3, $6) }
+
+message_typ:
+  TYPE_MESSAGE LANGLE ID RANGLE { Message_t(Id($3)) }
 
 /* for pattern matching with receive */
 receive:
@@ -153,7 +157,7 @@ pattern_list:
   | pattern_list pattern { $2::$1 }
 
 pattern:
-  BITWISE_OR ID LPAREN formals_opt RPAREN FUNC_RET_TYPE LBRACE stmt RBRACE
+  BITWISE_OR ID LPAREN formals_opt RPAREN FUNC_RET_TYPE LBRACE stmts RBRACE
       { { p_message_id = $2; p_message_formals = $4; p_body = $8; } }
 
 mut_vdecl:
@@ -183,10 +187,10 @@ stmt:
   | LBRACE stmts RBRACE           { $2 }
   | stmt_cond                     { $1 }
   | stmt_iter                     { $1 }
-  | ID LPAREN actuals_opt RPAREN ACT_SEND ID PUNC_SEMI
-                                  { Actor_send(Id($1), $3, Id($6)) }
-  | ID LPAREN actuals_opt RPAREN ACT_BROADCAST ID PUNC_SEMI
-                                  { Pool_send(Id($1), $3, Id($6)) }
+  | expr ACT_SEND ID PUNC_SEMI
+                                  { Actor_send($1, Id($3)) }
+  | expr ACT_BROADCAST ID PUNC_SEMI
+                                  { Pool_send($1, Id($3)) }
   | BREAK PUNC_SEMI               { Break }
   | CONTINUE PUNC_SEMI            { Continue }
 
@@ -208,7 +212,7 @@ map_opt:
 map_list:
   expr ARROW expr                         { [($1, $3)] }
   | map_list PUNC_COMMA expr ARROW expr   { ($3, $5) :: $1 }
- 
+
 cont_lit:
   TYPE_LIST LANGLE typ RANGLE
         LBRACKET actuals_opt RBRACKET             { List_Lit($3, $6) }
@@ -223,6 +227,10 @@ actor_lit:
   | ACT_SPAWN TYPE_POOL LANGLE ID RANGLE LPAREN LBRACE actuals_opt RBRACE
       PUNC_COMMA expr RPAREN        { Pool_Lit(Id($4), $8, $11) }
 
+message_lit:
+  TYPE_MESSAGE LANGLE ID RANGLE LPAREN actuals_opt RPAREN
+      { Message_Lit(Id($3), $6) }
+
 expr:
   ID                                              { Id($1) }
   | INT_LIT                                       { Int_Lit($1) }
@@ -235,6 +243,7 @@ expr:
   | LOGIC_FALSE                                   { Bool_Lit(false) }
   | cont_lit                                      { $1 }
   | actor_lit                                     { $1 }
+  | message_lit                                   { $1 }
   | expr ARITH_PLUS     expr                      { Binop($1, Add, $3) }
   | expr ARITH_MINUS    expr                      { Binop($1, Sub, $3) }
   | expr ARITH_TIMES    expr                      { Binop($1, Mult, $3) }
