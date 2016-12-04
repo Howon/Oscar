@@ -12,17 +12,18 @@ type types = Int_t | Bool_t | Double_t | Char_t | Unit_t | String_t
   | List_t of types
   | Set_t of types
   | Map_t of types * types
-  | Actor_t of string
-  | Pool_t of string
+  | Actor_t of expr
+  | Pool_t of expr
+  | Message_t of expr
 
-type formal = string * types
+and formal = string * types
 
-type message = {
+and message = {
     m_name: string;
     m_formals: formal list;
 }
 
-type expr =
+and expr =
     Int_Lit of int
   | Double_Lit of float
   | Char_Lit of char
@@ -32,8 +33,9 @@ type expr =
   | List_Lit of types * expr list
   | Set_Lit of types * expr list
   | Map_Lit of types * types * (expr * expr) list
-  | Actor_Lit of string * (expr list)
-  | Pool_Lit of string * (expr list) * expr
+  | Actor_Lit of expr * (expr list)
+  | Pool_Lit of expr * (expr list) * expr
+  | Message_Lit of expr * (expr list)
   | Binop of expr * bin_op * expr
   | Uop of u_op * expr
   | Id of string
@@ -64,8 +66,8 @@ and stmt =
   | While of expr * stmt
   | Break
   | Continue
-  | Actor_send of message * expr
-  | Pool_send of message * expr
+  | Actor_send of expr * expr
+  | Pool_send of expr * expr
 
 and lambda = {
   l_formals: formal list;
