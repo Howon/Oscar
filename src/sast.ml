@@ -1,7 +1,7 @@
 open Ast
 
 type sexpr =
-  SBinop of sexpr * bin_op * sexpr * types
+    SBinop of sexpr * bin_op * sexpr * types
   | SUnop of u_op * sexpr * types
   | SId of string * types
   | SAssign of string * expr * types
@@ -16,7 +16,7 @@ type sexpr =
   | SNoexpr
 
 type sstmt =
-  SBlock of stmt list
+    SBlock of stmt list
   | SExpr of sexpr * types
   | SReturn of sexpr * types
   | SIf of sexpr * sstmt * sexpr

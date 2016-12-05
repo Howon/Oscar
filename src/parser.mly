@@ -50,11 +50,11 @@ MESSAGES
 ***********/
 
 messages:
-  /* nothing */               { [] }
+    /* nothing */             { [] }
   | message_list              { List.rev $1 }
 
 message_list:
-  message_decl                { [$1] }
+    message_decl              { [$1] }
   | message_list message_decl { $2::$1 }
 
 message_decl:
@@ -65,11 +65,11 @@ ACTORS
 ***********/
 
 actors:
-  /* nothing */               { [] }
+    /* nothing */             { [] }
   | actor_list                { List.rev $1 }
 
 actor_list:
-  actor_decl                  { [$1] }
+    actor_decl                { [$1] }
   | actor_list actor_decl     { $2::$1 }
 
 actor_decl:
@@ -82,11 +82,11 @@ FUNCTIONS
 ***********/
 
 functions:
-  /* nothing */               { [] }
+    /* nothing */             { [] }
   | function_list             { List.rev $1 }
 
 function_list:
-  fdecl                       { [$1] }
+    fdecl                     { [$1] }
   | function_list fdecl       { $2::$1 }
 
 fdecl:
@@ -96,45 +96,45 @@ fdecl:
       f_return_t = $7; f_body = $10 } }
 
 formals_opt:
-  /* nothing */   { [] }
+    /* nothing */ { [] }
   | formal_list   { List.rev $1 }
 
 formal_list:
-  ID FUNC_ARG_TYPE typ                            { [($1, $3)] }
+    ID FUNC_ARG_TYPE typ                          { [($1, $3)] }
   | formal_list PUNC_COMMA ID FUNC_ARG_TYPE typ   { ($3, $5) :: $1 }
 
 /* primative types */
 
 typ_opt:
-  /* nothing */ { [] }
-  | typ_list    { List.rev $1 }
+    /* nothing */ { [] }
+  | typ_list      { List.rev $1 }
 
 typ_list:
-  typ                       { [$1] }
+    typ                     { [$1] }
   | typ_list PUNC_COMMA typ { $3 :: $1 }
 
 typ:
-  simple_typ    { $1 }
+    simple_typ  { $1 }
   | cont_typ    { $1 }
   | actor_typ   { $1 }
   | lambda_typ  { $1 }
   | message_typ { $1 }
 
 simple_typ:
-  TYPE_INT        { Int_t }
+    TYPE_INT      { Int_t }
   | TYPE_BOOL     { Bool_t }
   | TYPE_DOUBLE   { Double_t }
   | TYPE_CHAR     { Char_t }
   | TYPE_UNIT     { Unit_t }
 
 cont_typ:
-  TYPE_STR                                    { String_t }
+    TYPE_STR                                  { String_t }
   | TYPE_MAP LANGLE typ PUNC_COMMA typ RANGLE { Map_t($3, $5) }
   | TYPE_SET LANGLE typ RANGLE                { Set_t($3) }
   | TYPE_LIST LANGLE typ RANGLE               { List_t($3) }
 
 actor_typ:
-  TYPE_ACTOR LANGLE ID RANGLE   { Actor_t(Id($3)) }
+    TYPE_ACTOR LANGLE ID RANGLE { Actor_t(Id($3)) }
   | TYPE_POOL LANGLE ID RANGLE  { Pool_t(Id($3)) }
 
 lambda_typ:
@@ -148,11 +148,11 @@ receive:
   ACT_RECEIVE ASSIGN LBRACE pattern_opt RBRACE { $4 }
 
 pattern_opt:
-  /* nothing */   { [] }
+    /* nothing */ { [] }
   | pattern_list  { List.rev $1 }
 
 pattern_list:
-  pattern                { [$1] }
+    pattern              { [$1] }
   | pattern_list pattern { $2::$1 }
 
 pattern:
@@ -160,7 +160,7 @@ pattern:
       { { p_mid = $2; p_mformals = $4; p_body = $8; } }
 
 mut_vdecl:
-  MUTABLE typ ID                { Mutdecl({ mv_name = $3;
+    MUTABLE typ ID              { Mutdecl({ mv_name = $3;
                                             mv_type = $2;
                                             mv_init = Noexpr}) }
   | MUTABLE typ ID ASSIGN expr  { Mutdecl({ mv_name = $3;
@@ -168,15 +168,15 @@ mut_vdecl:
                                             mv_init = $5}) }
 
 stmts:
-  /* nothing */       { Block([]) }
+    /* nothing */     { Block([]) }
   | stmt_list         { Block(List.rev $1) }
 
 stmt_list:
-  stmt                { [$1] }
+    stmt              { [$1] }
   | stmt_list stmt    { $2 :: $1 }
 
 stmt:
-  expr PUNC_SEMI                  { Expr $1 }
+    expr PUNC_SEMI                { Expr $1 }
   | typ ID ASSIGN expr PUNC_SEMI  { Vdecl({ v_name = $2;
                                       v_type = $1;
                                       v_init = $4}) }
@@ -191,21 +191,21 @@ stmt:
                                   { Pool_send($1, Id($3)) }
 
 stmt_cond:
-  FLOW_IF LPAREN expr RPAREN LBRACE stmts RBRACE %prec NOELSE
+    FLOW_IF LPAREN expr RPAREN LBRACE stmts RBRACE %prec NOELSE
                                       { If($3, $6, Expr(Noexpr)) }
   | FLOW_IF LPAREN expr RPAREN LBRACE stmts RBRACE
         FLOW_ELSE LBRACE stmts RBRACE { If($3, $6, $10) }
 
 map_opt:
-  /* nothing */   { [] }
+    /* nothing */ { [] }
   | map_list      { List.rev $1 }
 
 map_list:
-  expr ARROW expr                         { [($1, $3)] }
+    expr ARROW expr                       { [($1, $3)] }
   | map_list PUNC_COMMA expr ARROW expr   { ($3, $5) :: $1 }
 
 cont_lit:
-  TYPE_LIST LANGLE typ RANGLE
+    TYPE_LIST LANGLE typ RANGLE
         LBRACKET actuals_opt RBRACKET             { List_Lit($3, $6) }
   | TYPE_SET LANGLE typ RANGLE
         LBRACKET actuals_opt RBRACKET             { Set_Lit($3, $6) }
@@ -213,7 +213,7 @@ cont_lit:
         LBRACKET map_opt RBRACKET                 { Map_Lit($3, $5, $8) }
 
 actor_lit:
-  ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE LPAREN actuals_opt RPAREN
+    ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE LPAREN actuals_opt RPAREN
                                     { Actor_Lit(Id($4), $7) }
   | ACT_SPAWN TYPE_POOL LANGLE ID RANGLE LPAREN LBRACE actuals_opt RBRACE
       PUNC_COMMA expr RPAREN        { Pool_Lit(Id($4), $8, $11) }
@@ -223,7 +223,7 @@ message_lit:
       { Message_Lit(Id($3), $6) }
 
 expr:
-  ID                                              { Id($1) }
+    ID                                            { Id($1) }
   | INT_LIT                                       { Int_Lit($1) }
   | DOUBLE_LIT                                    { Double_Lit($1) }
   | CHAR_LIT                                      { Char_Lit($1) }
@@ -266,9 +266,9 @@ lambda:
       { Lambda({ l_formals = $2; l_return_t = $5; l_body = $8; }) }
 
 actuals_opt:
-  /* nothing */   { [] }
+    /* nothing */ { [] }
   | actuals_list  { List.rev $1 }
 
 actuals_list:
-  expr                            { [$1] }
+    expr                          { [$1] }
   | actuals_list PUNC_COMMA expr  { $3 :: $1 }

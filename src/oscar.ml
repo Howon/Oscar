@@ -19,8 +19,9 @@ let _ =
   Semant.check ast; *)
   match action with
 
-  PrettyPrint -> print_endline (Ast.str_program ast)
-  | LLVM_IR -> print_string (Llvm.string_of_llmodule (Codegen.translate ast))
-  | Compile -> let m = Codegen.translate ast in
-    Llvm_analysis.assert_valid_module m;
-    print_string (Llvm.string_of_llmodule m)
+    PrettyPrint -> print_endline (Ast.str_program ast)
+  | LLVM_IR     -> print_string
+      (Llvm.string_of_llmodule (Codegen.translate ast))
+  | Compile     -> let m = Codegen.translate ast in
+      Llvm_analysis.assert_valid_module m;
+      print_string (Llvm.string_of_llmodule m)

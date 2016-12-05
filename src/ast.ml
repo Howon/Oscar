@@ -8,13 +8,13 @@ type bin_op =
 type u_op = Not | Neg
 
 type types = Int_t | Bool_t | Double_t | Char_t | Unit_t | String_t
-  | Lambda_t  of (types list) * types
-  | List_t    of types
-  | Set_t     of types
-  | Map_t     of types * types
-  | Actor_t   of expr
-  | Pool_t    of expr
-  | Message_t of expr
+  | Lambda_t    of (types list) * types
+  | List_t      of types
+  | Set_t       of types
+  | Map_t       of types * types
+  | Actor_t     of expr
+  | Pool_t      of expr
+  | Message_t   of expr
 
 and expr =
     Int_Lit     of int
@@ -37,14 +37,14 @@ and expr =
   | Noexpr
 
 and stmt =
-    Block      of stmt list
-  | Expr       of expr
-  | Return     of expr
-  | Vdecl      of val_decl
-  | Mutdecl    of mvar_decl
-  | If         of expr * stmt * stmt
-  | Actor_send of expr * expr
-  | Pool_send  of expr * expr
+    Block       of stmt list
+  | Expr        of expr
+  | Return      of expr
+  | Vdecl       of val_decl
+  | Mutdecl     of mvar_decl
+  | If          of expr * stmt * stmt
+  | Actor_send  of expr * expr
+  | Pool_send   of expr * expr
 
 and formal = string * types
 
@@ -213,19 +213,19 @@ and str_stmt = function
   | Vdecl(v)                  -> (str_types v.v_type) ^ " " ^ v.v_name ^
                                  " = " ^ (str_expr v.v_init) ^ ";"
   | If(e, s1, s2)             -> str_if e s1 s2
-  | Actor_send(e, a)   -> (str_expr e) ^ " |> " ^ str_expr a ^ ";"
-  | Pool_send(e, p)    -> (str_expr e) ^ " |>> " ^ str_expr p ^ ";"
+  | Actor_send(e, a)          -> (str_expr e) ^ " |> " ^ str_expr a ^ ";"
+  | Pool_send(e, p)           -> (str_expr e) ^ " |>> " ^ str_expr p ^ ";"
 
 and str_stmts = function
-  Block(stmts) -> String.concat "\n" (List.map str_stmt stmts)
-  | _ -> ""
+  Block(stmts)  -> String.concat "\n" (List.map str_stmt stmts)
+  | _           -> ""
 
 (* Print Lambda Functions BRUG*)
 
 and str_if e s1 s2 =
   "if (" ^ str_expr e ^ ") " ^ str_stmt s1 ^ (match s2 with
-    Expr(Noexpr) -> ""
-    | _    -> " else " ^ str_stmt s2)
+    Expr(Noexpr)  -> ""
+    | _           -> " else " ^ str_stmt s2)
 
 and str_lambda lambda =
   "(" ^ str_formals lambda.l_formals ^ ") => " ^ str_types
