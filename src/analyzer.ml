@@ -8,12 +8,12 @@ module StringSet = Set.Make (String)
 
 type vsymtab = {
   vparent      : vsymtab option;
-  vals         : val_decl list;
+  svals        : sval_decl list
 }
 
 type mvsymtab = {
   mvparent     : mvsymtab option;
-  mvars        : mvar_decl list;
+  smvars       : smvar_decl list
 }
 
 type actor_scope = {
@@ -32,7 +32,7 @@ type actor_scope = {
 
 let rec find_value_decl (vstab : vsymtab) (v_name : string) =
   try
-    List.find (fun val_decl -> val_decl.v_name = v_name) vstab.vals
+    List.find (fun sval -> sval.sv_name = v_name) vstab.svals
   with Not_found ->
     match vstab.vparent with
         Some(vparent) -> find_value_decl vparent v_name
@@ -40,7 +40,7 @@ let rec find_value_decl (vstab : vsymtab) (v_name : string) =
 
 let rec find_variable_decl (mvstab : mvsymtab) (mv_name : string) =
   try
-    List.find (fun mvar_decl -> mvar_decl.mv_name = mv_name) mvstab.mvars
+    List.find (fun mvar -> mvar.smv_name = mv_name) mvstab.smvars
   with Not_found ->
     match mvstab.mvparent with
         Some mvparent -> find_variable_decl mvparent mv_name
@@ -75,19 +75,19 @@ let find_message (sm_name : string) (env : scope) =
   try
     List.find (fun sm -> sm_name = sm.sm_name) env.messages
   with Not_found ->
-    raise (Failure ("Message of type " ^ sm_name ^ " not found"))
+    raise Failure("Message of type " ^ sm_name ^ " not found")
 
 let find_actor (sa_name : string) (env : scope) =
   try
     List.find (fun a_scope -> sa_name = a_scope.a_actor.sa_name) env.actors
   with Not_found ->
-    raise (Failure ("Actor of type " ^ sa_name ^ " not found"))
+    raise Failure("Actor of type " ^ sa_name ^ " not found")
 
 let find_func (sf_name : string) (env : scope)  =
   try
     List.find (fun sfun -> sf_name = sfun.sf_name) env.funcs
   with Not_found ->
-    raise (Failure ("Function of name " ^ sf_name ^ " not found"))
+    raise Failure("Function of name " ^ sf_name ^ " not found")
 
 let get_comp_texpr (op : bin_op) (e1 : sexpr) (t1 : types)
     (e2 : sexpr) (t2 : types) =
@@ -104,9 +104,9 @@ let get_comp_texpr (op : bin_op) (e1 : sexpr) (t1 : types)
     | Set_t(st1), Set_t(st2) when st1 = st2 -> (SBinop(e1, op, e2), Set_t(st1))
     | Actor_t(_), Actor_t(_) -> raise Exception.Actor_err
     | Pool_t(_), Pool_t(_)   -> raise Exception.Pool_err
-    | _ -> raise (Failure ("operand type mismatch: " ^
+    | _ -> raise Failure("operand type mismatch: " ^
                       (Prettyprint.str_types t1) ^ " " ^
-                      (Prettyprint.str_types t2)))
+                      (Prettyprint.str_types t2))
 
 let check_binop (te1 : t_expr) (te2 : t_expr)
     (op : bin_op) (env : scope) =
@@ -116,18 +116,18 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
           Int_t, Int_t  -> (SBinop(e1, op, e2), Int_t)
         | Double_t, Double_t -> (SBinop(e1, op, e2), Double_t)
         | String_t, String_t -> (SBinop(e1, op, e2), String_t)
-        | _ -> raise (Failure ("operand type mismatch: " ^
-                          (str_types t1) ^ " " ^ (str_types t2))))
+        | _ -> raise Failure("operand type mismatch: " ^
+                          (str_types t1) ^ " " ^ (str_types t2)))
     | Sub | Mult | Div | Less | Leq | Greater | Geq -> (match t1, t2 with
           Int_t, Int_t  -> (SBinop(e1, op, e2), Int_t)
         | Double_t, Double_t -> (SBinop(e1, op, e2), Double_t)
-        | _ -> raise (Failure ("operand type mismatch: " ^
-                          (str_types t1) ^ " " ^ (str_types t2))))
+        | _ -> raise Failure("operand type mismatch: " ^
+                          (str_types t1) ^ " " ^ (str_types t2)))
     | Mod | Bit_And | Bit_Or | Bit_Xor | Bit_RShift | Bit_LShift ->
         (match t1, t2 with
             Int_t, Int_t  -> (SBinop(e1, op, e2), Int_t)
-          | _ -> raise (Failure ("operand type mismatch: " ^
-                          (str_types t1) ^ " " ^ (str_types t2))))
+          | _ -> raise Failure("operand type mismatch: " ^
+                          (str_types t1) ^ " " ^ (str_types t2)))
     | Equal | Neq ->
         (try
           get_comp_texpr op e1 t1 e2 t2
@@ -138,12 +138,12 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
               raise (Failure "Pools cannot be compared for equality"))
     | And | Or -> (match t1, t2 with
           Bool_t, Bool_t -> (SBinop(e1, op, e2), Bool_t)
-        | _ -> raise (Failure ("operand type mismatch: " ^
-                          (str_types t1) ^ " " ^ (str_types t2))))
+        | _ -> raise Failure("operand type mismatch: " ^
+                          (str_types t1) ^ " " ^ (str_types t2)))
     | Assign -> (match e1 with
           SId s when t1 = t2 ->
             (if (is_immu env.env_vtable s) then
-              raise (Failure("Reassignment to a value " ^ s))
+              raise Failure("Reassignment to a value " ^ s)
             else
               if (is_mut env.env_mvtable s) then
                 (try
@@ -153,27 +153,27 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
                       if t1 = t2 then
                         (SBinop(e1, op, e2), t1)
                       else
-                        raise (Failure("Assignment to incompatible type")))
+                        raise (Failure "Assignment to incompatible type"))
               else
-                raise (Failure("Assignment to invalid id")))
-        | _ -> raise (Failure("Assignment to incompatible type")))
+                raise (Failure "Assignment to invalid id" ))
+        | _ -> raise (Failure "Assignment to incompatible type" ))
     | Access -> (match t1, t2 with
           List_t(lt), Int_t             -> (SBinop(e1, op, e2), lt)
         | Map_t(kt, vt), _ when kt = t2 -> (SBinop(e1, op, e2), vt)
         | Set_t(st), _ when st = t2     -> (SBinop(e1, op, e2), Bool_t)
-        | _ -> raise (Failure("Invalid access types")))
+        | _ -> raise (Failure "Invalid access types" ))
 
 let check_uop (te : t_expr) (op : u_op) =
   let (e, t) = te in match op with
       Neg -> (match t with
           Int_t    -> (SUop(op, e), Int_t)
         | Double_t -> (SUop(op, e), Double_t)
-        | _ -> raise (Failure ("operand type mismatch: " ^
-                          Prettyprint.str_uop op ^ " on " ^ Prettyprint.str_expr e)))
+        | _ -> raise Failure("operand type mismatch: " ^
+                          Prettyprint.str_uop op ^ " on " ^ Prettyprint.str_expr e))
     | Not -> (match t with
           Bool_t -> (SUop(op, e), Bool_t)
-        | _ -> raise (Failure ("operand type mismatch: " ^
-                          Prettyprint.str_uop op ^ " on " ^ Prettyprint.str_expr e)))
+        | _ -> raise Failure("operand type mismatch: " ^
+                          Prettyprint.str_uop op ^ " on " ^ Prettyprint.str_expr e))
 
 let check_args_t (params : types list) (args : types list) =
   try
@@ -202,7 +202,7 @@ let check_message_lit (sm: smessage) (args : t_expr list) =
     let sargs = texpr_to_sexpr_list args in
     (SMessage_Lit(SId(sm.sm_name), sargs), Message_t(Id(sm.sm_name)))
   else
-    raise (Failure ("Message constructed with wrong parameter types"))
+    raise (Failure "Message constructed with wrong parameter types")
 
 let check_actor_lit (sa : sactor) (args : t_expr list) =
   let params = List.map (fun (_, x) -> x) sa.sa_formals in
@@ -210,7 +210,7 @@ let check_actor_lit (sa : sactor) (args : t_expr list) =
     let sargs = texpr_to_sexpr_list args in
     (SActor_Lit(SId(sa.sa_name), sargs), Actor_t(Id(sa.sa_name)))
   else
-    raise (Failure ("Actor constructed with wrong parameter types"))
+    raise (Failure "Actor constructed with wrong parameter types")
 
 let check_func_call (sf : sfunc) (args : t_expr list) =
   let params = List.map (fun (_, x) -> x) sf.sf_formals in
@@ -311,8 +311,8 @@ let rec check_expr (e : expr) (env : scope) =
 and check_stmt (s : stmt) (env : scope) =
   match s with
       Block sl ->
-        let nvsymt = { vparent = Some env.env_vtable; vals = []; } in
-        let nmv_symt = { mvparent = Some env.env_mvtable; mvars  = []; } in
+        let nvsymt = { vparent = Some env.env_vtable; svals = []; } in
+        let nmv_symt = { mvparent = Some env.env_mvtable; smvars  = []; } in
         let nenv = { env with env_vtable = nvsymt; env_mvtable = nmv_symt; } in
         let (checked_stmts, _) = check_stmt_list sl false nenv in
         (SBlock checked_stmts, env)
@@ -328,6 +328,8 @@ and check_stmt (s : stmt) (env : scope) =
           | _ -> raise (Failure "This function does not return"))
     | Vdecl vdecl -> check_vdecl vdecl env
     | Mutdecl mvdecl -> check_mvdecl mvdecl env
+    | Fdecl fdecl ->
+        check_func_decl fdecl
     | If(cond, isl, esl) ->
         let (se, t) = check_expr cond env in
         (match t with
@@ -349,10 +351,10 @@ and check_stmt (s : stmt) (env : scope) =
                 (SActor_send(se1, se2), env)
               with Not_found ->
                 raise (Failure ("No matching pattern to receive message " ^
-                                    m_name ^ " in actor " ^ a_name)))
+                           m_name ^ " in actor " ^ a_name)))
           | _ -> raise (Failure ("Invalid send operation between " ^
-                                     Prettyprint.str_types st1 ^ " to " ^
-                                     Prettyprint.str_types st2)))
+                            Prettyprint.str_types st1 ^ " to " ^
+                            Prettyprint.str_types st2)))
     | Pool_send(e1, e2) ->
         let (se1, st1) = check_expr e1 env in
         let (se2, st2) = check_expr e2 env in
@@ -367,10 +369,10 @@ and check_stmt (s : stmt) (env : scope) =
                 (SActor_send(se1, se2), env)
               with Not_found ->
                 raise (Failure ("No matching pattern to receive message " ^
-                                    m_name ^ " in actor " ^ a_name)))
+                           m_name ^ " in actor " ^ a_name)))
           | _ -> raise (Failure ("Invalid send operation between " ^
-                                     Prettyprint.str_types st1 ^ " to " ^
-                                     Prettyprint.str_types st2))) and
+                            Prettyprint.str_types st1 ^ " to " ^
+                            Prettyprint.str_types st2))) and
 
 check_vdecl (vdecl : val_decl) (env : scope) =
   let {v_name; v_type; v_init} = vdecl in
@@ -378,26 +380,22 @@ check_vdecl (vdecl : val_decl) (env : scope) =
       Lambda_t(_, _) -> raise (Failure "Cannot declare lambda types")
     | _ ->
       let (se, t) = check_expr v_init env in
-      if (se = SNoexpr) then
-        raise (Failre "Immutable values need to be initialized")
-      else if v_type = t then
+      if v_type = t then
         (try
-          let _ = (List.find (fun v ->
-            v.v_name = v_name
-          ) env.env_vtable.vals) in
+          let _ = (List.find (fun sval ->
+            sval.sv_name = v_name
+          ) env.env_vtable.svals) in
           raise (Failure ("Immutable val " ^ v_name ^ " declared already"))
         with Not_found ->
+          let svdecl = sval_decl(v_name, v_type, se) in
           let nvsymbt = {
-            env.env_vtable with vals = vdecl :: env.env_vtable.vals;
-          } in let nenv = { env with env_vtable = nvsymbt } in
-          let svdecl = {
-            sv_name = v_name;
-            sv_type = v_type;
-            sv_init = se
+            env.env_vtable with svals = svdecl :: env.env_vtable.svals;
+          } in let nenv = { env with
+            env_vtable = nvsymbt
           } in (SVdecl svdecl), nenv)
       else
         raise (Failure ("Value initialization type mismatch " ^
-                           (str_types vdecl.v_type) ^ " " ^ (str_types t)))) and
+                   (str_types vdecl.v_type) ^ " " ^ (str_types t)))) and
 
 check_mvdecl (mvdecl : mvar_decl) (env : scope) =
   if env.in_actor then
@@ -408,24 +406,37 @@ check_mvdecl (mvdecl : mvar_decl) (env : scope) =
         let (se, t) = check_expr mv_init env in
         if mv_type = t then
           (try
-            let _ = (List.find (fun mv ->
-              mv.mv_name = mv_name
-            ) env.env_mvtable.mvars) in
-            raise (Failure ("Mutable var " ^ mv_name ^ " declared already"))
+            let _ = (List.find (fun smvar ->
+              smvar.smv_name = mv_name
+            ) env.env_mvtable.smvars) in
+            raise Failure("Mutable var " ^ mv_name ^ " declared already")
           with Not_found ->
+            let smvdecl = smvar_decl(mv_name, mv_type, se) in
             let nmvsymbt = {
-              env.env_mvtable with mvars = mvdecl :: env.env_mvtable.mvars;
-            } in let nenv = { env with env_mvtable = nmvsymbt } in
-            let smvdecl = {
-              smv_name = mv_name;
-              smv_type = mv_type;
-              smv_init = se
+              env.env_mvtable with smvars = smvdecl :: env.env_mvtable.smvars;
+            } in let nenv = { env with
+              env_mvtable = nmvsymbt
             } in (SMutdecl smvdecl), nenv)
         else
-          raise (Failure ("Variable initialization type mismatch " ^
-                           (str_types mvdecl.mv_type) ^ " " ^ (str_types t))))
+          raise Failure("Variable initialization type mismatch " ^
+                     (str_types mvdecl.mv_type) ^ " " ^ (str_types t)))
   else
-    raise (Failure ("Mutables types are only allowed in actors")) and
+    raise Failure("Mutables types are only allowed in actors") and
+
+check_func_decl (fdecl : func) (env : scope) =
+  let {fname; fformals; frt; fbody} = fdecl in
+  (try
+    let _ = List.find (fun f -> f.f_name = fname ) env in
+    raise (Failure ("Function " ^ fdecl.f_name ^ " declared already"))
+  with Not_found ->
+    let nvsymtab = List.fold_left (fun acc form ->
+      let (formal_name, formal_type) = form in
+      sval_decl(formal_type, formal_type, SNoexpr) :: acc
+    ) env.vsymtab fformals in
+    let nenv = { env with vsymtab = nvsymtab; return_t = frt } in
+    let cfbody = check_stmt fbody nenv in
+    let sfdecl = sfunc(fname, fformals, frt, cfbody) in
+    (sfdecl, nenv)) and
 
 check_stmt_list (sl : stmt list) (ret : bool) (env : scope) =
   let _ = (
@@ -433,16 +444,16 @@ check_stmt_list (sl : stmt list) (ret : bool) (env : scope) =
       try ignore (List.find (fun s -> match s with
             Return _ -> true
           | _ -> false) sl)
-      with Not_found -> raise (Failure "This function must return")
+      with Not_found -> raise Failure("This function must return")
     else ()
   ) in let (csl, nenv) = (List.fold_left (fun acc st ->
     let (sl', env') = (check_stmt st (snd acc)) in (sl' :: fst acc, env')
-  ) ([], env) sl) in (List.rev csl, nenv) in
+  ) ([], env) sl) in (List.rev csl, nenv)
 
 let check_message_decl (mdecl : message) (env : scope) =
   (try
     let _ = List.find (fun m -> m.m_name = mdecl.m_name) env.messages in
-    raise (Failure ("Message " ^ mdecl.m_name ^ " declared already"))
+    raise Failure("Message " ^ mdecl.m_name ^ " declared already")
   with Not_found ->
     let smdecl = smessage(mdecl.m_name, mdecl.m_formals) in
     let nenv = {env with messages = smdecl :: env.messages} in
@@ -457,14 +468,27 @@ let check_actor_decl (adecl : actor) (env : scope) =
       ) patterns in true
     with Not_found -> false) in
 
+  let {aname; aformals; abody; areceive} = adecl in
   (try
-    let _ = List.find (fun (a, _, _) -> a.a_name = adecl.a_name) env.actors in
-    raise (Failure ("Actor " ^ adecl.a_name ^ " declared already"))
+    let _ = List.find (fun (a, _, _) -> a.a_name = aname) env.actors in
+    raise Failure("Actor " ^ adecl.a_name ^ " declared already")
   with Not_found ->
-    let sps = List.map (fun (m, p, _) -> (m, p)) adecl.a_receive in
-    let m_allowed = List.filter (fun sm -> check_receive sm sps) env.messages in
+    let nvsymtab = List.fold_left (fun acc form ->
+      let (formal_name, formal_type) = form in
+      sval_decl(formal_type, formal_type, SNoexpr) :: acc
+    ) env.vsymtab aformals in
+
+    let spatterns = List.map (fun (m, p, _) -> (m, p)) adecl.a_receive in
+    let dup_pattern = List.length (List.filter (fun p ->
+      try
+        let _ = List.find (fun pp -> pp = p) in true
+      with Not_found -> false
+    ) spatterns) > 0 in
+    let m_allowed = List.filter (fun sm ->
+      check_receive sm sptterns
+    ) env.messages in
     if (List.length m_allowed) <> (List.length adecl.a_receive) then
-      raise Failure ("Actor " ^ adecl.a_name ^ " attempts to receive " ^
+      raise Failure("Actor " ^ adecl.a_name ^ " attempts to receive " ^
                 "undefined messages")
     else
       let curr_scope = {env with in_actor = true} in
@@ -472,15 +496,6 @@ let check_actor_decl (adecl : actor) (env : scope) =
 
       let nenv = {env with actors = :: env.actors } in
       (smdecl, nenv)) and
-
-check_func_decl (fdecl : func) (env : scope) =
-  (try
-    let _ = List.find (fun f -> f.f_name = fdecl.f_name) env.funcs in
-    raise (Failure ("Function " ^ fdecl.f_name ^ " declared already"))
-  with Not_found ->
-    let sfdecl = sfunc(fdecl.f_name, fdecl.f_formals, fdecl.f_return_t, )
-    let nenv = {env with funcs = sfdecl :: env.funcs} in
-    (sfdecl, nenv)) in
 
 
 

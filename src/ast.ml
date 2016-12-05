@@ -42,6 +42,7 @@ and stmt =
   | Return     of expr
   | Vdecl      of val_decl
   | Mutdecl    of mvar_decl
+  | Fdecl      of func
   | If         of expr * stmt * stmt
   | Actor_send of expr * expr
   | Pool_send  of expr * expr
@@ -88,7 +89,6 @@ and actor = {
   a_name      : string;
   a_formals   : formal list;
   a_body      : stmt;
-  a_functions : func list;
   a_receive   : pattern list;
 }
 

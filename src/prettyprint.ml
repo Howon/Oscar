@@ -112,18 +112,18 @@ and str_kvs kvs =
 (* Print Statements BRUG*)
 
 and str_stmt = function
-    Block(stmts)              -> "{\n" ^ str_stmts (Block(stmts)) ^ "\n}"
-  | Expr(expr)                -> str_expr expr ^ ";"
-  | Return(expr)              -> "return " ^ str_expr expr ^ ";"
-  | Mutdecl(mv)               -> "mut " ^ (str_types mv.mv_type) ^
-                                    " " ^ mv.mv_name ^ (match mv.mv_init with
-                                    Noexpr -> ""
-                                    | _ -> " = " ^ (str_expr mv.mv_init)) ^ ";"
-  | Vdecl(v)                  -> (str_types v.v_type) ^ " " ^ v.v_name ^
-                                 " = " ^ (str_expr v.v_init) ^ ";"
-  | If(e, s1, s2)             -> str_if e s1 s2
-  | Actor_send(e, a)   -> (str_expr e) ^ " |> " ^ str_expr a ^ ";"
-  | Pool_send(e, p)    -> (str_expr e) ^ " |>> " ^ str_expr p ^ ";"
+    Block(stmts)     -> "{\n" ^ str_stmts (Block(stmts)) ^ "\n}"
+  | Expr(expr)       -> str_expr expr ^ ";"
+  | Return(expr)     -> "return " ^ str_expr expr ^ ";"
+  | Vdecl(v)         -> (str_types v.v_type) ^ " " ^ v.v_name ^
+                           " = " ^ (str_expr v.v_init) ^ ";"
+  | Mutdecl(mv)      -> "mut " ^ (str_types mv.mv_type) ^
+                           " " ^ mv.mv_name ^ (match mv.mv_init with
+                             Noexpr -> ""
+                           | _ -> " = " ^ (str_expr mv.mv_init)) ^ ";"
+  | If(e, s1, s2)    -> str_if e s1 s2
+  | Actor_send(e, a) -> (str_expr e) ^ " |> " ^ str_expr a ^ ";"
+  | Pool_send(e, p)  -> (str_expr e) ^ " |>> " ^ str_expr p ^ ";"
 
 and str_stmts = function
   Block(stmts) -> String.concat "\n" (List.map str_stmt stmts)
@@ -157,7 +157,6 @@ let str_func func =
 let str_actor actor =
   "actor " ^ actor.a_name ^ "(" ^ str_formals actor.a_formals ^
   ") {\n" ^ str_stmts actor.a_body ^ "\n\n" ^
-  String.concat "\n\n" (List.map str_func actor.a_functions) ^
   "\n\nreceive = {\n" ^ String.concat "\n"
   (List.map str_pattern actor.a_receive) ^ "\n}\n}"
 

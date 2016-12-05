@@ -73,9 +73,8 @@ actor_list:
   | actor_list actor_decl     { $2::$1 }
 
 actor_decl:
-  TYPE_ACTOR ID LPAREN formals_opt RPAREN LBRACE stmts functions receive RBRACE
-      { { a_name = $2; a_formals = $4; a_body = $7;
-        a_functions = $8; a_receive = $9 } }
+  TYPE_ACTOR ID LPAREN formals_opt RPAREN LBRACE stmts receive RBRACE
+      { { a_name = $2; a_formals = $4; a_body = $7; a_receive = $8 } }
 
 /**********
 FUNCTIONS
@@ -92,8 +91,7 @@ function_list:
 fdecl:
     TYPE_FUNC ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
     ASSIGN LBRACE stmts RBRACE
-      { { f_name = $2; f_formals = $4;
-      f_return_t = $7; f_body = $10 } }
+      { { f_name = $2; f_formals = $4; f_return_t = $7; f_body = $10 } }
 
 formals_opt:
   /* nothing */   { [] }
@@ -180,7 +178,9 @@ stmt:
   | typ ID ASSIGN expr PUNC_SEMI  { Vdecl({ v_name = $2;
                                       v_type = $1;
                                       v_init = $4}) }
+  | fdecl                         { Fdecl($1) }
   | mut_vdecl PUNC_SEMI           { $1 }
+  |
   | RETURN PUNC_SEMI              { Return Noexpr }
   | RETURN expr PUNC_SEMI         { Return $2 }
   | LBRACE stmts RBRACE           { $2 }

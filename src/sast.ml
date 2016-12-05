@@ -26,6 +26,7 @@ and sstmt =
   | SReturn     of sexpr
   | SVdecl      of sval_decl
   | SMutdecl    of smvar_decl
+  | SFdecl      of sfunc
   | SIf         of sexpr * sstmt * sstmt
   | SActor_send of sexpr * sexpr
   | SPool_send  of sexpr * sexpr
