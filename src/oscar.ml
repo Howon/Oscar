@@ -1,13 +1,17 @@
 (* Top-level of the Oscar compiler: scan & parse the input,
    check the resulting AST, generate LLVM IR, and dump the module *)
 
-type action = Ast | LLVM_IR | Compile
+open Ast
+
+type action = LLVM_IR | Compile | PrettyPrint
 
 let _ =
   let action = if Array.length Sys.argv > 1 then
-    List.assoc Sys.argv.(1) [ ("-a", Ast);	(* Print the AST only *)
-			      ("-l", LLVM_IR);  (* Generate LLVM, don't check *)
-			      ("-c", Compile) ] (* Generate, check LLVM IR *)
+    List.assoc Sys.argv.(1) [
+            ("-l", LLVM_IR);    (* Generate LLVM, don't check *)
+            ("-c", Compile);    (* Generate, check LLVM IR *)
+            ("-p", PrettyPrint) (* Don't generate LLVM, just prettyprint *)
+    ]
   else Compile in
   let lexbuf = Lexing.from_channel stdin in
   let ast = Parser.program Scanner.token lexbuf in
@@ -15,7 +19,7 @@ let _ =
   Semant.check ast; *)
   match action with
 
-   (* Ast -> print_string (Ast.string_of_program ast) *)
+  PrettyPrint -> print_endline (Ast.str_program ast)
   | LLVM_IR -> print_string (Llvm.string_of_llmodule (Codegen.translate ast))
   | Compile -> let m = Codegen.translate ast in
     Llvm_analysis.assert_valid_module m;
