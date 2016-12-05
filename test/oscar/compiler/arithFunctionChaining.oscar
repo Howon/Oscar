@@ -11,5 +11,5 @@ def f3(num: int) => int = {
 }
 
 def main() => unit = {
-  println(f1(f2(f3(20))));
+    println(f1(f2(f3(20))));
 }
