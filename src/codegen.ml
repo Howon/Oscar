@@ -110,7 +110,11 @@ let translate (messages, actors, functions) =
             | A.Geq     -> L.build_icmp L.Icmp.Sge
             | A.And     -> L.build_and
             | A.Or      -> L.build_or
-            (* TODO: add bitwise ops *)
+            | A.Bit_And -> L.build_and
+            | A.Bit_Or -> L.build_or
+            | A.Bit_Xor -> L.build_xor
+            | A.Bit_RShift -> L.build_lshr
+            | A.Bit_LShift -> L.build_shl
           ) e1' e2' "tmp" builder
       | A.Uop(op, e) ->
         let e' = expr builder e in
