@@ -213,13 +213,13 @@ cont_lit:
 
 actor_lit:
     ACT_SPAWN TYPE_ACTOR LANGLE ID RANGLE LPAREN actuals_opt RPAREN
-                                    { Actor_Lit(Id($4), $7) }
+                                    { Actor_Lit($4, $7) }
   | ACT_SPAWN TYPE_POOL LANGLE ID RANGLE LPAREN LBRACE actuals_opt RBRACE
-      PUNC_COMMA expr RPAREN        { Pool_Lit(Id($4), $8, $11) }
+      PUNC_COMMA expr RPAREN        { Pool_Lit($4, $8, $11) }
 
 message_lit:
   TYPE_MESSAGE LANGLE ID RANGLE LPAREN actuals_opt RPAREN
-      { Message_Lit(Id($3), $6) }
+      { Message_Lit($3, $6) }
 
 expr:
     ID                                            { Id($1) }
@@ -254,7 +254,7 @@ expr:
   | expr BITWISE_LEFT   expr                      { Binop($1, Bit_LShift, $3) }
   | ARITH_MINUS expr %prec NEG                    { Uop(Neg, $2) }
   | LOGIC_NOT expr                                { Uop(Not, $2) }
-  | ID LPAREN actuals_opt RPAREN                  { Call(Id($1), $3) }
+  | ID LPAREN actuals_opt RPAREN                  { Call($1, $3) }
   | LPAREN expr RPAREN                            { $2 }
   | lambda                                        { $1 }
   | expr ASSIGN expr                              { Binop($1, Assign, $3) }

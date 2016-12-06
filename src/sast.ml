@@ -13,12 +13,12 @@ type sexpr =
   | SList_Lit     of types * sexpr list
   | SSet_Lit      of types * sexpr list
   | SMap_Lit      of types * types * (sexpr * sexpr) list
-  | SActor_Lit    of sexpr * (sexpr list)
-  | SPool_Lit     of sexpr * (sexpr list) * sexpr
-  | SMessage_Lit  of sexpr * (sexpr list)
+  | SActor_Lit    of string * (sexpr list)
+  | SPool_Lit     of string * (sexpr list) * sexpr
+  | SMessage_Lit  of string * (sexpr list)
   | SBinop        of sexpr * bin_op * sexpr
   | SUop          of u_op * sexpr
-  | SCall         of sexpr * (sexpr list)
+  | SCall         of string * (sexpr list)
   | SNoexpr
 
 and sstmt =
@@ -105,14 +105,14 @@ let rec str_sexpr = function
   | SMap_Lit(kt, vt, skvs)    -> "map<" ^ str_types kt ^ ", " ^
                                    str_types vt ^ ">[" ^
                                      str_skvs skvs ^ "]"
-  | SActor_Lit(sat, sel)      -> "spawn actor<" ^ str_sexpr sat ^ ">(" ^
+  | SActor_Lit(sat, sel)      -> "spawn actor<" ^ sat ^ ">(" ^
                                    str_sexprs sel ^ ")"
-  | SPool_Lit(sat, sel, num)  -> "spawn pool<" ^ str_sexpr sat ^ ">({" ^
+  | SPool_Lit(sat, sel, num)  -> "spawn pool<" ^ sat ^ ">({" ^
                                    str_sexprs sel ^ "}, " ^
                                      str_sexpr num ^ ")"
-  | SMessage_Lit(m, sel)      -> "message<" ^ str_sexpr m ^ ">(" ^
+  | SMessage_Lit(m, sel)      -> "message<" ^ m ^ ">(" ^
                                    str_sexprs sel ^ ")"
-  | SCall(se, sel)            -> str_sexpr se ^ "(" ^ str_sexprs sel ^ ")"
+  | SCall(se, sel)            -> se ^ "(" ^ str_sexprs sel ^ ")"
   | SNoexpr                   -> ""
 
 and str_sexprs sel =

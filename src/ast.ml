@@ -29,12 +29,12 @@ and expr =
   | List_Lit     of types * expr list
   | Set_Lit      of types * expr list
   | Map_Lit      of types * types * (expr * expr) list
-  | Actor_Lit    of expr * (expr list)
-  | Pool_Lit     of expr * (expr list) * expr
-  | Message_Lit  of expr * (expr list)
+  | Actor_Lit    of string * (expr list)
+  | Pool_Lit     of string * (expr list) * expr
+  | Message_Lit  of string * (expr list)
   | Binop        of expr * bin_op * expr
   | Uop          of u_op * expr
-  | Call         of expr * expr list
+  | Call         of string * expr list
   | Noexpr
 
 and stmt =
@@ -179,14 +179,14 @@ and str_expr = function
                                 str_exprs ex  ^ "]"
   | Map_Lit (kt, vt, kvs)   -> "map<" ^ str_types kt ^ ", " ^
                                 str_types vt ^ ">[" ^ str_kvs kvs ^ "]"
-  | Actor_Lit (at, ex)      -> "spawn actor<" ^ str_expr at ^ ">(" ^
+  | Actor_Lit (at, ex)      -> "spawn actor<" ^ at ^ ">(" ^
                                 str_exprs ex ^ ")"
-  | Pool_Lit (at, ex, num)  -> "spawn pool<" ^ str_expr at ^ ">({" ^
+  | Pool_Lit (at, ex, num)  -> "spawn pool<" ^ at ^ ">({" ^
                                 str_exprs ex ^ "}, " ^
                                   str_expr num ^ ")"
-  | Message_Lit (m, ex)    -> "message<" ^ str_expr m ^ ">(" ^
+  | Message_Lit (m, ex)    -> "message<" ^ m ^ ">(" ^
                                 str_exprs ex ^ ")"
-  | Call (s, ex)           -> str_expr s ^ "(" ^ str_exprs ex ^ ")"
+  | Call (s, ex)           -> s ^ "(" ^ str_exprs ex ^ ")"
   | Noexpr                 -> ""
 
 and str_exprs ex =
