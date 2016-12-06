@@ -17,6 +17,8 @@ actor Types() {
   int accList = intList[2];
   char accMap = intCharMap[3];
 
+  mut int mI;
+  mI = 2;
   mut double mD;
   mD = 5.0;
   mut bool mB;
@@ -29,11 +31,11 @@ actor Types() {
   mut list<int> mIntList;
   mut set<int> mIntSet;
   mut map<int, char> mICM;
-  mICM[1] = 'a';
 
   def apply(f: lambda (double) => double, a: double) => double = {
     return f(a);
   }
+
   receive = {
 
   }

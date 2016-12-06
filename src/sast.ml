@@ -8,6 +8,7 @@ type sexpr =
   | SBool_Lit     of bool
   | SUnit_Lit     of unit
   | SId           of string
+  | SAccess       of sexpr * sexpr
   | SLambda       of slambda
   | SList_Lit     of types * sexpr list
   | SSet_Lit      of types * sexpr list
@@ -84,36 +85,35 @@ let str_smessage smessage =
   "message " ^ smessage.sm_name ^ "(" ^ (str_formals smessage.sm_formals) ^ ")"
 
 let rec str_sexpr = function
-    SBinop(se1, o, se2)        -> "(" ^ (str_sexpr se1) ^ (match o with
-                                      Access -> "[" ^ (str_sexpr se2) ^ "]"
-                                    | _ -> " " ^ (str_binop o) ^ " " ^
-                                        (str_sexpr se2)) ^ ")"
-  | SUop(o, se)                -> (str_uop o) ^ (str_sexpr se)
-  | SInt_Lit(i)                -> string_of_int i
-  | SDouble_Lit(f)             -> string_of_float f
-  | SChar_Lit(c)               -> "\'" ^ Char.escaped c ^ "\'"
-  | SString_Lit(s)             -> "\"" ^ s ^ "\""
-  | SBool_Lit(true)            -> "true"
-  | SBool_Lit(false)           -> "false"
-  | SUnit_Lit(u)               -> "unit"
-  | SId(se)                    -> se
-  | SLambda(slambda)           -> (str_slambda slambda)
-  | SList_Lit(t, sel)          -> "list<" ^ (str_types t) ^ ">[" ^
-                                    (str_sexprs sel) ^ "]"
-  | SSet_Lit(t, sel)           -> "set<" ^ (str_types t) ^ ">[" ^
-                                    (str_sexprs sel) ^ "]"
-  | SMap_Lit(kt, vt, m_exprs)  -> "map<" ^ (str_types kt) ^ ", " ^
-                                    (str_types vt) ^ ">[" ^
-                                      (str_skvs m_exprs) ^ "]"
-  | SActor_Lit(sat, sel)        -> "spawn actor<" ^ str_sexpr sat ^ ">(" ^
-                                    (str_sexprs sel) ^ ")"
-  | SPool_Lit(sat, sel, num)    -> "spawn pool<" ^ str_sexpr sat ^ ">({" ^
-                                    (str_sexprs sel) ^ "}, " ^
-                                      (str_sexpr num) ^ ")"
-  | SMessage_Lit(m, sel)       -> "message<" ^ str_sexpr m ^ ">(" ^
-                                    str_sexprs sel ^ ")"
-  | SCall(se, sel)              -> str_sexpr se ^ "(" ^ str_sexprs sel ^ ")"
-  | SNoexpr                    -> ""
+    SBinop(se1, o, se2)       -> "(" ^ str_sexpr se1 ^ " " ^ str_binop o
+                                   ^ " " ^ str_sexpr se2 ^ ")"
+  | SUop(o, se)               -> str_uop o ^ str_sexpr se
+  | SInt_Lit i                -> string_of_int i
+  | SDouble_Lit f             -> string_of_float f
+  | SChar_Lit c               -> "\'" ^ Char.escaped c ^ "\'"
+  | SString_Lit s             -> "\"" ^ s ^ "\""
+  | SBool_Lit true            -> "true"
+  | SBool_Lit false           -> "false"
+  | SUnit_Lit u               -> "unit"
+  | SId se                    -> se
+  | SAccess(scont, sit)       -> str_sexpr scont ^ "[" ^ str_sexpr sit ^ "]"
+  | SLambda slambda           -> str_slambda slambda
+  | SList_Lit(t, sel)         -> "list<" ^ str_types t ^ ">[" ^
+                                   str_sexprs sel ^ "]"
+  | SSet_Lit(t, sel)          -> "set<" ^ (str_types t) ^ ">[" ^
+                                   str_sexprs sel ^ "]"
+  | SMap_Lit(kt, vt, skvs)    -> "map<" ^ str_types kt ^ ", " ^
+                                   str_types vt ^ ">[" ^
+                                     str_skvs skvs ^ "]"
+  | SActor_Lit(sat, sel)      -> "spawn actor<" ^ str_sexpr sat ^ ">(" ^
+                                   str_sexprs sel ^ ")"
+  | SPool_Lit(sat, sel, num)  -> "spawn pool<" ^ str_sexpr sat ^ ">({" ^
+                                   str_sexprs sel ^ "}, " ^
+                                     str_sexpr num ^ ")"
+  | SMessage_Lit(m, sel)      -> "message<" ^ str_sexpr m ^ ">(" ^
+                                   str_sexprs sel ^ ")"
+  | SCall(se, sel)            -> str_sexpr se ^ "(" ^ str_sexprs sel ^ ")"
+  | SNoexpr                   -> ""
 
 and str_sexprs sel =
   String.concat ", " (List.map str_sexpr sel)
