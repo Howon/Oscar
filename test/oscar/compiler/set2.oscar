@@ -1,0 +1,4 @@
+def main() => unit = {
+  set<int> intSet = set<int>[1, 2, 3, 4, 5];
+  println(setContains(intSet, 3));
+}

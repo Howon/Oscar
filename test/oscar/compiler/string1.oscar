@@ -1,0 +1,5 @@
+def main() => unit = {
+  string s2 = "string2";
+  println("string1");
+  println(s2);
+}

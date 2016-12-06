@@ -1,0 +1,9 @@
+def main() => unit = {
+  if (1 > 2) {
+    println("if3 broken");
+  } else if (1 < 2) {
+    println("if3 verified");
+  } else {
+    println("if3 broken");
+  }
+}
