@@ -1,6 +1,0 @@
-def main() => unit = {
-  map<int, double> tMap = 
-    map<int, double>[0 -> 1.1, 4 -> 5.3, -3 -> 5.3];
-  println(mapAdd(tMap, 2 -> -1.3);
-  println(tMap);
-}

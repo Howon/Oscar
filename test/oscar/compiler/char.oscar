@@ -1,5 +1,3 @@
 def main() => unit = {
-  println('a');
-  println('a' + 'b');
-  println('a' - 'b');
+  println('c');
 }

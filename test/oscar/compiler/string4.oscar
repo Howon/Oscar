@@ -1,4 +1,0 @@
-def main() => unit = {
-  string s1 = "string1";
-  println(123.asString());
-}

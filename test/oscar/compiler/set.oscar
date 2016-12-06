@@ -1,3 +1,4 @@
 def main() => unit = {
+  println(set<int>[]);
   println(set<int>[1, 2, 3, 4, 5]);
 }
