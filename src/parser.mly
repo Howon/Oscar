@@ -103,6 +103,14 @@ formal_list:
 
 /* primative types */
 
+typ_opt:
+    /* nothing */ { [] }
+  | typ_list      { List.rev $1 }
+
+typ_list:
+    typ                     { [$1] }
+  | typ_list PUNC_COMMA typ { $3 :: $1 }
+
 typ:
     simple_typ  { $1 }
   | cont_typ    { $1 }
@@ -128,7 +136,7 @@ actor_typ:
   | TYPE_POOL LANGLE ID RANGLE  { Pool_t(Id($3)) }
 
 lambda_typ:
-  TYPE_LAMBDA LPAREN formals_opt RPAREN FUNC_RET_TYPE typ { Lambda_t($3, $6) }
+  TYPE_LAMBDA LPAREN typ_opt RPAREN FUNC_RET_TYPE typ { Lambda_t($3, $6) }
 
 message_typ:
   TYPE_MESSAGE LANGLE ID RANGLE { Message_t(Id($3)) }
@@ -214,43 +222,43 @@ message_lit:
       { Message_Lit(Id($3), $6) }
 
 expr:
-    ID                                       { Id($1) }
-  | INT_LIT                                  { Int_Lit($1) }
-  | DOUBLE_LIT                               { Double_Lit($1) }
-  | CHAR_LIT                                 { Char_Lit($1) }
-  | STRING_LIT                               { String_Lit($1) }
-  | BOOL_LIT                                 { Bool_Lit($1) }
-  | TYPE_UNIT                                { Unit_Lit() }
-  | LOGIC_TRUE                               { Bool_Lit(true) }
-  | LOGIC_FALSE                              { Bool_Lit(false) }
-  | cont_lit                                 { $1 }
-  | actor_lit                                { $1 }
-  | message_lit                              { $1 }
-  | expr ARITH_PLUS     expr                 { Binop($1, Add, $3) }
-  | expr ARITH_MINUS    expr                 { Binop($1, Sub, $3) }
-  | expr ARITH_TIMES    expr                 { Binop($1, Mult, $3) }
-  | expr ARITH_DIVIDE   expr                 { Binop($1, Div, $3) }
-  | expr ARITH_MOD      expr                 { Binop($1, Mod, $3) }
-  | expr LOGIC_EQ       expr                 { Binop($1, Equal, $3) }
-  | expr LOGIC_NEQ      expr                 { Binop($1, Neq, $3) }
-  | expr LANGLE         expr                 { Binop($1, Less, $3) }
-  | expr LOGIC_LEQ      expr                 { Binop($1, Leq, $3) }
-  | expr RANGLE         expr                 { Binop($1, Greater,$3) }
-  | expr LOGIC_GEQ      expr                 { Binop($1, Geq, $3) }
-  | expr LOGIC_AND      expr                 { Binop($1, And, $3) }
-  | expr LOGIC_OR       expr                 { Binop($1, Or, $3) }
-  | expr BITWISE_AND    expr                 { Binop($1, Bit_And, $3) }
-  | expr BITWISE_OR     expr                 { Binop($1, Bit_Or, $3) }
-  | expr BITWISE_XOR    expr                 { Binop($1, Bit_Xor, $3) }
-  | expr BITWISE_RIGHT  expr                 { Binop($1, Bit_RShift, $3) }
-  | expr BITWISE_LEFT   expr                 { Binop($1, Bit_LShift, $3) }
-  | ARITH_MINUS expr %prec NEG               { Uop(Neg, $2) }
-  | LOGIC_NOT expr                           { Uop(Not, $2) }
-  | ID LPAREN actuals_opt RPAREN             { Call(Id($1), $3) }
-  | LPAREN expr RPAREN                       { $2 }
-  | lambda                                   { $1 }
-  | expr ASSIGN expr                         { Binop($1, Assign, $3) }
-  | expr LBRACKET expr RBRACKET              { Access($1, $3) }
+    ID                                            { Id($1) }
+  | INT_LIT                                       { Int_Lit($1) }
+  | DOUBLE_LIT                                    { Double_Lit($1) }
+  | CHAR_LIT                                      { Char_Lit($1) }
+  | STRING_LIT                                    { String_Lit($1) }
+  | BOOL_LIT                                      { Bool_Lit($1) }
+  | TYPE_UNIT                                     { Unit_Lit() }
+  | LOGIC_TRUE                                    { Bool_Lit(true) }
+  | LOGIC_FALSE                                   { Bool_Lit(false) }
+  | cont_lit                                      { $1 }
+  | actor_lit                                     { $1 }
+  | message_lit                                   { $1 }
+  | expr ARITH_PLUS     expr                      { Binop($1, Add, $3) }
+  | expr ARITH_MINUS    expr                      { Binop($1, Sub, $3) }
+  | expr ARITH_TIMES    expr                      { Binop($1, Mult, $3) }
+  | expr ARITH_DIVIDE   expr                      { Binop($1, Div, $3) }
+  | expr ARITH_MOD      expr                      { Binop($1, Mod, $3) }
+  | expr LOGIC_EQ       expr                      { Binop($1, Equal, $3) }
+  | expr LOGIC_NEQ      expr                      { Binop($1, Neq, $3) }
+  | expr LANGLE         expr                      { Binop($1, Less, $3) }
+  | expr LOGIC_LEQ      expr                      { Binop($1, Leq, $3) }
+  | expr RANGLE         expr                      { Binop($1, Greater,$3) }
+  | expr LOGIC_GEQ      expr                      { Binop($1, Geq, $3) }
+  | expr LOGIC_AND      expr                      { Binop($1, And, $3) }
+  | expr LOGIC_OR       expr                      { Binop($1, Or, $3) }
+  | expr BITWISE_AND    expr                      { Binop($1, Bit_And, $3) }
+  | expr BITWISE_OR     expr                      { Binop($1, Bit_Or, $3) }
+  | expr BITWISE_XOR    expr                      { Binop($1, Bit_Xor, $3) }
+  | expr BITWISE_RIGHT  expr                      { Binop($1, Bit_RShift, $3) }
+  | expr BITWISE_LEFT   expr                      { Binop($1, Bit_LShift, $3) }
+  | ARITH_MINUS expr %prec NEG                    { Uop(Neg, $2) }
+  | LOGIC_NOT expr                                { Uop(Not, $2) }
+  | ID LPAREN actuals_opt RPAREN                  { Call(Id($1), $3) }
+  | LPAREN expr RPAREN                            { $2 }
+  | lambda                                        { $1 }
+  | expr ASSIGN expr                              { Binop($1, Assign, $3) }
+  | expr LBRACKET expr RBRACKET                     { Access($1, $3) }
 
 lambda:
   LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE

@@ -97,23 +97,18 @@ let find_func (sf_name : string) (env : scope)  =
   with Not_found ->
     raise (Failure ("Function of name " ^ sf_name ^ " not found"))
 
-let get_comp_texpr (op : bin_op) (e1 : sexpr) (t1 : types)
-    (e2 : sexpr) (t2 : types) =
+let rec types_equal (t1 : types) (t2 : types) =
   match t1, t2 with
-      Int_t, Int_t       -> (SBinop (e1, op, e2), Int_t)
-    | Double_t, Double_t -> (SBinop (e1, op, e2), Double_t)
-    | Char_t, Char_t     -> (SBinop (e1, op, e2), Char_t)
-    | String_t, String_t -> (SBinop (e1, op, e2), String_t)
-    | Bool_t, Bool_t     -> (SBinop (e1, op, e2), Bool_t)
-    | List_t (lt1), List_t (lt2) when lt1 = lt2 ->
-        (SBinop (e1, op, e2), List_t (lt1))
-    | Map_t (kt1, vt1), Map_t (kt2, vt2) when (kt1 = kt2) && (vt1 = vt2) ->
-        (SBinop (e1, op, e2), Map_t (kt1, vt1))
-    | Set_t (st1), Set_t (st2) when st1 = st2 -> (SBinop (e1, op, e2), Set_t (st1))
-    | Actor_t (_), Actor_t (_) -> raise Actor_err
-    | Pool_t (_), Pool_t (_)   -> raise Pool_err
-    | _ -> raise (Failure ("operand type mismatch: " ^ str_types t1 ^
-        str_binop op ^ str_types t2))
+      Int_t, Int_t       -> true
+    | Double_t, Double_t -> true
+    | Char_t, Char_t     -> true
+    | String_t, String_t -> true
+    | Bool_t, Bool_t     -> true
+    | List_t lt1, List_t lt2 when types_equal lt1 lt2 -> true
+    | Set_t st1, Set_t st2 when types_equal st1 st2 -> true
+    | Map_t (kt1, vt1), Map_t (kt2, vt2) when
+        types_equal kt1 kt2 && types_equal vt1 vt2 -> true
+    | _ -> false
 
 let check_binop (te1 : t_expr) (te2 : t_expr)
     (op : bin_op) (env : scope) =
@@ -131,65 +126,45 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
             Int_t, Int_t  -> (SBinop (e1, op, e2), Int_t)
           | Double_t, Double_t -> (SBinop (e1, op, e2), Double_t)
           | _ -> raise (Failure ("operand type mismatch: " ^
-                            (str_types t1) ^ " " ^ (str_types t2))))
+                   (str_types t1) ^ " " ^ (str_types t2))))
     | Mod | Bit_And | Bit_Or | Bit_Xor | Bit_RShift | Bit_LShift ->
         (match t1, t2 with
             Int_t, Int_t  -> (SBinop (e1, op, e2), Int_t)
           | _ -> raise (Failure ("operand type mismatch: " ^
-                          (str_types t1) ^ " " ^ (str_types t2))))
+                   (str_types t1) ^ " " ^ (str_types t2))))
     | Equal | Neq ->
-        (try
-          get_comp_texpr op e1 t1 e2 t2
-        with
-            Actor_err ->
-              raise (Failure "Actors cannot be compared for equality")
-          | Pool_err  ->
-              raise (Failure "Pools cannot be compared for equality"))
-    | And | Or -> (match t1, t2 with
-          Bool_t, Bool_t -> (SBinop (e1, op, e2), Bool_t)
-        | _ -> raise (Failure ("operand type mismatch: " ^
-                          str_types t1 ^ " " ^ str_types t2)))
+          (if types_equal t1 t2 then
+            (SBinop(e1, op, e1), t1)
+          else
+            match t1, t1 with
+              Actor_t _, Actor_t _ ->
+                raise (Failure "Actors cannot be compared for equality")
+            | Pool_t _, Pool_t _ ->
+                raise (Failure "Pools cannot be compared for equality")
+            | _ -> raise (Failure ("Cannot compare " ^ str_types t1 ^ " with " ^
+                     str_types t2)))
+    | And | Or ->
+        (match t1, t2 with
+            Bool_t, Bool_t -> (SBinop (e1, op, e2), Bool_t)
+          | _ -> raise (Failure ("Only boolean expressions are allowed for " ^
+                   str_binop op)))
     | Assign ->
-        (match e1 with
-          SId s when t1 = t2 ->
-            (if (is_immu s env.env_vtable) then
-              raise (Failure ("Reassignment to a value " ^ s))
-            else
-              if (is_mut s env.env_mvtable) then
-                (try
-                    get_comp_texpr op e1 t1 e2 t2
-                with
-                  Actor_err | Pool_err ->
-                    if t1 = t2 then
-                      (SBinop (e1, op, e2), t1)
-                    else
-                      raise (Failure ("Assignment to incompatible type: " ^
-                              s ^ " is " ^ str_types t1 ^ " cannot be " ^
-                                "asigned to " ^ str_types t2)))
+        match e1 with
+            SId s | SAccess (SId s, _) ->
+              (if is_immu s env.env_vtable then
+                raise (Failure ("Reassignment to a value " ^ s))
               else
-                raise (Failure ("Undefined identifier: " ^ s)))
-        | SAccess(sa, _) when t1 = t2 ->
-            (match sa with
-                SId s ->
-                  (if (is_immu s env.env_vtable) then
-                    raise (Failure ("Reassignment to a value " ^ s))
+                if (is_mut s env.env_mvtable) then
+                  if types_equal t1 t2 then
+                    (SBinop(e1, op, e1), t1)
                   else
-                    if (is_mut s env.env_mvtable) then
-                      (try
-                        get_comp_texpr op e1 t1 e2 t2
-                      with
-                        Actor_err | Pool_err ->
-                          if t1 = t2 then
-                            (SBinop (e1, op, e2), t1)
-                          else
-                            raise (Failure ("Incompatible type: " ^ s ^ " : " ^
-                              str_types t1 ^ " cannot be " ^ "asigned to " ^
-                                str_types t2)))
-                  else
-                    raise (Failure ("Undefined identifier: " ^ s)))
-              | _ -> (SBinop (e1, op, e2), t1))
-        | _ -> raise (Failure ("Cannot assign " ^ str_types t1 ^  " as " ^
-                 str_types t2)))
+                    raise (Failure ("Assignment to incompatible type: " ^
+                      str_formal (s, t1) ^ " cannot be " ^ "asigned to " ^
+                        str_types t2))
+               else raise (Failure ("Identifier not found: " ^ s)))
+          | SAccess _ -> (SBinop (e1, op, e2), t2)
+          | _ -> raise (Failure ("Cannot assign " ^ str_types t1 ^  " as " ^
+                   str_types t2))
 
 let check_uop (te : t_expr) (op : u_op) =
   let (e, t) = te in match op with
@@ -213,11 +188,11 @@ let rec check_args_t (params : types list) (args : types list) =
   try
     List.iter2 (fun t1 t2 -> (match t1, t2 with
         Lambda_t (args1, rt1), Lambda_t (args2, rt2) ->
-          (let arg_tl1 = get_list_snd args1 in
-          let arg_tl2 = get_list_snd args2 in
-          if !(rt1 = rt2) || !(check_args_t arg_tl1 arg_tl2) then
+          let types_match = types_equal rt1 rt2 in
+          let args_match = check_args_t args1 args2 in
+          if (not types_match || not args_match) then
             raise Type_mismatch
-          else ())
+          else ()
       | _ ->
           if (t1 != t2) then
             raise Type_mismatch
@@ -243,7 +218,7 @@ let check_actor_lit (sa : sactor) (args : t_expr list) =
   let req_params = get_list_snd sa.sa_formals in
   if check_args req_params args then
     let sargs = get_list_fst args in
-    (SActor_Lit (SId (sa.sa_name), sargs), Actor_t (Id (sa.sa_name)))
+    (SActor_Lit (SId sa.sa_name, sargs), Actor_t (Id sa.sa_name))
   else
     raise (Failure ("Actor constructed with conflicting parameter types " ^
       sa.sa_name ^ " requires (" ^ str_types_list req_params ^
@@ -253,12 +228,22 @@ let check_func_call (sf : sfunc) (args : t_expr list) =
   let req_params = get_list_snd sf.sf_formals in
   if check_args req_params args then
     let sargs = get_list_fst args in
-    (SCall (SId (sf.sf_name), sargs), sf.sf_return_t)
+    (SCall (SId sf.sf_name, sargs), sf.sf_return_t)
   else
     raise (Failure ("Function called with conflicting parameter types " ^
       sf.sf_name ^ " has signature (" ^ str_types_list req_params ^ ") => " ^
         str_types sf.sf_return_t ^ " but called with " ^
           str_types_list (get_list_snd args)))
+
+let rec gen_temp_name (len : int) =
+  match len with
+      1 -> [ Char.escaped (Char.chr len) ]
+    | 26 -> raise (Failure "Too many arguments for this lambda")
+    | _ -> Char.escaped (Char.chr len) :: gen_temp_name (len - 1)
+
+let gen_lambda_formals (l_formals : types list) =
+  let temp_names = gen_temp_name (List.length l_formals) in
+    List.fold_left2 (fun acc n f -> (n, f) :: acc) [] temp_names l_formals
 
 let rec check_expr (e : expr) (env : scope) =
   let check_exprl (el : expr list) =
@@ -295,8 +280,7 @@ let rec check_expr (e : expr) (env : scope) =
           sl_formals  = l_formals;
           sl_return_t = l_return_t;
           sl_body     = fst (check_stmt l_body env)
-        } in
-        (slambda, Lambda_t (l_formals, l_return_t))
+        } in (slambda, Lambda_t (get_list_snd l_formals, l_return_t))
     | List_Lit (lt, ex) ->
         let te_list = check_exprl ex in
         let sexpr_list = get_list_fst te_list in
@@ -314,37 +298,39 @@ let rec check_expr (e : expr) (env : scope) =
     | Actor_Lit (at, ex) ->
         let (act_t, _) = check_expr at env in
           (match act_t with
-            SId (act_name) ->
-              let sactor = find_actor act_name env in
-              let te_list = check_exprl ex in
-              check_actor_lit sactor te_list
-          | _ -> raise (Failure "Invalid actor type"))
+              SId act_name ->
+                let sactor = find_actor act_name env in
+                let te_list = check_exprl ex in
+                check_actor_lit sactor te_list
+            | _ -> raise (Failure ("Invalid actor " ^ str_sexpr act_t)))
     | Pool_Lit (at, ex, num) ->
         let (sa_num, num_act) = check_expr num env in
         (match sa_num with
-            SInt_Lit (x)->
+            SInt_Lit x ->
               if x < 1 then
                 raise (Failure "Number of actors in a pool must be at least 1")
               else
                 let (act_t, _) = check_expr at env in
                 (match act_t with
-                    SId (act_name) ->
+                    SId act_name ->
                       let sactor = find_actor act_name env in
                       let te_list = check_exprl ex in
                       (match check_actor_lit sactor te_list with
-                          SActor_Lit (sa_id, sa_args), Actor_t (a_t) ->
-                            (SPool_Lit (sa_id, sa_args, sa_num), Pool_t (a_t))
-                        | _ -> raise (Failure "Pool construction failed"))
-                  | _ -> raise (Failure "Invalid actor type in this pool"))
-          | _ -> raise (Failure ("Number of actors must be an integer")))
+                          SActor_Lit (sa_id, sa_args), Actor_t a_t ->
+                            (SPool_Lit (sa_id, sa_args, sa_num), Pool_t a_t)
+                        | _ -> raise (Failure ("Cannot create a pool with " ^
+                                 "undeclared actor " ^ act_name)))
+                  | _ -> raise (Failure ("Invalid actor " ^ str_sexpr act_t ^
+                           " in this pool")))
+          | _ -> raise (Failure "Number of actors must be an integer"))
     | Message_Lit (m, ex) ->
         let (m_t, _) = check_expr m env in
         (match m_t with
-          SId (m_name) ->
+          SId m_name ->
             let smessage = find_message m_name env in
             let te_list = check_exprl ex in
             check_message_lit smessage te_list
-        | _ -> raise (Failure "Invalid message type"))
+        | _ -> raise (Failure ("Invalid message type " ^ str_sexpr m_t)))
     | Binop (e1, op, e2) ->
         let checked_e1 = check_expr e1 env and
         checked_e2 = check_expr e2 env in
@@ -500,24 +486,31 @@ check_func_decl (fdecl : func) (env : scope) =
     let _ = List.find (fun sf -> sf.sf_name = f_name ) env.funcs in
     raise (Failure ("Function " ^ f_name ^ " declared already"))
   with Not_found ->
-    let nsvals = List.fold_left (fun acc form ->
+    let (nvals, nfuncs) = List.fold_left (fun acc form ->
       let (formal_name, formal_type) = form in
       match formal_type with
-          Lambda_t (_) -> {
-            sf_name = formal_name;
-            sf_return_t = formal_type;
-
-          }
-      | _ ->
-        {
-          sv_name = formal_name;
-          sv_type = formal_type;
-          sv_init = SNoexpr
-        } :: acc
+          Lambda_t (lfl, lrt) ->
+            let n_funcs = {
+              sf_name     = formal_name;
+              sf_return_t = lrt;
+              sf_formals  = gen_lambda_formals lfl;
+              sf_body     = SExpr SNoexpr
+            } :: snd acc in
+            (fst acc, n_funcs)
+        | _ ->
+            let n_vals = {
+              sv_name = formal_name;
+              sv_type = formal_type;
+              sv_init = SNoexpr
+            } :: fst acc in
+            (n_vals, snd acc)
     ) (env.env_vtable.svals, env.funcs) f_formals in
-    let nvsymtab = { env.env_vtable with svals = nsvals } in
-    let nenv = { env with env_vtable = nvsymtab; return_t = Some f_return_t } in
-    let (cfbody, _) = check_stmt f_body nenv in
+    let nvsymtab = { env.env_vtable with svals = nvals } in
+    let nenv = { env with
+      funcs = nfuncs;
+      env_vtable = nvsymtab;
+      return_t = Some f_return_t
+    } in let (cfbody, _) = check_stmt f_body nenv in
     let sfdecl = {
       sf_name     = f_name;
       sf_formals  = f_formals;
@@ -554,8 +547,8 @@ let check_actor_decl (adecl : actor) (env : scope) =
     let p_formals = List.map (fun p -> (p.p_mid, p.p_mformals)) patterns in
     (try
       let _ = List.find (fun p ->
-        let p_formal_ts = List.map (fun (_, t) -> t) (snd p) in
-        let m_formal_ts = List.map (fun (_, t) -> t) sm.sm_formals in
+        let p_formal_ts = get_list_snd (snd p) in
+        let m_formal_ts = get_list_snd sm.sm_formals in
         (fst p = sm.sm_name) && check_args_t m_formal_ts p_formal_ts
       ) p_formals in true
     with Not_found -> false) in
@@ -621,7 +614,7 @@ let stdlib_funcs =
   let build_func (sfn : string) (fl : formal list) (rt : types) (body : sstmt) =
     { sf_name = sfn; sf_formals = fl; sf_return_t = rt; sf_body = body; } in
 
-  let empty_func = SExpr (SNoexpr) in
+  let empty_func = SExpr SNoexpr in
   [
     build_func "println" [("", String_t)] Unit_t empty_func;
   ]

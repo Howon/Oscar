@@ -8,7 +8,7 @@ type bin_op =
 type u_op = Not | Neg
 
 type types = Int_t | Bool_t | Double_t | Char_t | Unit_t | String_t
-  | Lambda_t   of (formal list) * types
+  | Lambda_t   of types list * types
   | List_t     of types
   | Set_t      of types
   | Map_t      of types * types
@@ -126,21 +126,21 @@ let str_uop = function
 (* Print Data Types BRUG*)
 
 let rec str_types = function
-    Int_t               -> "int"
-  | Bool_t              -> "bool"
-  | Double_t            -> "double"
-  | Char_t              -> "char"
-  | Unit_t              -> "unit"
-  | String_t            -> "string"
-  | Lambda_t (fls, rt)  -> "lambda (" ^ (String.concat ", "
-                             (List.map (fun f -> str_formal f) fls)
-                               ) ^ ") => " ^ str_types rt ^ ")"
-  | List_t t            -> "list<" ^ str_types t ^ ">"
-  | Set_t t             -> "set<" ^ str_types t ^ ">"
-  | Map_t (t1, t2)      -> "map<" ^ str_types t1 ^ ", " ^ str_types t2 ^ ">"
-  | Actor_t t           -> "actor<" ^ str_expr t ^ ">"
-  | Pool_t t            -> "pool<" ^ str_expr t ^ ">"
-  | Message_t t         -> "message<" ^ str_expr t ^ ">"
+    Int_t                -> "int"
+  | Bool_t               -> "bool"
+  | Double_t             -> "double"
+  | Char_t               -> "char"
+  | Unit_t               -> "unit"
+  | String_t             -> "string"
+  | Lambda_t (args, rt)  -> "(" ^ (String.concat ", " (List.map (fun arg ->
+                              str_types arg) args)) ^ ") => " ^
+                                str_types rt ^ ")"
+  | List_t t             -> "list<" ^ str_types t ^ ">"
+  | Set_t t              -> "set<" ^ str_types t ^ ">"
+  | Map_t (t1, t2)       -> "map<" ^ str_types t1 ^ ", " ^ str_types t2 ^ ">"
+  | Actor_t t            -> "actor<" ^ str_expr t ^ ">"
+  | Pool_t t             -> "pool<" ^ str_expr t ^ ">"
+  | Message_t t          -> "message<" ^ str_expr t ^ ">"
 
 and str_types_list types =
   String.concat ", " (List.map str_types types)
