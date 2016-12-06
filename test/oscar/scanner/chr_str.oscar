@@ -1,0 +1,16 @@
+def main() => unit = {
+  char a = ' ';
+  char b = '#';
+  char c = ')';
+  char d = '~';
+  char e = 'a';
+  char f = 'A';
+  char g = '1';
+  char h = '\t';
+  char n = '\n';
+  char ap = '\'';
+  char qo = '\"';
+  char s = '\\';
+
+  string test = "1234567890qwertyuiopasdfghjklzxcvbnm[{]};:'",<.>/?!@#$%^&*()_+-=`~\t\n\r\\\'\"";
+}
