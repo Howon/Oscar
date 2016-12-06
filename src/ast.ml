@@ -8,7 +8,7 @@ type bin_op =
 type u_op = Not | Neg
 
 type types = Int_t | Bool_t | Double_t | Char_t | Unit_t | String_t
-  | Lambda_t   of (formal list) * types
+  | Lambda_t   of (string * types) list * types
   | List_t     of types
   | Set_t      of types
   | Map_t      of types * types
@@ -132,9 +132,9 @@ let rec str_types = function
   | Char_t              -> "char"
   | Unit_t              -> "unit"
   | String_t            -> "string"
-  | Lambda_t (fls, rt)  -> "lambda (" ^ (String.concat ", "
-                             (List.map (fun f -> str_formal f) fls)
-                               ) ^ ") => " ^ str_types rt ^ ")"
+  | Lambda_t (fls, rt)  -> "(" ^ (String.concat ", " (List.map (fun (n, t) ->
+                             n ^ " : " ^ str_types t) fls)) ^ ") => " ^
+                               str_types rt ^ ")"
   | List_t t            -> "list<" ^ str_types t ^ ">"
   | Set_t t             -> "set<" ^ str_types t ^ ">"
   | Map_t (t1, t2)      -> "map<" ^ str_types t1 ^ ", " ^ str_types t2 ^ ">"
