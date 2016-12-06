@@ -1,0 +1,10 @@
+def apply(f: lambda (int) => int, input: int) => int = {
+  return f(input);
+}
+
+def main() => unit = {
+  int a = 12;
+  int b = apply((x:int) => int = { return x - 10; }, a);
+
+  println(b);
+}
