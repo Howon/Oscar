@@ -62,7 +62,7 @@ let translate (messages, actors, functions) =
             (* add bitwise ops *)
           ) e1' e2' "tmp" builder
       | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
-      | A.Call(Id("println"), el) -> build_print_call el builder
+      | A.Call("println", el) -> build_print_call el builder
 
     (* Takes a list of expressions and builds the correct print call *)
     and build_print_call el builder =

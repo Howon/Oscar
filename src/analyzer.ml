@@ -188,10 +188,8 @@ let rec check_args_t (params : types list) (args : types list) =
   try
     List.iter2 (fun t1 t2 -> (match t1, t2 with
         Lambda_t (args1, rt1), Lambda_t (args2, rt2) ->
-          let arg_tl1 = get_list_snd args1 in
-          let arg_tl2 = get_list_snd args2 in
           let types_match = types_equal rt1 rt2 in
-          let args_match = check_args_t arg_tl1 arg_tl2 in
+          let args_match = check_args_t args1 args2 in
           if (not types_match || not args_match) then
             raise Type_mismatch
           else ()
@@ -210,7 +208,7 @@ let check_message_lit (sm: smessage) (args : t_expr list) =
   let req_params = get_list_snd sm.sm_formals in
   if check_args req_params args then
     let sargs = get_list_fst args in
-    (SMessage_Lit (SId (sm.sm_name), sargs), Message_t (Id (sm.sm_name)))
+    (SMessage_Lit (sm.sm_name, sargs), Message_t (Id (sm.sm_name)))
   else
     raise (Failure ("Message constructed with conflicting parameter types " ^
       sm.sm_name ^ " requires (" ^ str_types_list req_params ^
@@ -220,7 +218,7 @@ let check_actor_lit (sa : sactor) (args : t_expr list) =
   let req_params = get_list_snd sa.sa_formals in
   if check_args req_params args then
     let sargs = get_list_fst args in
-    (SActor_Lit (SId sa.sa_name, sargs), Actor_t (Id sa.sa_name))
+    (SActor_Lit (sa.sa_name, sargs), Actor_t (Id sa.sa_name))
   else
     raise (Failure ("Actor constructed with conflicting parameter types " ^
       sa.sa_name ^ " requires (" ^ str_types_list req_params ^
@@ -230,12 +228,22 @@ let check_func_call (sf : sfunc) (args : t_expr list) =
   let req_params = get_list_snd sf.sf_formals in
   if check_args req_params args then
     let sargs = get_list_fst args in
-    (SCall (SId sf.sf_name, sargs), sf.sf_return_t)
+    (SCall (sf.sf_name, sargs), sf.sf_return_t)
   else
     raise (Failure ("Function called with conflicting parameter types " ^
       sf.sf_name ^ " has signature (" ^ str_types_list req_params ^ ") => " ^
         str_types sf.sf_return_t ^ " but called with " ^
           str_types_list (get_list_snd args)))
+
+let rec gen_temp_name (len : int) =
+  match len with
+      1 -> [ Char.escaped (Char.chr len) ]
+    | 26 -> raise (Failure "Too many arguments for this lambda")
+    | _ -> Char.escaped (Char.chr len) :: gen_temp_name (len - 1)
+
+let gen_lambda_formals (l_formals : types list) =
+  let temp_names = gen_temp_name (List.length l_formals) in
+    List.fold_left2 (fun acc n f -> (n, f) :: acc) [] temp_names l_formals
 
 let rec check_expr (e : expr) (env : scope) =
   let check_exprl (el : expr list) =
@@ -272,7 +280,7 @@ let rec check_expr (e : expr) (env : scope) =
           sl_formals  = l_formals;
           sl_return_t = l_return_t;
           sl_body     = fst (check_stmt l_body env)
-        } in (slambda, Lambda_t (l_formals, l_return_t))
+        } in (slambda, Lambda_t (get_list_snd l_formals, l_return_t))
     | List_Lit (lt, ex) ->
         let te_list = check_exprl ex in
         let sexpr_list = get_list_fst te_list in
@@ -288,13 +296,9 @@ let rec check_expr (e : expr) (env : scope) =
         let skv_list = List.map (fun ((k, _), (t, _)) -> (k, t)) tkv_list in
         (SMap_Lit (kt, vt, skv_list), Map_t (kt, vt))
     | Actor_Lit (at, ex) ->
-        let (act_t, _) = check_expr at env in
-          (match act_t with
-              SId act_name ->
-                let sactor = find_actor act_name env in
-                let te_list = check_exprl ex in
-                check_actor_lit sactor te_list
-            | _ -> raise (Failure ("Invalid actor " ^ str_sexpr act_t)))
+        let sactor = find_actor at env in
+        let te_list = check_exprl ex in
+        check_actor_lit sactor te_list
     | Pool_Lit (at, ex, num) ->
         let (sa_num, num_act) = check_expr num env in
         (match sa_num with
@@ -302,27 +306,18 @@ let rec check_expr (e : expr) (env : scope) =
               if x < 1 then
                 raise (Failure "Number of actors in a pool must be at least 1")
               else
-                let (act_t, _) = check_expr at env in
-                (match act_t with
-                    SId act_name ->
-                      let sactor = find_actor act_name env in
-                      let te_list = check_exprl ex in
-                      (match check_actor_lit sactor te_list with
-                          SActor_Lit (sa_id, sa_args), Actor_t a_t ->
-                            (SPool_Lit (sa_id, sa_args, sa_num), Pool_t a_t)
-                        | _ -> raise (Failure ("Cannot create a pool with " ^
-                                 "undeclared actor " ^ act_name)))
-                  | _ -> raise (Failure ("Invalid actor " ^ str_sexpr act_t ^
-                           " in this pool")))
+                let sactor = find_actor at env in
+                let te_list = check_exprl ex in
+                (match check_actor_lit sactor te_list with
+                    SActor_Lit (sa_id, sa_args), Actor_t a_t ->
+                      (SPool_Lit (sa_id, sa_args, sa_num), Pool_t a_t)
+                  | _ -> raise (Failure ("Cannot create a pool with " ^
+                           "undeclared actor " ^ at )))
           | _ -> raise (Failure "Number of actors must be an integer"))
     | Message_Lit (m, ex) ->
-        let (m_t, _) = check_expr m env in
-        (match m_t with
-          SId m_name ->
-            let smessage = find_message m_name env in
-            let te_list = check_exprl ex in
-            check_message_lit smessage te_list
-        | _ -> raise (Failure ("Invalid message type " ^ str_sexpr m_t)))
+        let smessage = find_message m env in
+        let te_list = check_exprl ex in
+        check_message_lit smessage te_list
     | Binop (e1, op, e2) ->
         let checked_e1 = check_expr e1 env and
         checked_e2 = check_expr e2 env in
@@ -330,13 +325,9 @@ let rec check_expr (e : expr) (env : scope) =
     | Uop (op, e) ->
         let checked_e = check_expr e env in check_uop checked_e op
     | Call (f, args) ->
-        let (et, _) = check_expr f env in
-        (match et with
-            SId f_id ->
-              let sf = find_func f_id env in
-              let tex_args = check_exprl args in
-              check_func_call sf tex_args
-          | _ -> raise (Failure ("Invalid function id " ^ str_expr f)))
+        let sf = find_func f env in
+        let tex_args = check_exprl args in
+        check_func_call sf tex_args
      | Noexpr -> (SNoexpr, Unit_t)
 
 and check_stmt (s : stmt) (env : scope) =
@@ -485,7 +476,7 @@ check_func_decl (fdecl : func) (env : scope) =
             let n_funcs = {
               sf_name     = formal_name;
               sf_return_t = lrt;
-              sf_formals  = lfl;
+              sf_formals  = gen_lambda_formals lfl;
               sf_body     = SExpr SNoexpr
             } :: snd acc in
             (fst acc, n_funcs)
@@ -618,7 +609,7 @@ let check_program (p : program) =
   let seed_env = {
     messages = [];
     actors = [];
-    funcs = [];
+    funcs = stdlib_funcs;
     env_vtable = empty_vsymtab;
     env_mvtable = empty_mvsymtab;
     return_t = None;
