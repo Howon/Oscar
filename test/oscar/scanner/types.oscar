@@ -2,33 +2,40 @@
  * COMMENT BLOCK
  */
 
-actor Types {
-  int i;
-  double d;
-  boolean b;
-  char c;
-  string s;
-  list<int> intList;
-  set<int> intSet;
-  map<int, double> intDoubleMap;
-  tuple<string, int, double> strIntDoubleTuple;
-  pool<Worker> workerPool;
+actor Types() {
+  int pos_i = 1;
+  int neg_i = -1;
+  double d = 2.5;
+  bool b_t = true;
+  bool b_f = false;
+  char c = 'a';
+  string s = "test";
+  list<int> intList = list<int>[1, 2, 3];
+  set<int> intSet = set<int>[1, 2, 3];
+  map<int, char> intCharMap = map<int, char>[1 -> 'a', 2 -> 'b'];
 
-  mut int mI;
+  int accList = intList[2];
+  char accMap = intCharMap[3];
+
   mut double mD;
-  mut boolean mB;
+  mD = 5.0;
+  mut bool mB;
+  mB = true;
+  mB = false;
   mut char mC;
+  mC = 'b';
   mut string mS;
+  mS = "mut test";
   mut list<int> mIntList;
   mut set<int> mIntSet;
-  mut map<int, double> mIntDoubleMap;
-  mut tuple<string, int, double> mStrIntDoubleTuple;
-  mut pool<Worker> mWorkerPool;
+  mut map<int, char> mICM;
+  mICM[1] = 'a';
 
-  def println(s: string) => unit = { }
-
-  def apply(f: (double) => double, a: double) => double = {
+  def apply(f: lambda (double) => double, a: double) => double = {
     return f(a);
+  }
+  receive = {
+
   }
 }
 
