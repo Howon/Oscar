@@ -131,7 +131,7 @@ let rec str_types = function
   | String_t             -> "string"
   | Lambda_t (args, rt)  -> "lambda (" ^ (String.concat ", " (List.map
                               (fun arg -> str_types arg) args)) ^ ") => " ^
-                                str_types rt ^ ")"
+                                str_types rt
   | List_t t             -> "list<" ^ str_types t ^ ">"
   | Set_t t              -> "set<" ^ str_types t ^ ">"
   | Map_t (t1, t2)       -> "map<" ^ str_types t1 ^ ", " ^ str_types t2 ^ ">"
