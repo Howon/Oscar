@@ -132,14 +132,14 @@ cont_typ:
   | TYPE_LIST LANGLE typ RANGLE                { List_t($3) }
 
 actor_typ:
-    TYPE_ACTOR LANGLE ID RANGLE  { Actor_t(Id($3)) }
-  | TYPE_POOL LANGLE ID RANGLE   { Pool_t(Id($3)) }
+    TYPE_ACTOR LANGLE ID RANGLE  { Actor_t($3) }
+  | TYPE_POOL LANGLE ID RANGLE   { Pool_t($3) }
 
 lambda_typ:
   TYPE_LAMBDA LPAREN typ_opt RPAREN FUNC_RET_TYPE typ { Lambda_t($3, $6) }
 
 message_typ:
-  TYPE_MESSAGE LANGLE ID RANGLE { Message_t(Id($3)) }
+  TYPE_MESSAGE LANGLE ID RANGLE { Message_t($3) }
 
 /* for pattern matching with receive */
 receive:

@@ -85,10 +85,7 @@ let str_smessage smessage =
   "message " ^ smessage.sm_name ^ "(" ^ (str_formals smessage.sm_formals) ^ ")"
 
 let rec str_sexpr = function
-    SBinop(se1, o, se2)       -> "(" ^ str_sexpr se1 ^ " " ^ str_binop o
-                                   ^ " " ^ str_sexpr se2 ^ ")"
-  | SUop(o, se)               -> str_uop o ^ str_sexpr se
-  | SInt_Lit i                -> string_of_int i
+    SInt_Lit i                -> string_of_int i
   | SDouble_Lit f             -> string_of_float f
   | SChar_Lit c               -> "\'" ^ Char.escaped c ^ "\'"
   | SString_Lit s             -> "\"" ^ s ^ "\""
@@ -112,6 +109,10 @@ let rec str_sexpr = function
                                      str_sexpr num ^ ")"
   | SMessage_Lit(m, sel)      -> "message<" ^ m ^ ">(" ^
                                    str_sexprs sel ^ ")"
+  | SBinop(se1, o, se2)       -> "(" ^ str_sexpr se1 ^ " " ^ str_binop o
+                                   ^ " " ^ str_sexpr se2 ^ ")"
+  | SUop(o, se)               -> str_uop o ^ str_sexpr se
+
   | SCall(se, sel)            -> se ^ "(" ^ str_sexprs sel ^ ")"
   | SNoexpr                   -> ""
 

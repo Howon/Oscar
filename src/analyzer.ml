@@ -32,6 +32,11 @@ type actor_scope = {
   in_actor    : bool;
 }
 
+let build_func (sfn : string) (fl : formal list) (rt : types) (body : sstmt) =
+  { sf_name = sfn; sf_formals = fl; sf_return_t = rt; sf_body = body; }
+
+let empty_func = SExpr SNoexpr
+
 let upd_env_vtable (vtab : vsymtab) (env : scope) =
   { env with env_vtable = vtab }
 
@@ -223,7 +228,7 @@ let check_message_lit (sm: smessage) (args : t_expr list) =
   let req_params = get_list_snd sm.sm_formals in
   if check_args req_params args then
     let sargs = get_list_fst args in
-    (SMessage_Lit (sm.sm_name, sargs), Message_t (Id (sm.sm_name)))
+    (SMessage_Lit (sm.sm_name, sargs), Message_t sm.sm_name)
   else
     raise (Failure ("Message constructed with conflicting parameter types " ^
       sm.sm_name ^ " requires (" ^ str_types_list req_params ^
@@ -233,7 +238,7 @@ let check_actor_lit (sa : sactor) (args : t_expr list) =
   let req_params = get_list_snd sa.sa_formals in
   if check_args req_params args then
     let sargs = get_list_fst args in
-      (SActor_Lit (sa.sa_name, sargs), Actor_t (Id sa.sa_name))
+      (SActor_Lit (sa.sa_name, sargs), Actor_t sa.sa_name)
   else
     raise (Failure ("Actor constructed with conflicting parameter types " ^
       sa.sa_name ^ " requires (" ^ str_types_list req_params ^
@@ -378,7 +383,7 @@ and check_stmt (s : stmt) (env : scope) =
         let (se1, st1) = check_expr e1 env in
         let (se2, st2) = check_expr e2 env in
         (match st1, st2 with
-            Message_t (Id m_name), Actor_t (Id a_name) ->
+            Message_t m_name, Actor_t a_name ->
               let sm = find_message m_name env in
               let sm_allowed = (find_actor_scope a_name env).a_messages in
               (try
@@ -396,7 +401,7 @@ and check_stmt (s : stmt) (env : scope) =
         let (se1, st1) = check_expr e1 env in
         let (se2, st2) = check_expr e2 env in
         (match st1, st2 with
-            Message_t (Id m_name), Pool_t (Id a_name) ->
+            Message_t m_name, Pool_t a_name ->
               let sm = find_message m_name env in
               let sm_allowed = (find_actor_scope a_name env).a_messages in
               (try
@@ -511,8 +516,9 @@ and check_func_decl (fdecl : func) (env : scope) =
             (n_vals, snd acc)
     ) (env.env_vtable.svals, env.funcs) f_formals in
     let nv_table = { env.env_vtable with svals = nvals } in
+    let forward_decl = build_func f_name f_formals f_return_t empty_func in
     let fenv = { env with
-      funcs = nfuncs;
+      funcs = forward_decl :: nfuncs;
       env_vtable = nv_table;
       return_t = Some f_return_t
     } in
@@ -618,21 +624,15 @@ let check_actor_decl (adecl : actor) (env : scope) =
         let nenv = { env with actors = new_actor_scope :: env.actors } in
         (new_actor_scope, nenv))
 
-let stdlib_funcs =
-  let build_func (sfn : string) (fl : formal list) (rt : types) (body : sstmt) =
-    { sf_name = sfn; sf_formals = fl; sf_return_t = rt; sf_body = body; } in
-
-  let empty_func = SExpr SNoexpr in
-  [
-    build_func "println" [("", String_t)] Unit_t empty_func;
-    build_func "println" [("", String_t)] Unit_t empty_func;
-    build_func "listReverse" [("", List_t())] List_t empty_func;
-  ]
-
 let check_program (p : program) =
   let (messages, actors, functions) = p in
   let empty_vsymtab = { vparent = None; svals = [] } in
   let empty_mvsymtab = { mvparent = None; smvars =  [] } in
+  let stdlib_funcs =
+  [
+    build_func "println" [("", String_t)] Unit_t empty_func;
+    build_func "println" [("", Int_t)] Unit_t empty_func;
+  ] in
   let seed_env = {
     messages = [];
     actors = [];

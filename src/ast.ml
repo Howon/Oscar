@@ -12,9 +12,9 @@ type types = Int_t | Bool_t | Double_t | Char_t | Unit_t | String_t
   | List_t     of types
   | Set_t      of types
   | Map_t      of types * types
-  | Actor_t    of expr
-  | Pool_t     of expr
-  | Message_t  of expr
+  | Actor_t    of string
+  | Pool_t     of string
+  | Message_t  of string
 
 and expr =
     Int_Lit      of int
@@ -138,9 +138,9 @@ let rec str_types = function
   | List_t t             -> "list<" ^ str_types t ^ ">"
   | Set_t t              -> "set<" ^ str_types t ^ ">"
   | Map_t (t1, t2)       -> "map<" ^ str_types t1 ^ ", " ^ str_types t2 ^ ">"
-  | Actor_t t            -> "actor<" ^ str_expr t ^ ">"
-  | Pool_t t             -> "pool<" ^ str_expr t ^ ">"
-  | Message_t t          -> "message<" ^ str_expr t ^ ">"
+  | Actor_t t            -> "actor<" ^ t ^ ">"
+  | Pool_t t             -> "pool<" ^ t ^ ">"
+  | Message_t t          -> "message<" ^ t ^ ">"
 
 and str_types_list types =
   String.concat ", " (List.map str_types types)
@@ -160,10 +160,7 @@ and str_message message =
 (* Print Expressions BRUG*)
 
 and str_expr = function
-    Binop (e1, o, e2)       -> "(" ^ str_expr e1 ^ " " ^ str_binop o ^
-                                 " " ^ str_expr e2 ^ ")"
-  | Uop (o, e)              -> str_uop o ^ str_expr e
-  | Int_Lit i               -> string_of_int i
+    Int_Lit i               -> string_of_int i
   | Double_Lit f            -> string_of_float f
   | Char_Lit c              -> "\'" ^ Char.escaped c ^ "\'"
   | String_Lit s            -> "\"" ^ s ^ "\""
@@ -186,6 +183,10 @@ and str_expr = function
                                   str_expr num ^ ")"
   | Message_Lit (m, ex)    -> "message<" ^ m ^ ">(" ^
                                 str_exprs ex ^ ")"
+  | Binop (e1, o, e2)       -> "(" ^ str_expr e1 ^ " " ^ str_binop o ^
+                                 " " ^ str_expr e2 ^ ")"
+  | Uop (o, e)              -> str_uop o ^ str_expr e
+
   | Call (s, ex)           -> s ^ "(" ^ str_exprs ex ^ ")"
   | Noexpr                 -> ""
 
