@@ -1,6 +1,5 @@
 def main() => unit = {
   println(list<int>[]);
   println(list<int>[1,2,3,4,5]);
-  println(list<double>[6.0,7.0,8.0])
-  println(list<double> (10, 0.0));
+  println(list<double>[6.0,7.0,8.0]);
 }
