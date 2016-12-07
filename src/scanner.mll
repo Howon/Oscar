@@ -43,6 +43,7 @@ rule token = parse
 
   (* comma, dot, semi *)
   | ','                   { PUNC_COMMA }
+  | '.'                   { PUNC_DOT }
   | ';'                   { PUNC_SEMI }
 
   (* logic *)

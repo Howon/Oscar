@@ -35,7 +35,7 @@ and expr =
   | Binop        of expr * bin_op * expr
   | Uop          of u_op * expr
   | FuncCall     of string * expr list
-  | ObjCall      of expr * string * expr
+  | ObjCall      of expr * string * expr list
   | Noexpr
 
 and stmt =
@@ -189,6 +189,7 @@ and str_expr = function
   | Uop (o, e)              -> str_uop o ^ str_expr e
 
   | FuncCall (s, ex)       -> s ^ "(" ^ str_exprs ex ^ ")"
+  | ObjCall(obj, m, ex)    -> str_expr obj ^ "." ^ m ^ "(" ^ str_exprs ex ^ ")"
   | Noexpr                 -> ""
 
 and str_exprs ex =

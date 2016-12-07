@@ -3,7 +3,7 @@
 %token LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET
 %token ARITH_PLUS ARITH_MINUS ARITH_TIMES ARITH_DIVIDE ARITH_MOD
 %token ASSIGN
-%token PUNC_COMMA PUNC_SEMI
+%token PUNC_COMMA PUNC_SEMI PUNC_DOT
 %token LOGIC_EQ LOGIC_NEQ LANGLE RANGLE LOGIC_LEQ LOGIC_GEQ LOGIC_NOT
 %token LOGIC_AND LOGIC_OR LOGIC_TRUE LOGIC_FALSE
 %token BITWISE_AND BITWISE_OR BITWISE_XOR  BITWISE_RIGHT BITWISE_LEFT
@@ -23,6 +23,7 @@
 %token EOF
 
 %nonassoc NOELSE
+%left ACT_SEND ACT_BROADCAST
 %right ASSIGN
 %left FUNC_ARG_TYPE ARROW FUNC_RET_TYPE
 %left LOGIC_AND LOGIC_OR
@@ -33,7 +34,6 @@
 %left ARITH_PLUS ARITH_MINUS
 %left ARITH_TIMES ARITH_DIVIDE ARITH_MOD
 %right LOGIC_NOT
-%left ACT_SEND ACT_BROADCAST
 
 %right NEG /* for negative numbers */
 
@@ -255,10 +255,11 @@ expr:
   | ARITH_MINUS expr %prec NEG                    { Uop(Neg, $2) }
   | LOGIC_NOT expr                                { Uop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                  { FuncCall($1, $3) }
+  | ID PUNC_DOT ID LPAREN actuals_opt RPAREN      { ObjCall(Id($1), $3, $5) }
   | LPAREN expr RPAREN                            { $2 }
   | lambda                                        { $1 }
   | expr ASSIGN expr                              { Binop($1, Assign, $3) }
-  | expr LBRACKET expr RBRACKET                     { Access($1, $3) }
+  | expr LBRACKET expr RBRACKET                   { Access($1, $3) }
 
 lambda:
   LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
