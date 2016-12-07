@@ -19,7 +19,6 @@ type sexpr =
   | SBinop        of sexpr * bin_op * sexpr
   | SUop          of u_op * sexpr
   | SFuncCall     of string * (sexpr list)
-  | SObjCall      of sexpr * string * sexpr list
   | SNoexpr
 
 and sstmt =
@@ -114,8 +113,6 @@ let rec str_sexpr = function
                                    str_sexpr se2 ^ ")"
   | SUop(o, se)               -> str_uop o ^ str_sexpr se
   | SFuncCall(se, sel)        -> se ^ "(" ^ str_sexprs sel ^ ")"
-  | SObjCall(sobj, m, sel)    -> str_sexpr sobj ^ "." ^ m ^ "(" ^
-                                   str_sexprs sel ^ ")"
   | SNoexpr                   -> ""
 
 and str_sexprs sel =
@@ -127,8 +124,21 @@ and str_skvs skvs =
   String.concat ", " (List.map skv_string skvs)
 
 and str_sstmt = function
-    SBlock sstmts       -> "{\n" ^ str_sstmts (SBlock(sstmts)) ^ "\n}"
+    SBlock(sstmts)     -> "{\n" ^ str_sstmts (SBlock(sstmts)) ^ "\n}"
   | SExpr texp          -> str_sexpr (let (se, _) = texp in se) ^ ";"
+  | SReturn(se)        -> "return " ^ str_sexpr se ^ ";"
+  | SMutdecl(smv)      -> "mut " ^ (str_types smv.smv_type) ^ " " ^
+                            smv.smv_name ^ (match smv.smv_init with
+                                SNoexpr -> ""
+                              | _ -> " = " ^ (str_sexpr smv.smv_init)) ^ ";"
+  | SVdecl(sv)         -> (str_types sv.sv_type) ^ " " ^ sv.sv_name ^ " = " ^
+                            (str_sexpr sv.sv_init) ^ ";"
+  | SFdecl(sf)         -> str_sfunc sf
+  | SIf(se, s1, s2)    -> str_sif se s1 s2
+  | SActor_send(se, a) -> (str_sexpr se) ^ " |> " ^ str_sexpr a ^ ";"
+  | SPool_send(se, p)  -> (str_sexpr se) ^ " |>> " ^ str_sexpr p ^ ";"
+
+
   | SReturn se          -> "return " ^ str_sexpr se ^ ";"
   | SMutdecl smv        -> "mut " ^ (str_types smv.smv_type) ^ " " ^
                              smv.smv_name ^ (match smv.smv_init with

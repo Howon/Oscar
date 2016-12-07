@@ -35,7 +35,6 @@ and expr =
   | Binop        of expr * bin_op * expr
   | Uop          of u_op * expr
   | FuncCall     of string * expr list
-  | ObjCall      of expr * string * expr list
   | Noexpr
 
 and stmt =
@@ -97,7 +96,6 @@ and actor = {
 type program = message list * actor list * func list
 
 (* PRETTY PRINTER *)
-(* Print Operators BRUG*)
 
 let str_binop = function
     Add         -> "+"
@@ -124,8 +122,6 @@ let str_uop = function
     Not  -> "!"
   | Neg  -> "-"
 
-(* Print Data Types BRUG*)
-
 let rec str_types = function
     Int_t                -> "int"
   | Bool_t               -> "bool"
@@ -133,9 +129,9 @@ let rec str_types = function
   | Char_t               -> "char"
   | Unit_t               -> "unit"
   | String_t             -> "string"
-  | Lambda_t (args, rt)  -> "(" ^ (String.concat ", " (List.map (fun arg ->
-                              str_types arg) args)) ^ ") => " ^
-                                str_types rt ^ ")"
+  | Lambda_t (args, rt)  -> "lambda (" ^ (String.concat ", " (List.map
+                              (fun arg -> str_types arg) args)) ^ ") => " ^
+                                str_types rt
   | List_t t             -> "list<" ^ str_types t ^ ">"
   | Set_t t              -> "set<" ^ str_types t ^ ">"
   | Map_t (t1, t2)       -> "map<" ^ str_types t1 ^ ", " ^ str_types t2 ^ ">"
@@ -145,7 +141,6 @@ let rec str_types = function
 
 and str_types_list types =
   String.concat ", " (List.map str_types types)
-(* Print Formals BRUG*)
 
 and str_formal  = function
   (name, typ) -> name ^ " : " ^ str_types typ
@@ -153,12 +148,8 @@ and str_formal  = function
 and str_formals (formals : formal list) =
   String.concat ", " (List.map str_formal formals)
 
-(* Print Messages BRUG*)
-
 and str_message message =
   "message " ^ message.m_name ^ "(" ^ (str_formals message.m_formals) ^ ")"
-
-(* Print Expressions BRUG*)
 
 and str_expr = function
     Int_Lit i               -> string_of_int i
@@ -172,25 +163,24 @@ and str_expr = function
   | Access (cont, it)       -> str_expr cont ^ "[" ^ str_expr it ^ "]"
   | Lambda lambda           -> str_lambda lambda
   | List_Lit (t, ex)        -> "list<" ^  str_types t  ^ ">[" ^
-                                str_exprs ex  ^ "]"
+                                 str_exprs ex  ^ "]"
   | Set_Lit (t, ex)         -> "set<" ^  str_types t  ^ ">[" ^
-                                str_exprs ex  ^ "]"
+                                 str_exprs ex  ^ "]"
   | Map_Lit (kt, vt, kvs)   -> "map<" ^ str_types kt ^ ", " ^
-                                str_types vt ^ ">[" ^ str_kvs kvs ^ "]"
+                                 str_types vt ^ ">[" ^ str_kvs kvs ^ "]"
   | Actor_Lit (at, ex)      -> "spawn actor<" ^ at ^ ">(" ^
-                                str_exprs ex ^ ")"
+                                 str_exprs ex ^ ")"
   | Pool_Lit (at, ex, num)  -> "spawn pool<" ^ at ^ ">({" ^
-                                str_exprs ex ^ "}, " ^
-                                  str_expr num ^ ")"
-  | Message_Lit (m, ex)    -> "message<" ^ m ^ ">(" ^
-                                str_exprs ex ^ ")"
+                                 str_exprs ex ^ "}, " ^
+                                   str_expr num ^ ")"
+  | Message_Lit (m, ex)     -> "message<" ^ m ^ ">(" ^
+                                 str_exprs ex ^ ")"
   | Binop (e1, o, e2)       -> "(" ^ str_expr e1 ^ " " ^ str_binop o ^
                                  " " ^ str_expr e2 ^ ")"
   | Uop (o, e)              -> str_uop o ^ str_expr e
 
-  | FuncCall (s, ex)       -> s ^ "(" ^ str_exprs ex ^ ")"
-  | ObjCall(obj, m, ex)    -> str_expr obj ^ "." ^ m ^ "(" ^ str_exprs ex ^ ")"
-  | Noexpr                 -> ""
+  | FuncCall (s, ex)        -> s ^ "(" ^ str_exprs ex ^ ")"
+  | Noexpr                  -> ""
 
 and str_exprs ex =
   String.concat ", " (List.map str_expr ex)
@@ -200,8 +190,6 @@ and str_kvs kvs =
   let kv_string kv =
     let (k, v) = kv in str_expr k ^ " -> " ^ str_expr v in
   String.concat ", " (List.map kv_string kvs)
-
-(* Print Statements BRUG*)
 
 and str_stmt = function
     Block stmts        -> "{\n" ^ str_stmts (Block(stmts)) ^ "\n}"
@@ -222,8 +210,6 @@ and str_stmts = function
   Block(stmts)  -> String.concat "\n" (List.map str_stmt stmts)
   | _           -> ""
 
-(* Print Lambda Functions BRUG*)
-
 and str_if e s1 s2 =
   "if (" ^ str_expr e ^ ") " ^ str_stmt s1 ^ (match s2 with
       Expr Noexpr  -> ""
@@ -233,18 +219,12 @@ and str_lambda lambda =
   "(" ^ str_formals lambda.l_formals ^ ") => " ^ str_types
     lambda.l_return_t ^ " = " ^ str_stmt lambda.l_body
 
-(* Print Patterns BRUG*)
-
 and str_pattern p =
   "| " ^ p.p_mid ^ "(" ^ str_formals p.p_mformals ^ ") => " ^ str_stmt p.p_body
-
-(* Print Functions BRUG*)
 
 and str_func func =
   "def " ^ func.f_name ^ "(" ^ str_formals func.f_formals ^ ") => " ^
     str_types func.f_return_t ^ " = " ^ str_stmt func.f_body
-
-(* Print Actor BRUG*)
 
 let str_actor actor =
   "actor " ^ actor.a_name ^ "(" ^ str_formals actor.a_formals ^ ") {\n" ^

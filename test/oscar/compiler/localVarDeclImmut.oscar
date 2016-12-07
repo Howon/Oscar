@@ -1,0 +1,16 @@
+def main() => unit = {
+	int i = 17;
+	println(i);
+
+	char c = 'c';
+	println(c);
+
+	double d = 42.0;
+	println(d);	
+
+	bool b = true;
+	println(b);
+
+	string s = "brug";
+	println(s);
+}

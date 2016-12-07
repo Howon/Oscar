@@ -1,0 +1,7 @@
+def foo(s: string) => int = {
+	println(s);
+}
+
+def main() => unit = {
+	foo("brug");
+}

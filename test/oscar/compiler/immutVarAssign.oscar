@@ -1,3 +1,4 @@
 def main() => unit = {
-  println(5 + 5);
+	int x = 17;
+	x = 42;
 }
