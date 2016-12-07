@@ -71,7 +71,7 @@ test_scanner() {
     echo "==================================" >> session_file
 
     # Create file to be tested (with tokens)
-    $oscar_compile -a < $oscar_test_file > oscar_test_output
+    $oscar_compile -p < $oscar_test_file > oscar_test_output
 
     #Test output differences use the diff command and neglect screen output
     # diff $oscar_test_output $oscar_test_file$compiler_extension > /dev/null

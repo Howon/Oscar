@@ -51,7 +51,7 @@ let translate (messages, actors, functions) =
       (* todo: this assumes type is int; should grab type from semantic analysis *)
       | A.Id(_)           -> A.Int_t
     in
-      
+
     let (the_function, _) = StringMap.find func.A.f_name function_decls in
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
@@ -75,12 +75,12 @@ let translate (messages, actors, functions) =
           (Array.to_list (L.params the_function))
         in
         (* no adding locals for now, empty list as a substitute *)
-      List.fold_left add_local formals [] 
+      List.fold_left add_local formals []
     in
 
     (* Return the value for a variable or formal argument *)
-    let lookup n = 
-      try StringMap.find n local_vars with 
+    let lookup n =
+      try StringMap.find n local_vars with
           | Not_found -> raise (Failure ("undefined local variable: " ^ n))
     in
 
@@ -130,7 +130,7 @@ let translate (messages, actors, functions) =
           let (fdef, fdecl) = StringMap.find f function_decls in
           let actuals = List.rev (List.map (expr builder) (List.rev act)) in
           let result = (
-            match fdecl.A.f_return_t with 
+            match fdecl.A.f_return_t with
                 A.Unit_t -> ""
               | _ -> f ^ "_result"
             ) in
@@ -141,10 +141,10 @@ let translate (messages, actors, functions) =
 
       (* special expression matcher that turns bools into strings,
           but leaves everything else normal *)
-      let expr_with_bool_string builder = function 
+      let expr_with_bool_string builder = function
           A.Bool_Lit(b) -> expr builder (A.String_Lit(if b then "true" else "false"))
         | e -> expr builder e
-      in 
+      in
 
       (* type to string used to print *)
       let map_type_to_string = function
@@ -193,7 +193,7 @@ let translate (messages, actors, functions) =
     in
 
     (* Build the code for each statement in the function *)
-    let builder = stmt builder (A.Block func.A.f_body) in
+    let builder = stmt builder func.A.f_body in
 
     (* Add a return if the last block falls off the end *)
     add_terminal builder (
