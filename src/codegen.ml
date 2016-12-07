@@ -186,8 +186,22 @@ let translate (messages, actors, functions) =
               A.Unit_t -> L.build_ret_void builder
             | _ -> L.build_ret (expr builder e) builder
           ); builder
+      | A.If (predicate, then_stmt, else_stmt) ->
+        let bool_val = expr builder predicate in
+        let merge_bb = L.append_block context "merge" the_function in
+
+        let then_bb = L.append_block context "then" the_function in
+          add_terminal (stmt (L.builder_at_end context then_bb) then_stmt)
+          (L.build_br merge_bb);
+
+        let else_bb = L.append_block context "else" the_function in
+          add_terminal (stmt (L.builder_at_end context else_bb) else_stmt) 
+          (L.build_br merge_bb);
+
+        ignore (L.build_cond_br bool_val then_bb else_bb builder);
+        L.builder_at_end context merge_bb
       (* todo: ??? *)
-      (* | A.Local(t, s, e) ->
+      (* | A.Local(t, s, e) -> 
           L.build_alloca (ltype_of_typ t) s builder in
           ignore(L.build_store (expr builder e) local builder) *)
     in

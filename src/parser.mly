@@ -164,7 +164,6 @@ mut_vdecl:
   | MUTABLE typ ID ASSIGN expr  { Mutdecl({ mv_name = $3;
                                             mv_type = $2;
                                             mv_init = $5}) }
-
 stmts:
     /* nothing */  { Block([]) }
   | stmt_list      { Block(List.rev $1) }
@@ -172,6 +171,10 @@ stmts:
 stmt_list:
     stmt            { [$1] }
   | stmt_list stmt  { $2 :: $1 }
+
+/*stmts:*/
+  /* nothing */       /*{ Block([]) }*/
+  /*| stmts stmt        { $2 :: $1 }*/
 
 stmt:
     expr PUNC_SEMI                { Expr $1 }
@@ -182,6 +185,7 @@ stmt:
   | fdecl                        { Fdecl($1) }
   | RETURN PUNC_SEMI             { Return Noexpr }
   | RETURN expr PUNC_SEMI        { Return $2 }
+/*| LBRACE stmts RBRACE           { Block(List.rev $2) }*/
   | LBRACE stmts RBRACE          { $2 }
   | stmt_cond                    { $1 }
   | expr ACT_SEND ID PUNC_SEMI
