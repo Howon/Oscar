@@ -1,5 +1,6 @@
 def main() => unit = {
   set<int> intSet1 = set<int>[1, 2, 3, 4, 5];
-  set<int> intSet2 = set<int>[0, 4, 5];
-  println(setIntersect(intSet1, intSet2));
+  set<int> intSet2 = set<int>[1, 2, 4, 7, 9];
+  println(setIntersect(intSet1, intSet2) == set<int>[1, 2, 4]);
+  println(setIntersect(intSet2, intSet1) == set<int>[1, 2, 4]);
 }
