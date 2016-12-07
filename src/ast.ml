@@ -34,7 +34,8 @@ and expr =
   | Message_Lit  of string * (expr list)
   | Binop        of expr * bin_op * expr
   | Uop          of u_op * expr
-  | Call         of string * expr list
+  | FuncCall     of string * expr list
+  | ObjCall      of expr * string * expr
   | Noexpr
 
 and stmt =
@@ -187,7 +188,7 @@ and str_expr = function
                                  " " ^ str_expr e2 ^ ")"
   | Uop (o, e)              -> str_uop o ^ str_expr e
 
-  | Call (s, ex)           -> s ^ "(" ^ str_exprs ex ^ ")"
+  | FuncCall (s, ex)       -> s ^ "(" ^ str_exprs ex ^ ")"
   | Noexpr                 -> ""
 
 and str_exprs ex =

@@ -37,6 +37,12 @@ let build_func (sfn : string) (fl : formal list) (rt : types) (body : sstmt) =
 
 let empty_func = SExpr SNoexpr
 
+let upd_vtable_vals (nsval : sval_decl) (v_table : vsymtab) =
+  { v_table with svals = nsval :: v_table.svals }
+
+let upd_mvtable_vals (nmsvar : smvar_decl) (mv_table : mvsymtab) =
+  { mv_table with smvars = nmsvar :: mv_table.smvars }
+
 let upd_env_vtable (vtab : vsymtab) (env : scope) =
   { env with env_vtable = vtab }
 
@@ -327,7 +333,7 @@ let rec check_expr (e : expr) (env : scope) =
             check_binop checked_e1 checked_e2 op env
     | Uop (op, e) ->
         let checked_e = check_expr e env in check_uop checked_e op
-    | Call (f, args) ->
+    | FuncCall (f, args) ->
         let sfs = find_funcs f env in
           let tex_args = check_exprl args in
             (try
@@ -335,7 +341,7 @@ let rec check_expr (e : expr) (env : scope) =
                 check_func_call f tex_args
               ) sfs in
                 let sargs = get_list_fst tex_args in
-                  (SCall (sf.sf_name, sargs), sf.sf_return_t)
+                  (SFuncCall (sf.sf_name, sargs), sf.sf_return_t)
             with Not_found ->
               raise (Failure ("Function " ^ f ^ " with signature (" ^
                 str_types_list (get_list_snd tex_args) ^ ") => " ^ str_types (
@@ -421,28 +427,26 @@ and check_vdecl (vdecl : val_decl) (env : scope) =
       Lambda_t (_, _) -> raise (Failure "Cannot declare lambda types")
     | _ ->
       let (se, t) = check_expr v_init env in
-      match se with
-          SNoexpr -> raise (Failure ("Must initialize value " ^ v_name))
-        | _ ->
-            if t = v_type then
-              (try
-                let _ = (List.find (fun sval ->
-                  sval.sv_name = v_name
-                ) env.env_vtable.svals) in
-                raise (Failure ("Value " ^ v_name ^ " declared already"))
-              with Not_found ->
-                let svdecl = {
-                  sv_name = v_name;
-                  sv_type = v_type;
-                  sv_init = se
-                } in
-                let nvsymbt = {
-                  env.env_vtable with svals = svdecl :: env.env_vtable.svals;
-                } in (SVdecl svdecl, upd_env_vtable nvsymbt env))
-            else
-              raise (Failure ("Value initialization type mismatch: " ^
-                v_name ^ " is " ^ (str_types v_type) ^ " but initialized as " ^
-                  (str_types t))))
+        match se with
+            SNoexpr -> raise (Failure ("Must initialize value " ^ v_name))
+          | _ ->
+              if t = v_type then
+                (try
+                  let _ = (List.find (fun sval ->
+                    sval.sv_name = v_name
+                  ) env.env_vtable.svals) in
+                  raise (Failure ("Value " ^ v_name ^ " declared already"))
+                with Not_found ->
+                  let svdecl = {
+                    sv_name = v_name;
+                    sv_type = v_type;
+                    sv_init = se
+                  } in let nv_table = upd_vtable_vals svdecl env.env_vtable in
+                    (SVdecl svdecl, upd_env_vtable nv_table env))
+              else
+                raise (Failure ("Value initialization type mismatch: " ^
+                  v_name ^ " is " ^ (str_types v_type) ^ " but initialized " ^
+                    "as " ^ (str_types t))))
 
 and check_mvdecl (mvdecl : mvar_decl) (env : scope) =
   if env.in_actor then
@@ -466,10 +470,8 @@ and check_mvdecl (mvdecl : mvar_decl) (env : scope) =
               smv_name = mv_name;
               smv_type = mv_type;
               smv_init = se;
-            } in
-            let nmvsymbt = {
-              env.env_mvtable with smvars = smvdecl :: env.env_mvtable.smvars;
-            } in (SMutdecl smvdecl, upd_env_mvtable nmvsymbt env))
+            } in let nm_table = upd_mvtable_vals smvdecl env.env_mvtable in
+              (SMutdecl smvdecl, upd_env_mvtable nm_table env))
         else
           raise (Failure ("Variable initialization type mismatch: " ^
             mv_name ^ " is " ^ (str_types mv_type) ^
@@ -516,20 +518,16 @@ and check_func_decl (fdecl : func) (env : scope) =
             (n_vals, snd acc)
     ) (env.env_vtable.svals, env.funcs) f_formals in
     let nv_table = { env.env_vtable with svals = nvals } in
-    let forward_decl = build_func f_name f_formals f_return_t empty_func in
-    let fenv = { env with
-      funcs = forward_decl :: nfuncs;
-      env_vtable = nv_table;
-      return_t = Some f_return_t
-    } in
-    let (cfbody, _) = check_stmt f_body fenv in
-    let sfdecl = {
-      sf_name     = f_name;
-      sf_formals  = f_formals;
-      sf_return_t = f_return_t;
-      sf_body     = cfbody
-    } in let nenv = upd_env_funcs sfdecl env in
-    (SFdecl sfdecl, nenv))
+      let forward_decl = build_func f_name f_formals f_return_t empty_func in
+        let fenv = { env with
+          funcs = forward_decl :: nfuncs;
+          env_vtable = nv_table;
+          return_t = Some f_return_t
+        } in
+          let (cfbody, _) = check_stmt f_body fenv in
+            let sfdecl = build_func f_name f_formals f_return_t cfbody in
+              let nenv = upd_env_funcs sfdecl env in
+                (SFdecl sfdecl, nenv))
 
 and check_stmt_list (sl : stmt list) (ret : bool) (env : scope) =
   let _ = (

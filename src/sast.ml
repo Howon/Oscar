@@ -18,7 +18,7 @@ type sexpr =
   | SMessage_Lit  of string * (sexpr list)
   | SBinop        of sexpr * bin_op * sexpr
   | SUop          of u_op * sexpr
-  | SCall         of string * (sexpr list)
+  | SFuncCall         of string * (sexpr list)
   | SNoexpr
 
 and sstmt =
@@ -113,7 +113,7 @@ let rec str_sexpr = function
                                    ^ " " ^ str_sexpr se2 ^ ")"
   | SUop(o, se)               -> str_uop o ^ str_sexpr se
 
-  | SCall(se, sel)            -> se ^ "(" ^ str_sexprs sel ^ ")"
+  | SFuncCall(se, sel)        -> se ^ "(" ^ str_sexprs sel ^ ")"
   | SNoexpr                   -> ""
 
 and str_sexprs sel =

@@ -254,7 +254,7 @@ expr:
   | expr BITWISE_LEFT   expr                      { Binop($1, Bit_LShift, $3) }
   | ARITH_MINUS expr %prec NEG                    { Uop(Neg, $2) }
   | LOGIC_NOT expr                                { Uop(Not, $2) }
-  | ID LPAREN actuals_opt RPAREN                  { Call($1, $3) }
+  | ID LPAREN actuals_opt RPAREN                  { FuncCall($1, $3) }
   | LPAREN expr RPAREN                            { $2 }
   | lambda                                        { $1 }
   | expr ASSIGN expr                              { Binop($1, Assign, $3) }
