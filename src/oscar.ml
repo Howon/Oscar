@@ -3,7 +3,7 @@
 
 open Sast
 
-type action = LLVM_IR | Compile | Sast
+type action = LLVM_IR | Compile | Ast | Sast
 
 let _ =
   let arg_len = Array.length Sys.argv in
@@ -15,6 +15,7 @@ let _ =
         (List.assoc Sys.argv.(1) [
                 ("-l", LLVM_IR);    (* Generate LLVM, don't check *)
                 ("-c", Compile);    (* Generate, check LLVM IR *)
+                ("-p", Ast);        (* Don't gen LLVM, just prettyprint ast *)
                 ("-s", Sast) (* Don't generate LLVM, just prettyprint *)
         ], open_in Sys.argv.(2))
     else
@@ -34,9 +35,9 @@ let _ =
 (* let ast = Parser.program Scanner.token lexbuf in
   Semant.check ast; *)
   match action with
-   (* Ast -> print_string (Ast.string_of_program ast) *)
-    Sast     -> print_endline (Sast.str_sprogram sprogram)
-  | LLVM_IR  -> print_string
+    Ast       -> print_endline (Ast.str_program program)
+  | Sast      -> print_endline (Sast.str_sprogram sprogram)
+  | LLVM_IR   -> print_string
       (Llvm.string_of_llmodule (Codegen.translate program))
   | Compile  -> let m = Codegen.translate program in
       Llvm_analysis.assert_valid_module m;
