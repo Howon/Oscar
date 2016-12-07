@@ -625,6 +625,8 @@ let stdlib_funcs =
   let empty_func = SExpr SNoexpr in
   [
     build_func "println" [("", String_t)] Unit_t empty_func;
+    build_func "println" [("", String_t)] Unit_t empty_func;
+    build_func "listReverse" [("", List_t())] List_t empty_func;
   ]
 
 let check_program (p : program) =
