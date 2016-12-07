@@ -1,0 +1,8 @@
+def main() => unit = {
+  println(true && true);
+  println(true && false);
+  println(false && false);
+  println(true || true);
+  println(true || false);
+  println(false || false);
+}
