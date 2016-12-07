@@ -3,6 +3,7 @@
  */
 
 actor Types() {
+  int a = 4;
   int pos_i = 1;
   int neg_i = -1;
   double d = 2.5;
@@ -32,7 +33,11 @@ actor Types() {
   mut set<int> mIntSet;
   mut map<int, char> mICM;
 
-  def apply(f: lambda (double) => double, a: double) => double = {
+  def apply(f: lambda (double) => double , a: double) => double = {
+    def t(x : int) => unit = {
+    }
+
+    t(4);
     return f(a);
   }
 
