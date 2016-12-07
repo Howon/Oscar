@@ -1,4 +1,4 @@
 def main() => unit = {
-  int x = 4.0;
+  double x = 4.0;
   println(asInt(x));
 }
