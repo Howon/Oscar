@@ -67,6 +67,28 @@ let translate (messages, actors, functions) =
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
 
+
+       (* let local_vars =
+      let add_formal m (n, t) p = L.set_value_name n p;
+      let local = L.build_alloca (ltype_of_typ t) n builder in
+        ignore (L.build_store p local builder);
+        StringMap.add n local m
+      in
+
+      (* not adding locals for now, note locals should be in format (type, name)
+          as opposed to (name, type) for formals above *)
+      let add_local m (t, n) =
+        let local_var = L.build_alloca (ltype_of_typ t) n builder in
+        StringMap.add n local_var m in
+
+        let formals = List.fold_left2 add_formal StringMap.empty func.A.f_formals
+          (Array.to_list (L.params the_function))
+        in
+        (* no adding locals for now, empty list as a substitute *)
+      List.fold_left add_local formals []
+    in *)
+
+
       (* let add_formal (n, t) p = 
       L.set_value_name n p;
 
@@ -94,14 +116,14 @@ let translate (messages, actors, functions) =
         builder *)
 
 
-      let add_formal (n, t) p = 
-        let local = L.build_alloca (ltype_of_typ t) n builder in
-          L.build_store p local builder;
-          Hashtbl.add local_vars n local;
-          L.set_value_name n p;
-          (n, t)
-      in 
-      List.fold_left2 add_formal func.A.f_formals Array.to_list (L.params the_function);
+    let add_local (n, t) p = 
+      let local = L.build_alloca (ltype_of_typ t) n builder in
+        L.build_store p local builder;
+        Hashtbl.add local_vars n local;
+        L.set_value_name n p;
+        (n, t)
+    in 
+    List.map2 add_local func.A.f_formals (Array.to_list (L.params the_function));
 
     (* Return the value for a variable or formal argument *)
     let lookup n =
