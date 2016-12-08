@@ -632,6 +632,9 @@ let check_program (p : program) =
   [
     build_func "println" [("", String_t)] Unit_t empty_func;
     build_func "println" [("", Int_t)] Unit_t empty_func;
+    build_func "println" [("", Double_t)] Unit_t empty_func;
+    build_func "println" [("", Char_t)] Unit_t empty_func;
+    build_func "println" [("", Bool_t)] Unit_t empty_func;
   ] in
   let seed_env = {
     messages = [];
