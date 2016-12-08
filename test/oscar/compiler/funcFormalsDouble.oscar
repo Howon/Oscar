@@ -1,4 +1,4 @@
-def foo(d: double) => int = {
+def foo(d: double) => unit = {
 	println(d);
 }
 

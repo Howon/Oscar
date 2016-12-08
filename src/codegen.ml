@@ -201,7 +201,7 @@ let translate (messages, actors, functions) =
         ignore (L.build_cond_br bool_val then_bb else_bb builder);
         L.builder_at_end context merge_bb
       (* todo: ??? *)
-      (* | A.Local(t, s, e) -> 
+      (* | A.Local(t, s, e) ->
           L.build_alloca (ltype_of_typ t) s builder in
           ignore(L.build_store (expr builder e) local builder) *)
     in
