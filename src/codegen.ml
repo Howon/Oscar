@@ -2,6 +2,10 @@ module L = Llvm
 module A = Ast
 
 module StringMap = Map.Make(String)
+open Hashtbl
+(* module Hashtbl = Hashtbl.Make(String) *)
+
+let local_vars = Hashtbl.create 50
 
 let translate (messages, actors, functions) =
   let context = L.global_context () in
@@ -37,6 +41,9 @@ let translate (messages, actors, functions) =
   (* Fill in the body of the given function *)
   let build_function_body func =
 
+    (* clear hashtable *)
+    ignore(Hashtbl.clear local_vars);
+
     (* params to types *)
     let rec map_param_to_type = function
         A.Int_Lit(_)      -> A.Int_t
@@ -55,14 +62,16 @@ let translate (messages, actors, functions) =
     let (the_function, _) = StringMap.find func.A.f_name function_decls in
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
+
     (* Construct the function's "locals": formal arguments and locally
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
-    let local_vars =
-      let add_formal m (n, t) p = L.set_value_name n p;
+
+      (* let add_formal (n, t) p = 
+      L.set_value_name n p;
+
       let local = L.build_alloca (ltype_of_typ t) n builder in
-        ignore (L.build_store p local builder);
-        StringMap.add n local m
+        ignore (L.build_store p local builder)
       in
 
       (* not adding locals for now, note locals should be in format (type, name)
@@ -71,16 +80,32 @@ let translate (messages, actors, functions) =
         let local_var = L.build_alloca (ltype_of_typ t) n builder in
         StringMap.add n local_var m in
 
-        let formals = List.fold_left2 add_formal StringMap.empty func.A.f_formals
+        let formals = List.fold_left2 add_formal func.A.f_formals
           (Array.to_list (L.params the_function))
         in
         (* no adding locals for now, empty list as a substitute *)
-      List.fold_left add_local formals []
-    in
+      List.fold_left add_local formals []; *)
+
+   (*  let init_val = expr builder val_decl.v_init in
+      let local = L.build_alloca (ltype_of_typ val_decl.v_type) val_decl.v_name builder in
+        L.build_store init_val local builder;
+        L.set_value_name val_decl.v_name init_val;
+        Hashtbl.add local_vars val_decl.v_name local; 
+        builder *)
+
+
+      let add_formal (n, t) p = 
+        let local = L.build_alloca (ltype_of_typ t) n builder in
+          L.build_store p local builder;
+          Hashtbl.add local_vars n local;
+          L.set_value_name n p;
+          (n, t)
+      in 
+      List.fold_left2 add_formal func.A.f_formals Array.to_list (L.params the_function);
 
     (* Return the value for a variable or formal argument *)
     let lookup n =
-      try StringMap.find n local_vars with
+      try Hashtbl.find local_vars n with
           | Not_found -> raise (Failure ("undefined local variable: " ^ n))
     in
 
@@ -124,7 +149,6 @@ let translate (messages, actors, functions) =
                 | A.Double_t -> L.const_fneg)
             | A.Not -> L.const_not
           ) e'
-      | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
       | A.Call ("println", el) -> build_print_call el builder
       | A.Call (f, act) ->
           let (fdef, fdecl) = StringMap.find f function_decls in
@@ -186,10 +210,13 @@ let translate (messages, actors, functions) =
               A.Unit_t -> L.build_ret_void builder
             | _ -> L.build_ret (expr builder e) builder
           ); builder
-      (* todo: ??? *)
-      (* | A.Local(t, s, e) -> 
-          L.build_alloca (ltype_of_typ t) s builder in
-          ignore(L.build_store (expr builder e) local builder) *)
+      | A.Vdecl(val_decl) ->
+          let init_val = expr builder val_decl.v_init in
+            let local = L.build_alloca (ltype_of_typ val_decl.v_type) val_decl.v_name builder in
+              L.build_store init_val local builder;
+              L.set_value_name val_decl.v_name init_val;
+              Hashtbl.add local_vars val_decl.v_name local; 
+              builder
     in
 
     (* Build the code for each statement in the function *)
