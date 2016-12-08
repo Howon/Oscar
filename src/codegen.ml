@@ -63,19 +63,18 @@ let translate (messages, actors, functions) =
     let (the_function, _) = StringMap.find func.A.f_name function_decls in
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
-
-    (* Construct the function's "locals": formal arguments and locally
-       declared variables.  Allocate each on the stack, initialize their
-       value, if appropriate, and remember their values in the "locals" map *)
-
-    (* Add a local varible to the Hashtbl local_vars *)
+    (* Add a local varible to the Hashtbl local_vars:
+        Allocate on the stack, initialize its value, 
+        and add to Hashtbl local_vars *)
     let add_local (n, t) p = 
       let local = L.build_alloca (ltype_of_typ t) n builder in
         L.build_store p local builder;
         Hashtbl.add local_vars n local;
         L.set_value_name n p;
     in 
+    (* add all the formals for the function to the Hashtbl local_vars *)
     List.map2 add_local func.A.f_formals (Array.to_list (L.params the_function));
+
 
     (* Return the value for a variable or formal argument *)
     let lookup n =
