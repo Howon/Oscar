@@ -1,0 +1,19 @@
+message testNow()
+
+
+actor Tester() {
+  mut string s = "unchanged";
+  
+  receive = {
+    | testNow() => {
+        println(s == "changed");
+		s = "changed";
+		println(s == "changed");
+    }
+  }
+}
+
+def main() => unit = {
+  actor<Tester> stringTester = spawn actor<Tester>();
+  message<testNow>() |> stringTester;
+}
