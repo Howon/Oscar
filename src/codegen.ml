@@ -18,6 +18,7 @@ let translate (messages, actors, functions) =
 
   let ltype_of_typ = function
       A.Int_t     -> i32_t
+    | A.Char_t    -> i8_t
     | A.Bool_t    -> i1_t
     | A.Unit_t    -> void_t
     | A.Double_t  -> f_t
@@ -121,7 +122,6 @@ let translate (messages, actors, functions) =
         L.build_store p local builder;
         Hashtbl.add local_vars n local;
         L.set_value_name n p;
-        (n, t)
     in 
     List.map2 add_local func.A.f_formals (Array.to_list (L.params the_function));
 
