@@ -55,7 +55,7 @@ let translate (messages, actors, functions) =
       | A.Binop(e1, _, _) -> map_param_to_type e1
                                 (* temp fix, grabs type of left arg *)
       | A.Uop(_, e)       -> map_param_to_type e
-      | A.Call(_, _)      -> A.Int_t
+      | A.FuncCall(_, _)      -> A.Int_t
       (* todo: this assumes type is int; should grab type from semantic analysis *)
       | A.Id(_)           -> A.Int_t
     in
@@ -123,8 +123,8 @@ let translate (messages, actors, functions) =
                 | A.Double_t -> L.const_fneg)
             | A.Not -> L.const_not
           ) e'
-      | A.Call ("println", el) -> build_print_call el builder
-      | A.Call (f, act) ->
+      | A.FuncCall("println", el) -> build_print_call el builder
+      | A.FuncCall (f, act) ->
           let (fdef, fdecl) = StringMap.find f function_decls in
           let actuals = List.rev (List.map (expr builder) (List.rev act)) in
           let result = (
@@ -189,6 +189,20 @@ let translate (messages, actors, functions) =
             let tup = (val_decl.v_name, val_decl.v_type) in
               add_local tup init_val;
             builder;
+      | A.If (predicate, then_stmt, else_stmt) ->
+          let bool_val = expr builder predicate in
+          let merge_bb = L.append_block context "merge" the_function in
+
+          let then_bb = L.append_block context "then" the_function in
+            add_terminal (stmt (L.builder_at_end context then_bb) then_stmt)
+            (L.build_br merge_bb);
+
+          let else_bb = L.append_block context "else" the_function in
+            add_terminal (stmt (L.builder_at_end context else_bb) else_stmt) 
+            (L.build_br merge_bb);
+
+          ignore (L.build_cond_br bool_val then_bb else_bb builder);
+          L.builder_at_end context merge_bb
     in
 
     (* Build the code for each statement in the function *)

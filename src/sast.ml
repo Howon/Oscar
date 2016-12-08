@@ -18,12 +18,12 @@ type sexpr =
   | SMessage_Lit  of string * (sexpr list)
   | SBinop        of sexpr * bin_op * sexpr
   | SUop          of u_op * sexpr
-  | SCall         of string * (sexpr list)
+  | SFuncCall     of string * (sexpr list)
   | SNoexpr
 
 and sstmt =
     SBlock       of sstmt list
-  | SExpr        of sexpr
+  | SExpr        of t_expr
   | SReturn      of sexpr
   | SVdecl       of sval_decl
   | SMutdecl     of smvar_decl
@@ -109,11 +109,10 @@ let rec str_sexpr = function
                                      str_sexpr num ^ ")"
   | SMessage_Lit(m, sel)      -> "message<" ^ m ^ ">(" ^
                                    str_sexprs sel ^ ")"
-  | SBinop(se1, o, se2)       -> "(" ^ str_sexpr se1 ^ " " ^ str_binop o
-                                   ^ " " ^ str_sexpr se2 ^ ")"
+  | SBinop(se1, o, se2)       -> "(" ^ str_sexpr se1 ^ " " ^ str_binop o ^ " " ^
+                                   str_sexpr se2 ^ ")"
   | SUop(o, se)               -> str_uop o ^ str_sexpr se
-
-  | SCall(se, sel)            -> se ^ "(" ^ str_sexprs sel ^ ")"
+  | SFuncCall(se, sel)        -> se ^ "(" ^ str_sexprs sel ^ ")"
   | SNoexpr                   -> ""
 
 and str_sexprs sel =
@@ -126,7 +125,7 @@ and str_skvs skvs =
 
 and str_sstmt = function
     SBlock(sstmts)     -> "{\n" ^ str_sstmts (SBlock(sstmts)) ^ "\n}"
-  | SExpr(se)          -> str_sexpr se ^ ";"
+  | SExpr texp          -> str_sexpr (let (se, _) = texp in se) ^ ";"
   | SReturn(se)        -> "return " ^ str_sexpr se ^ ";"
   | SMutdecl(smv)      -> "mut " ^ (str_types smv.smv_type) ^ " " ^
                             smv.smv_name ^ (match smv.smv_init with
@@ -139,13 +138,26 @@ and str_sstmt = function
   | SActor_send(se, a) -> (str_sexpr se) ^ " |> " ^ str_sexpr a ^ ";"
   | SPool_send(se, p)  -> (str_sexpr se) ^ " |>> " ^ str_sexpr p ^ ";"
 
+
+  | SReturn se          -> "return " ^ str_sexpr se ^ ";"
+  | SMutdecl smv        -> "mut " ^ (str_types smv.smv_type) ^ " " ^
+                             smv.smv_name ^ (match smv.smv_init with
+                                 SNoexpr -> ""
+                               | _ -> " = " ^ (str_sexpr smv.smv_init)) ^ ";"
+  | SVdecl sv           -> (str_types sv.sv_type) ^ " " ^ sv.sv_name ^ " = " ^
+                             (str_sexpr sv.sv_init) ^ ";"
+  | SFdecl sf           -> str_sfunc sf
+  | SIf (se, s1, s2)    -> str_sif se s1 s2
+  | SActor_send (se, a) -> (str_sexpr se) ^ " |> " ^ str_sexpr a ^ ";"
+  | SPool_send (se, p)  -> (str_sexpr se) ^ " |>> " ^ str_sexpr p ^ ";"
+
 and str_sstmts = function
     SBlock(sstmts)  -> String.concat "\n" (List.map str_sstmt sstmts)
   | _           -> ""
 
 and str_sif se s1 s2 =
   "if (" ^ str_sexpr se ^ ") " ^ str_sstmt s1 ^ (match s2 with
-      SExpr(SNoexpr)  -> ""
+      SExpr (SNoexpr, _)  -> ""
     | _  -> " else " ^ str_sstmt s2)
 
 and str_slambda slambda =

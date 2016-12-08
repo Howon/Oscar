@@ -35,7 +35,7 @@ type actor_scope = {
 let build_func (sfn : string) (fl : formal list) (rt : types) (body : sstmt) =
   { sf_name = sfn; sf_formals = fl; sf_return_t = rt; sf_body = body; }
 
-let empty_func = SExpr SNoexpr
+let empty_body = SExpr (SNoexpr, Unit_t)
 
 let upd_env_vtable (vtab : vsymtab) (env : scope) =
   { env with env_vtable = vtab }
@@ -327,7 +327,7 @@ let rec check_expr (e : expr) (env : scope) =
             check_binop checked_e1 checked_e2 op env
     | Uop (op, e) ->
         let checked_e = check_expr e env in check_uop checked_e op
-    | Call (f, args) ->
+    | FuncCall (f, args) ->
         let sfs = find_funcs f env in
           let tex_args = check_exprl args in
             (try
@@ -335,7 +335,7 @@ let rec check_expr (e : expr) (env : scope) =
                 check_func_call f tex_args
               ) sfs in
                 let sargs = get_list_fst tex_args in
-                  (SCall (sf.sf_name, sargs), sf.sf_return_t)
+                  (SFuncCall (sf.sf_name, sargs), sf.sf_return_t)
             with Not_found ->
               raise (Failure ("Function " ^ f ^ " with signature (" ^
                 str_types_list (get_list_snd tex_args) ^ ") => " ^ str_types (
@@ -356,7 +356,7 @@ and check_stmt (s : stmt) (env : scope) =
           | _       -> false
         ) in let (checked_stmts, _) = check_stmt_list sl must_return nenv in
         (SBlock checked_stmts, env)
-    | Expr e -> (SExpr (fst (check_expr e env)), env)
+    | Expr e -> (SExpr (check_expr e env), env)
     | Return e ->
         let (sexpr, t) = check_expr e env in
         (match env.return_t with
@@ -504,7 +504,7 @@ and check_func_decl (fdecl : func) (env : scope) =
               sf_name     = formal_name;
               sf_return_t = lrt;
               sf_formals  = gen_lambda_formals lfl;
-              sf_body     = SExpr SNoexpr
+              sf_body     = empty_body
             } :: snd acc in
             (fst acc, n_funcs)
         | _ ->
@@ -516,7 +516,7 @@ and check_func_decl (fdecl : func) (env : scope) =
             (n_vals, snd acc)
     ) (env.env_vtable.svals, env.funcs) f_formals in
     let nv_table = { env.env_vtable with svals = nvals } in
-    let forward_decl = build_func f_name f_formals f_return_t empty_func in
+    let forward_decl = build_func f_name f_formals f_return_t empty_body in
     let fenv = { env with
       funcs = forward_decl :: nfuncs;
       env_vtable = nv_table;
@@ -630,11 +630,11 @@ let check_program (p : program) =
   let empty_mvsymtab = { mvparent = None; smvars =  [] } in
   let stdlib_funcs =
   [
-    build_func "println" [("", String_t)] Unit_t empty_func;
-    build_func "println" [("", Int_t)] Unit_t empty_func;
-    build_func "println" [("", Double_t)] Unit_t empty_func;
-    build_func "println" [("", Char_t)] Unit_t empty_func;
-    build_func "println" [("", Bool_t)] Unit_t empty_func;
+    build_func "println" [("", String_t)] Unit_t empty_body;
+    build_func "println" [("", Int_t)] Unit_t empty_body;
+    build_func "println" [("", Double_t)] Unit_t empty_body;
+    build_func "println" [("", Char_t)] Unit_t empty_body;
+    build_func "println" [("", Bool_t)] Unit_t empty_body;
   ] in
   let seed_env = {
     messages = [];
