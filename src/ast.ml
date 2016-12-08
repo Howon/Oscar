@@ -34,7 +34,7 @@ and expr =
   | Message_Lit  of string * (expr list)
   | Binop        of expr * bin_op * expr
   | Uop          of u_op * expr
-  | Call         of string * expr list
+  | FuncCall     of string * expr list
   | Noexpr
 
 and stmt =
@@ -163,23 +163,23 @@ and str_expr = function
   | Access (cont, it)       -> str_expr cont ^ "[" ^ str_expr it ^ "]"
   | Lambda lambda           -> str_lambda lambda
   | List_Lit (t, ex)        -> "list<" ^  str_types t  ^ ">[" ^
-                                str_exprs ex  ^ "]"
+                                 str_exprs ex  ^ "]"
   | Set_Lit (t, ex)         -> "set<" ^  str_types t  ^ ">[" ^
-                                str_exprs ex  ^ "]"
+                                 str_exprs ex  ^ "]"
   | Map_Lit (kt, vt, kvs)   -> "map<" ^ str_types kt ^ ", " ^
-                                str_types vt ^ ">[" ^ str_kvs kvs ^ "]"
+                                 str_types vt ^ ">[" ^ str_kvs kvs ^ "]"
   | Actor_Lit (at, ex)      -> "spawn actor<" ^ at ^ ">(" ^
-                                str_exprs ex ^ ")"
+                                 str_exprs ex ^ ")"
   | Pool_Lit (at, ex, num)  -> "spawn pool<" ^ at ^ ">({" ^
-                                str_exprs ex ^ "}, " ^
-                                  str_expr num ^ ")"
+                                 str_exprs ex ^ "}, " ^
+                                   str_expr num ^ ")"
   | Message_Lit (m, ex)     -> "message<" ^ m ^ ">(" ^
-                                str_exprs ex ^ ")"
+                                 str_exprs ex ^ ")"
   | Binop (e1, o, e2)       -> "(" ^ str_expr e1 ^ " " ^ str_binop o ^
                                  " " ^ str_expr e2 ^ ")"
   | Uop (o, e)              -> str_uop o ^ str_expr e
 
-  | Call (s, ex)            -> s ^ "(" ^ str_exprs ex ^ ")"
+  | FuncCall (s, ex)        -> s ^ "(" ^ str_exprs ex ^ ")"
   | Noexpr                  -> ""
 
 and str_exprs ex =

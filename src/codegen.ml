@@ -47,7 +47,7 @@ let translate (messages, actors, functions) =
       | A.Binop(e1, _, _) -> map_param_to_type e1
                                 (* temp fix, grabs type of left arg *)
       | A.Uop(_, e)       -> map_param_to_type e
-      | A.Call(_, _)      -> A.Int_t
+      | A.FuncCall(_, _)      -> A.Int_t
       (* todo: this assumes type is int; should grab type from semantic analysis *)
       | A.Id(_)           -> A.Int_t
     in
@@ -125,8 +125,8 @@ let translate (messages, actors, functions) =
             | A.Not -> L.const_not
           ) e'
       | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
-      | A.Call ("println", el) -> build_print_call el builder
-      | A.Call (f, act) ->
+      | A.FuncCall("println", el) -> build_print_call el builder
+      | A.FuncCall (f, act) ->
           let (fdef, fdecl) = StringMap.find f function_decls in
           let actuals = List.rev (List.map (expr builder) (List.rev act)) in
           let result = (
@@ -187,7 +187,7 @@ let translate (messages, actors, functions) =
             | _ -> L.build_ret (expr builder e) builder
           ); builder
       (* todo: ??? *)
-      (* | A.Local(t, s, e) -> 
+      (* | A.Local(t, s, e) ->
           L.build_alloca (ltype_of_typ t) s builder in
           ignore(L.build_store (expr builder e) local builder) *)
     in

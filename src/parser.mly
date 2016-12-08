@@ -23,6 +23,7 @@
 %token EOF
 
 %nonassoc NOELSE
+%left ACT_SEND ACT_BROADCAST
 %right ASSIGN
 %left FUNC_ARG_TYPE ARROW FUNC_RET_TYPE
 %left LOGIC_AND LOGIC_OR
@@ -33,7 +34,6 @@
 %left ARITH_PLUS ARITH_MINUS
 %left ARITH_TIMES ARITH_DIVIDE ARITH_MOD
 %right LOGIC_NOT
-%left ACT_SEND ACT_BROADCAST
 
 %right NEG /* for negative numbers */
 
@@ -254,11 +254,11 @@ expr:
   | expr BITWISE_LEFT   expr                      { Binop($1, Bit_LShift, $3) }
   | ARITH_MINUS expr %prec NEG                    { Uop(Neg, $2) }
   | LOGIC_NOT expr                                { Uop(Not, $2) }
-  | ID LPAREN actuals_opt RPAREN                  { Call($1, $3) }
+  | ID LPAREN actuals_opt RPAREN                  { FuncCall($1, $3) }
   | LPAREN expr RPAREN                            { $2 }
   | lambda                                        { $1 }
   | expr ASSIGN expr                              { Binop($1, Assign, $3) }
-  | expr LBRACKET expr RBRACKET                     { Access($1, $3) }
+  | expr LBRACKET expr RBRACKET                   { Access($1, $3) }
 
 lambda:
   LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
