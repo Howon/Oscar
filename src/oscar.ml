@@ -16,7 +16,7 @@ let _ =
                 ("-l", LLVM_IR);    (* Generate LLVM, don't check *)
                 ("-c", Compile);    (* Generate, check LLVM IR *)
                 ("-p", Ast);        (* Don't gen LLVM, just prettyprint ast *)
-                ("-s", Sast) (* Don't generate LLVM, just prettyprint *)
+                ("-s", Sast)        (* Don't generate LLVM, just prettyprint *)
         ], open_in Sys.argv.(2))
     else
       (Compile, open_in Sys.argv.(1))
