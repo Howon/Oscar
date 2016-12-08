@@ -124,7 +124,6 @@ let translate (messages, actors, functions) =
                 | A.Double_t -> L.const_fneg)
             | A.Not -> L.const_not
           ) e'
-      | A.String_Lit(s) -> L.build_global_stringptr s "tmp" builder
       | A.FuncCall("println", el) -> build_print_call el builder
       | A.FuncCall (f, act) ->
           let (fdef, fdecl) = StringMap.find f function_decls in
