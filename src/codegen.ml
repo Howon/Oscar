@@ -68,55 +68,7 @@ let translate (messages, actors, functions) =
        declared variables.  Allocate each on the stack, initialize their
        value, if appropriate, and remember their values in the "locals" map *)
 
-
-       (* let local_vars =
-      let add_formal m (n, t) p = L.set_value_name n p;
-      let local = L.build_alloca (ltype_of_typ t) n builder in
-        ignore (L.build_store p local builder);
-        StringMap.add n local m
-      in
-
-      (* not adding locals for now, note locals should be in format (type, name)
-          as opposed to (name, type) for formals above *)
-      let add_local m (t, n) =
-        let local_var = L.build_alloca (ltype_of_typ t) n builder in
-        StringMap.add n local_var m in
-
-        let formals = List.fold_left2 add_formal StringMap.empty func.A.f_formals
-          (Array.to_list (L.params the_function))
-        in
-        (* no adding locals for now, empty list as a substitute *)
-      List.fold_left add_local formals []
-    in *)
-
-
-      (* let add_formal (n, t) p = 
-      L.set_value_name n p;
-
-      let local = L.build_alloca (ltype_of_typ t) n builder in
-        ignore (L.build_store p local builder)
-      in
-
-      (* not adding locals for now, note locals should be in format (type, name)
-          as opposed to (name, type) for formals above *)
-      let add_local m (t, n) =
-        let local_var = L.build_alloca (ltype_of_typ t) n builder in
-        StringMap.add n local_var m in
-
-        let formals = List.fold_left2 add_formal func.A.f_formals
-          (Array.to_list (L.params the_function))
-        in
-        (* no adding locals for now, empty list as a substitute *)
-      List.fold_left add_local formals []; *)
-
-   (*  let init_val = expr builder val_decl.v_init in
-      let local = L.build_alloca (ltype_of_typ val_decl.v_type) val_decl.v_name builder in
-        L.build_store init_val local builder;
-        L.set_value_name val_decl.v_name init_val;
-        Hashtbl.add local_vars val_decl.v_name local; 
-        builder *)
-
-
+    (* Add a local varible to the Hashtbl local_vars *)
     let add_local (n, t) p = 
       let local = L.build_alloca (ltype_of_typ t) n builder in
         L.build_store p local builder;
@@ -233,12 +185,10 @@ let translate (messages, actors, functions) =
             | _ -> L.build_ret (expr builder e) builder
           ); builder
       | A.Vdecl(val_decl) ->
-          let init_val = expr builder val_decl.v_init in
-            let local = L.build_alloca (ltype_of_typ val_decl.v_type) val_decl.v_name builder in
-              L.build_store init_val local builder;
-              L.set_value_name val_decl.v_name init_val;
-              Hashtbl.add local_vars val_decl.v_name local; 
-              builder
+          let init_val = expr builder val_decl.v_init in 
+            let tup = (val_decl.v_name, val_decl.v_type) in
+              add_local tup init_val;
+            builder;
     in
 
     (* Build the code for each statement in the function *)
