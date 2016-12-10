@@ -47,5 +47,5 @@ actor Types() {
 }
 
 def main() => unit = {
-  println("Hello World!");
+  Println("Hello World!");
 }
