@@ -41,9 +41,8 @@ rule token = parse
   | '/'                   { ARITH_DIVIDE }
   | '%'                   { ARITH_MOD }
 
-  (* comma, dot, semi *)
+  (* comma, semi *)
   | ','                   { PUNC_COMMA }
-  | '.'                   { PUNC_DOT }
   | ';'                   { PUNC_SEMI }
 
   (* logic *)
