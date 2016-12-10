@@ -1,0 +1,11 @@
+message testNow()
+message testLater()
+
+actor Tester() {
+  
+  receive = {
+    | testLater() => {
+        println("Error1");
+	}
+  }
+}
