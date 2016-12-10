@@ -6,9 +6,9 @@ actor Tester() {
   
   receive = {
     | testNow() => {
-        println(s == "changed");
+        Println(s == "changed");
 		s = "changed";
-		println(s == "changed");
+		Println(s == "changed");
     }
   }
 }

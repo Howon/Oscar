@@ -1,4 +1,4 @@
 def main() => unit = {
   string s = "string";
-  println("pull " + s);
+  Println("pull " + s);
 }

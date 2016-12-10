@@ -1,7 +1,7 @@
 def main() => unit = {
   if (1 > 2) {
-    println("if2 broken");
+    Println("if2 broken");
   } else {
-    println("if2 verified");
+    Println("if2 verified");
   }
 }

@@ -1,7 +1,7 @@
 def main() => unit = {
-  string s = strFilter((x:char) => char = { 
+  string s = Filter((x:char) => char = { 
     return x != ‘l’;
   }, "hello world");
-  println(s);
+  Println(s);
 }
 

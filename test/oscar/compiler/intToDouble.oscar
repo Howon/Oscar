@@ -1,4 +1,4 @@
 def main() => unit = {
   int x = 4;
-  println(asDouble(x));
+  Println(AsDouble(x));
 }

@@ -3,11 +3,12 @@ message testNow()
 
 actor Tester() {
   mut int x = 0;
+  
   receive = {
     | testNow() => {
-        println(x);
+        Println(x);
 		x = x + 1;
-		println(x);
+		Println(x);
     }
   }
 }

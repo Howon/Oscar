@@ -1,6 +1,6 @@
 def main() => unit = {
-  println(!false);
-  println(!true);
-  println(!true && !false);
-  println(!true || !false));
+  Println(!false);
+  Println(!true);
+  Println(!true && !false);
+  Println(!true || !false));
 }

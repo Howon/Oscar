@@ -5,7 +5,7 @@ actor Tester() {
   
   receive = {
     | testNow() => {
-        println(apply((x:int) => int = { return x - 10; }, 11));
+        Println(apply((x:int) => int = { return x - 10; }, 11));
     }
   }
 }

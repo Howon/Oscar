@@ -1,4 +1,4 @@
 def main() => unit = {
   string s1 = "string1";
-  println(strSubstring(s1, 2, 5));
+  Println(Substring(s1, 2, 5));
 }

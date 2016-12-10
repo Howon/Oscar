@@ -5,7 +5,7 @@ actor Tester() {
   
   receive = {
     | testNow() => {
-        println(10);
+        Println(10);
     }
   }
 }

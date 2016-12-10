@@ -1,5 +1,5 @@
 def main() => unit = {
-  println(list<int>[]);
-  println(list<int>[1, 2, 3, 4, 5]);
-  println(list<double>[6.0, 7.0, 8.0]);
+  Println(list<int>[]);
+  Println(list<int>[1, 2, 3, 4, 5]);
+  Println(list<string>["hey", "hi", "hello"]);
 }

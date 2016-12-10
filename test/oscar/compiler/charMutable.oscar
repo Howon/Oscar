@@ -6,9 +6,9 @@ actor Tester() {
   
   receive = {
     | testNow() => {
-        println(c);
+        Println(c);
 		c = 'b';
-		println(c);
+		Println(c);
     }
   }
 }

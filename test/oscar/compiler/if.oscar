@@ -1,5 +1,5 @@
 def main() => unit = {
   if (2 > 1) {
-    println("if1 verified");
+    Println("if1 verified");
   }
 }

@@ -7,7 +7,7 @@ actor Tester() {
   receive = {
     | testNow() => {
 		set<int> s2 = setAdd(s1, 6);
-		println(s1 == s2);
+		Println(s1 == s2);
     }
   }
 }

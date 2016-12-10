@@ -1,6 +1,6 @@
 def main() => unit = {
-  println(set<int>[]);
-  println(set<int>[1]);
-  println(set<int>[2, 2, 2]);
-  println(set<int>[1, 2, 3] == set<int>[3, 2, 1])
+  Println(set<int>[]);
+  Println(set<int>[1]);
+  Println(set<int>[2, 2, 2]);
+  Println(set<int>[1, 2, 3] == set<int>[3, 2, 1])
 }

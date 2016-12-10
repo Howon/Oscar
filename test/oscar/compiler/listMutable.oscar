@@ -7,9 +7,9 @@ actor Tester() {
   
   receive = {
     | testNow() => {
-        println(l1 == l2);
+        Println(l1 == l2);
 		list<int> l3 = (l1[0] = 0);
-		println(l1 == l2);
+		Println(l1 == l2);
     }
   }
 }
