@@ -5,10 +5,10 @@ actor Tester() {
   
   receive = {
     | testNow() => {
-        println("Error1");
+        Println("Error1");
 	}
 	| testNow() => {
-	    println("Error2");
+	    Println("Error2");
     }
   }
 }

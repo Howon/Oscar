@@ -1,1 +1,1 @@
-Value initialization type mismatch: x is Int_t but initialized as Double_t
+Value initialization type mismatch: x is int but initialized as double

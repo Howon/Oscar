@@ -1,11 +1,14 @@
 message testNow()
-message testLater()
+
 
 actor Tester() {
   
   receive = {
+    | testNow() => {
+        Println("Error1");
+	}
     | testLater() => {
-        println("Error1");
+        Println("Error1");
 	}
   }
 }

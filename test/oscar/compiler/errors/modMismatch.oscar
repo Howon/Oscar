@@ -1,3 +1,3 @@
 def main() => unit = {
-  println(3.0 % 2.0);
+  Println(3.0 % 2.0);
 }

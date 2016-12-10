@@ -5,12 +5,12 @@ actor Tester() {
   
   receive = {
     | testNow() => {
-        println("Error");
+        Println("Error");
     }
   }
 }
 
 def main() => unit = {
-  pool<Worker> pool1 = spawn pool<Worker>({}, 0);
+  pool<Worker> pool1 = spawn pool<Worker>({}, 3);
   message<testNow>() |>> pool1;
 }

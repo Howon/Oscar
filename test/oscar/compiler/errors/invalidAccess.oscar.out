@@ -1,1 +1,1 @@
-Invalid access types List_t lt, Int_t cannot be accessed by String_t
+Invalid access types list<int> cannot be accessed by string

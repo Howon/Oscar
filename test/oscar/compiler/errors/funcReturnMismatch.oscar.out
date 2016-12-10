@@ -1,1 +1,1 @@
-Return type mismatch: expected Int_t but returns Double_t
+Return type mismatch: expected int but returns double
