@@ -347,11 +347,11 @@ let rec check_expr (e : expr) (env : scope) =
         let tkv_list= List.map (fun (k, v) ->
           ((check_expr k env), (check_expr v env))
         ) kvx in
-        (SMap_Lit (kt, vt, tkv_list), Map_t (kt, vt))
+          (SMap_Lit (kt, vt, tkv_list), Map_t (kt, vt))
     | Actor_Lit (at, ex) ->
         let sactor = find_actor at env in
         let te_list = check_expr_list ex env in
-        check_actor_lit sactor te_list
+          check_actor_lit sactor te_list
     | Pool_Lit (at, ex, num) ->
         let (sa_num, num_act) = check_expr num env in
         (match sa_num with
@@ -361,11 +361,11 @@ let rec check_expr (e : expr) (env : scope) =
               else
                 let sactor = find_actor at env in
                 let te_list = check_expr_list ex env in
-                (match check_actor_lit sactor te_list with
-                    SActor_Lit (sa_id, sa_args), Actor_t a_t ->
-                      (SPool_Lit (sa_id, te_list, (sa_num, Int_t)), Pool_t a_t)
-                  | _ -> raise (Failure ("Cannot create a pool with " ^
-                           "undeclared actor " ^ at )))
+                  (match check_actor_lit sactor te_list with
+                      SActor_Lit (sa_id, sa_args), Actor_t a_t ->
+                        (SPool_Lit (sa_id, te_list, (sa_num, Int_t)), Pool_t a_t)
+                    | _ -> raise (Failure ("Cannot create a pool with " ^
+                             "undeclared actor " ^ at )))
           | _ -> raise (Failure "Number of actors must be an integer"))
     | Message_Lit (m, ex) ->
         let smessage = find_message m env in
@@ -453,20 +453,20 @@ and check_stmt (s : stmt) (env : scope) =
     | Actor_send (e1, e2)->
         let texp1 = check_expr e1 env and texp2 = check_expr e2 env in
         let (se1, st1) = texp1 and (se2, st2) = texp2 in
-        (match st1, st2 with
+          (match st1, st2 with
             Message_t m_name, Actor_t a_name ->
-              let sm = find_message m_name env in
-              let sm_allowed = (find_actor_scope a_name env).a_messages in
-                (try
-                  let _ = List.find (fun allowed_m ->
-                    allowed_m.sm_name = sm.sm_name
-                  ) sm_allowed in
-                  (SActor_send (texp1, texp2), env)
-                with Not_found ->
-                  raise (Failure ("No matching pattern to receive message " ^
-                    m_name ^ " in actor " ^ a_name)))
-          | _ -> raise (Failure ("Invalid send operation between " ^
-                   str_types st1 ^ " to " ^ str_types st2)))
+                let sm = find_message m_name env in
+                let sm_allowed = (find_actor_scope a_name env).a_messages in
+                  (try
+                    let _ = List.find (fun allowed_m ->
+                      allowed_m.sm_name = sm.sm_name
+                    ) sm_allowed in
+                    (SActor_send (texp1, texp2), env)
+                  with Not_found ->
+                    raise (Failure ("No matching pattern to receive message " ^
+                      m_name ^ " in actor " ^ a_name)))
+            | _ -> raise (Failure ("Invalid send operation between " ^
+                     str_types st1 ^ " to " ^ str_types st2)))
     | Pool_send (e1, e2) ->
         let texp1 = check_expr e1 env and texp2 = check_expr e2 env in
         let (se1, st1) = texp1 and (se2, st2) = texp2 in
