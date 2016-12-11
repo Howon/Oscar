@@ -1,7 +1,7 @@
 def main() => unit = {
-  println(1 + 5);
-  println(2 - 5);
-  println(3 * 5);
-  println(4 / 5);
-  println(5 % 5);
+  Println(1 + 5);
+  Println(2 - 5);
+  Println(3 * 5);
+  Println(4 / 5);
+  Println(5 % 5);
 }

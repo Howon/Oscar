@@ -1,5 +1,5 @@
 def foo(s: string) => unit = {
-	println(s);
+	Println(s);
 }
 
 def main() => unit = {

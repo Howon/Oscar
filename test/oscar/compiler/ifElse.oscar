@@ -1,5 +1,5 @@
 def main() => unit = {
   if (true) {
-	println("brug");
+	Println("brug");
   }
 }
