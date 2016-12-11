@@ -144,9 +144,9 @@ let translate (messages, actors, functions) =
 
       (* special expression matcher that turns bools into strings,
           but leaves everything else normal *)
-      let expr_with_bool_string builder = function
-          (S.SBool_Lit(b), typ) -> t_expr builder (S.SString_Lit(if b then "true" else "false"), A.String_t)
-        | (se, typ) -> t_expr builder (se, typ)
+      let bool_to_string (te : S.t_expr) = match te with
+          (S.SBool_Lit(b), typ) -> (S.SString_Lit(if b then "true" else "false"), A.String_t)
+        | (se, typ) -> (se, typ)
       in
 
       (* type to string used to print *)
@@ -160,10 +160,10 @@ let translate (messages, actors, functions) =
       in
 
       (* get the things to print *)
-     (*  let params = List.map (expr_with_bool_string builder) t_el in *)
-     let params = List.map (t_expr builder) t_el in
+      let new_t_el = List.map bool_to_string t_el in
+      let params = List.map (t_expr builder) new_t_el in
       (* get their types *)
-      let param_types = List.map snd t_el in
+      let param_types = List.map snd new_t_el in
 
       let const_str = List.fold_left
                         (fun s t -> s ^ map_type_to_string t) "" param_types
