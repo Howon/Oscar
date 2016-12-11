@@ -1,4 +1,4 @@
-def add5(int: x) => int = {
+def add5(x: int) => int = {
 	return x + 5;
 }
 
