@@ -377,7 +377,6 @@ let rec check_expr (e : expr) (env : scope) =
     | Uop (op, e) ->
         let checked_e = check_expr e env in check_uop checked_e op
     | FuncCall (f, args) ->
-        print_endline f;
         let checked_args = check_expr_list args env in
         let arg_types = get_list_snd checked_args in
         (if validate_arg_types arg_types then

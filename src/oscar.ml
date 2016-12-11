@@ -38,7 +38,7 @@ let _ =
     Ast       -> print_endline (Ast.str_program program)
   | Sast      -> print_endline (Sast.str_sprogram sprogram)
   | LLVM_IR   -> print_string
-      (Llvm.string_of_llmodule (Codegen.translate program))
-  | Compile  -> let m = Codegen.translate program in
+      (Llvm.string_of_llmodule (Codegen.translate sprogram))
+  | Compile  -> let m = Codegen.translate sprogram in
       Llvm_analysis.assert_valid_module m;
       print_string (Llvm.string_of_llmodule m)

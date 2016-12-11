@@ -17,12 +17,13 @@ let translate (messages, actors, functions) =
   and f_t    = L.double_type context
   and void_t = L.void_type context in
 
-  let ltype_of_typ = function
+  let ltype_of_typ (typ : A.types) = match typ with
       A.Int_t     -> i32_t
     | A.Char_t    -> i8_t
     | A.Bool_t    -> i1_t
     | A.Unit_t    -> void_t
     | A.Double_t  -> f_t
+    | A.String_t  -> L.pointer_type i8_t
   in
 
   (* Declare print(), which the print built-in function will call *)
@@ -47,6 +48,7 @@ let translate (messages, actors, functions) =
     ignore(Hashtbl.clear local_vars);
 
     (* params to types *)
+    (*
     let rec map_param_to_type = function
         S.SInt_Lit(_)      -> A.Int_t
       | S.SBool_Lit(_)     -> A.Bool_t
@@ -60,6 +62,7 @@ let translate (messages, actors, functions) =
       (* todo: this assumes type is int; should grab type from semantic analysis *)
       | S.SId(_)           -> A.Int_t
     in
+    *) 
 
     let (the_function, _) = StringMap.find func.S.sf_name function_decls in
     let builder = L.builder_at_end context (L.entry_block the_function) in
@@ -69,12 +72,12 @@ let translate (messages, actors, functions) =
         and add to Hashtbl local_vars *)
     let add_local (n, t) p = 
       let local = L.build_alloca (ltype_of_typ t) n builder in
-        L.build_store p local builder;
+        ignore(L.build_store p local builder);
         Hashtbl.add local_vars n local;
         L.set_value_name n p;
     in 
     (* add all the formals for the function to the Hashtbl local_vars *)
-    List.map2 add_local func.S.sf_formals (Array.to_list (L.params the_function));
+    ignore(List.map2 add_local func.S.sf_formals (Array.to_list (L.params the_function)));
 
 
     (* Return the value for a variable or formal argument *)
@@ -85,16 +88,17 @@ let translate (messages, actors, functions) =
 
     (* Construct code for an expression; return its value *)
     (* takes a t_expr, which is (sexpr, types) *)
-    let rec t_expr builder (se, typ) = function
-        (S.SInt_Lit(i), t)          -> L.const_int i32_t i
-      | (S.SBool_Lit(b), t)         -> L.const_int i1_t (if b then 1 else 0)
-      | (S.SDouble_Lit(d), t)       -> L.const_float f_t d
-      | (S.SChar_Lit(c), t)         -> L.const_int i8_t (Char.code c)
-      | (S.SString_Lit(s), t)       -> L.build_global_stringptr s "tmp" builder
-      | (S.SNoexpr, t)              -> L.const_int i32_t 0
-      | (S.SId(s), t)               -> L.build_load (lookup s) s builder
-      | (S.SBinop(e1, op, e2), t)   ->
-        let e1' = t_expr builder e1
+    let rec t_expr builder (te : S.t_expr) = 
+      match te with
+        (S.SInt_Lit(i), typ)          -> L.const_int i32_t i
+      | (S.SBool_Lit(b), typ)         -> L.const_int i1_t (if b then 1 else 0)
+      | (S.SDouble_Lit(d), typ)       -> L.const_float f_t d
+      | (S.SChar_Lit(c), typ)         -> L.const_int i8_t (Char.code c)
+      | (S.SString_Lit(s), typ)       -> L.build_global_stringptr s "tmp" builder
+      | (S.SNoexpr, typ)              -> L.const_int i32_t 0
+      | (S.SId(s), typ)               -> L.build_load (lookup s) s builder
+      | (S.SBinop(e1, op, e2), typ)   ->
+        let e1' = t_expr builder e1 
         and e2' = t_expr builder e2 in
           (match op with
               A.Add         -> L.build_add
@@ -116,15 +120,15 @@ let translate (messages, actors, functions) =
             | A.Bit_RShift  -> L.build_lshr
             | A.Bit_LShift  -> L.build_shl
           ) e1' e2' "tmp" builder
-      | (S.SUop(op, e), t) ->
+      | (S.SUop(op, e), typ) ->
         let e' = t_expr builder e in
           (match op with
-              A.Neg -> (match (map_param_to_type e) with
+              A.Neg -> (match typ with
                   A.Int_t -> L.const_neg
                 | A.Double_t -> L.const_fneg)
           ) e'
-      | (S.SFuncCall("println", t_el), t) -> build_print_call t_el builder
-      | (S.SFuncCall(f, act), t) ->
+      | (S.SFuncCall("Println", t_el), typ) -> build_print_call t_el builder
+      | (S.SFuncCall(f, act), typ) ->
           let (fdef, fdecl) = StringMap.find f function_decls in
           let actuals = List.rev (List.map (t_expr builder) (List.rev act)) in
           let result = (
@@ -141,14 +145,14 @@ let translate (messages, actors, functions) =
       (* special expression matcher that turns bools into strings,
           but leaves everything else normal *)
       let expr_with_bool_string builder = function
-          (S.SBool_Lit(b), t) -> t_expr builder (S.SString_Lit(if b then "true" else "false"))
-        | (se, t) -> t_expr builder se t
+          (S.SBool_Lit(b), typ) -> t_expr builder (S.SString_Lit(if b then "true" else "false"), A.String_t)
+        | (se, typ) -> t_expr builder (se, typ)
       in
 
       (* type to string used to print *)
       let map_type_to_string = function
           A.Int_t           -> "%d"
-        | A.Bool_t          -> "%s"
+        | A.Bool_t          -> "%d" (* todo bools print as ints *)
         | A.Double_t        -> "%f"
         | A.Char_t          -> "%c"
         | A.String_t        -> "%s"
@@ -156,7 +160,8 @@ let translate (messages, actors, functions) =
       in
 
       (* get the things to print *)
-      let params = List.map (expr_with_bool_string builder) t_el in
+     (*  let params = List.map (expr_with_bool_string builder) t_el in *)
+     let params = List.map (t_expr builder) t_el in
       (* get their types *)
       let param_types = List.map snd t_el in
 
@@ -180,12 +185,12 @@ let translate (messages, actors, functions) =
     (* Build the code for the given statement; return the builder for
        the statement's successor *)
     let rec stmt builder = function
-        S.SExpr(se, typ) -> ignore (t_expr builder se typ); builder
+        S.SExpr(se, typ) -> ignore (t_expr builder (se, typ)); builder
       | S.SBlock(sl) -> List.fold_left stmt builder sl
       | S.SReturn(se, typ) -> ignore(
           match func.S.sf_return_t with
               A.Unit_t -> L.build_ret_void builder
-            | _ -> L.build_ret (t_expr builder se typ) builder
+            | _ -> L.build_ret (t_expr builder (se, typ)) builder
           ); builder
       | S.SVdecl(sval_decl) ->
           let init_val = t_expr builder sval_decl.sv_init in 
