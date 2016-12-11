@@ -7,6 +7,6 @@ def gcd(a: int, b: int) => int = {
 }
 
 def main() => unit = {
-  println(gcd(135, 17));
-  println(gcd(40, 10));
+  Println(gcd(135, 17));
+  Println(gcd(40, 10));
 }

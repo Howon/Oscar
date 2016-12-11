@@ -143,7 +143,6 @@ and types_equal' (t1 : types) (t2 : types) =
       | _ -> false
   )
 
-
 let check_args (params : types list) (args : t_expr list) =
   check_args_t params (get_list_snd args)
 
@@ -625,7 +624,7 @@ and check_stmt (s : stmt) (env : scope) =
               Bool_t ->
                 let (check_if, _) = check_stmt isl env in
                 let (check_esl, _) = check_stmt esl env in
-                (SIf(texp, check_if, check_esl), env)
+                  (SIf(texp, check_if, check_esl), env)
             | _ -> raise (Failure "Condition must be a boolean"))
     | Actor_send (e1, e2)->
         let texp1 = check_expr e1 env and texp2 = check_expr e2 env in
@@ -634,8 +633,7 @@ and check_stmt (s : stmt) (env : scope) =
               Message_t m_name, Unit_t when (
                 match se2 with
                     SId "sender" -> true
-                  | _ -> false) ->
-                (SActor_send (texp1, texp2), env)
+                  | _ -> false)  -> (SActor_send (texp1, texp2), env)
             | Message_t m_name, Actor_t a_name ->
                 let sm = find_message m_name env in
                 let sm_allowed = (find_actor_scope a_name env).a_messages in
@@ -656,7 +654,7 @@ and check_stmt (s : stmt) (env : scope) =
               Message_t m_name, Unit_t when (
                 match se2 with
                     SId "sender" -> true
-                  | _ -> false) ->
+                  | _ -> false)  ->
                       raise (Failure ("Messages cannot be broadcasted to " ^
                         "sender refs"))
             | Message_t m_name, Pool_t a_name ->
@@ -680,26 +678,26 @@ and check_vdecl (vdecl : val_decl) (env : scope) =
         Lambda_t (_, _) ->
           raise (Failure ("Cannot declare lambda types " ^ v_name))
       | _ ->
-        let texp = check_expr v_init env in
-        let (se, t) = texp in
-          match se with
-              SNoexpr -> raise (Failure ("Must initialize value " ^ v_name))
-            | _ ->
-                if types_equal' t v_type then
-                  (if name_taken v_name env then
-                    raise (Failure ("Value " ^ v_name ^ " declared already"))
+          let texp = check_expr v_init env in
+          let (se, t) = texp in
+            match se with
+                SNoexpr -> raise (Failure ("Must initialize value " ^ v_name))
+              | _ ->
+                  if types_equal' t v_type then
+                    (if name_taken v_name env then
+                      raise (Failure ("Value " ^ v_name ^ " declared already"))
+                    else
+                      let svdecl = {
+                        sv_name = v_name;
+                        sv_type = v_type;
+                        sv_init = texp
+                      } in
+                      let nv_table = upd_vtable_vals svdecl env.env_vtable in
+                        (SVdecl svdecl, upd_env_vtable nv_table env))
                   else
-                    let svdecl = {
-                      sv_name = v_name;
-                      sv_type = v_type;
-                      sv_init = texp
-                    } in
-                    let nv_table = upd_vtable_vals svdecl env.env_vtable in
-                      (SVdecl svdecl, upd_env_vtable nv_table env))
-                else
-                  raise (Failure ("Value initialization type mismatch: " ^
-                    v_name ^ " is " ^ (str_types v_type) ^ " but initialized " ^
-                      "as " ^ (str_types t))))
+                    raise (Failure ("Value initialization type mismatch: " ^
+                      v_name ^ " is " ^ (str_types v_type) ^ " but " ^
+                       "initialized as " ^ (str_types t))))
 
 and check_mvdecl (mvdecl : mvar_decl) (env : scope) =
   if env.in_actor then
@@ -771,6 +769,11 @@ and check_func_decl (fdecl : func) (env : scope) =
         (SFdecl sfdecl, nenv)
 
 and check_stmt_list (sl : stmt list) (ret : bool) (env : scope) =
+  let rec check_f_return (sll : stmt list) (rt : types) =
+    List.find (fun s -> match s with
+        Return _ -> true
+      | If()
+      | _ -> false) sll in
   let _ = (
     if ret then
       try ignore (List.find (fun s -> match s with
@@ -808,71 +811,73 @@ let check_actor_decl (adecl : actor) (env : scope) =
       ) p_formals in true
     with Not_found -> false) in
 
-  let {a_name; a_formals; a_body; a_receive} = adecl in
-  (try
-    let _ = List.find (fun ascope ->
-      ascope.a_actor.sa_name = a_name
-    ) env.actors in
-    raise (Failure ("Actor " ^ adecl.a_name ^ " declared already"))
-  with Not_found ->
-    let rec check_dup l = (match l with
-          [] -> false
-        | (h :: t) ->
-            let x = (List.filter (fun x -> x = h) t) in
-            if (x = []) then
-              check_dup t
-            else
-              true
-      ) in if check_dup (List.map(fun p -> p.p_mid) a_receive) then
+  let check_patterns (receive : pattern list) (senv : scope) =
+    List.map (fun p ->
+      let (pvals, pfuncs) = spread_arg p.p_mformals [] senv.funcs env in
+      let pv_table = { vparent = Some senv.env_vtable; svals = pvals } in
+      let penv = { senv with
+        funcs = pfuncs;
+        env_vtable = pv_table;
+        actor_init = false;
+      } in {
+        sp_smid = p.p_mid;
+        sp_smformals = p.p_mformals;
+        sp_body = fst (check_stmt p.p_body penv)
+      }
+    ) receive in
+
+  let { a_name; a_formals; a_body; a_receive } = adecl in
+    (try
+      let _ = List.find (fun ascope ->
+        ascope.a_actor.sa_name = a_name
+      ) env.actors in
+      raise (Failure ("Actor " ^ adecl.a_name ^ " declared already"))
+    with Not_found ->
+      let rec check_dup l =
+        (match l with
+            [] -> false
+          | (h :: t) ->
+              let x = (List.filter (fun x -> x = h) t) in
+                if (x = []) then
+                  check_dup t
+                else
+                  true
+        ) in
+      if check_dup (List.map(fun p -> p.p_mid) a_receive) then
         raise (Failure ("Duplicate pattern matching in receive in actor " ^
           a_name))
-    else
-      let m_allowed = List.filter (fun sm ->
-        check_receive sm a_receive
-      ) env.messages in
-      if (List.length m_allowed) <> (List.length adecl.a_receive) then
-        raise (Failure ("Actor " ^ adecl.a_name ^ " attempts to receive " ^
-          "an undefined message"))
       else
-        let (nsvals, nsfuncs) =
-          spread_arg a_formals ([]) env.funcs env in
-        let nv_table = { vparent = Some env.env_vtable; svals = nsvals } in
-        let curr_scope = { env with
-          env_vtable  = nv_table;
-          funcs       = nsfuncs;
-          in_actor    = true;
-          actor_init  = true
-        } in
-        let (checked_body, sa_env) = check_stmt a_body curr_scope in
-        let sareceive = List.map (fun p ->
-          let (pvals, pfuncs) =
-            spread_arg p.p_mformals [] sa_env.funcs sa_env in
-          let pv_table = { vparent = Some sa_env.env_vtable; svals = pvals } in
-          let penv = { sa_env with
-            funcs = pfuncs;
-            env_vtable = pv_table;
-            actor_init = false;
+        let m_allowed = List.filter (fun sm ->
+          check_receive sm a_receive
+        ) env.messages in
+        if (List.length m_allowed) <> (List.length adecl.a_receive) then
+          raise (Failure ("Actor " ^ adecl.a_name ^ " attempts to receive " ^
+            "an undefined message"))
+        else
+          let (nsvals, nsfuncs) =
+            spread_arg a_formals ([]) env.funcs env in
+          let nv_table = { vparent = Some env.env_vtable; svals = nsvals } in
+          let curr_scope = { env with
+            env_vtable  = nv_table;
+            funcs       = nsfuncs;
+            in_actor    = true;
+            actor_init  = true
           } in
-          let (checked_pbody, _) = check_stmt p.p_body penv in
-          {
-            sp_smid = p.p_mid;
-            sp_smformals = p.p_mformals;
-            sp_body = checked_pbody
-          }
-        ) a_receive in
-        let new_sactor = {
-          sa_name    = a_name;
-          sa_formals = a_formals;
-          sa_body    = checked_body;
-          sa_receive = sareceive
-        } in
-        let new_actor_scope = {
-          a_actor = new_sactor;
-          a_scope = sa_env;
-          a_messages = m_allowed
-        } in
-        let nenv = { env with actors = new_actor_scope :: env.actors } in
-        (new_actor_scope, nenv))
+          let (checked_body, sa_env) = check_stmt a_body curr_scope in
+          let sareceive = check_patterns a_receive sa_env in
+          let new_sactor = {
+            sa_name    = a_name;
+            sa_formals = a_formals;
+            sa_body    = checked_body;
+            sa_receive = sareceive
+          } in
+          let new_actor_scope = {
+            a_actor = new_sactor;
+            a_scope = sa_env;
+            a_messages = m_allowed
+          } in
+          let nenv = { env with actors = new_actor_scope :: env.actors } in
+            (new_actor_scope, nenv))
 
 let check_program (p : program) =
   let (messages, actors, functions) = p in
@@ -908,10 +913,8 @@ let check_program (p : program) =
           SFdecl sf -> (sf :: fst acc, nenv)
         | _ -> raise (Failure ("Not a valid function: " ^ f.f_name))
   ) ([], a_env) functions in
-  try
-    let _ = List.find (fun sf -> sf.sf_name = "main") sfunctions in
-    (smessages, sactors, sfunctions)
-  with Not_found -> raise (Failure "No main function in this program")
-
-
+    try
+      let _ = List.find (fun sf -> sf.sf_name = "main") sfunctions in
+      (smessages, sactors, sfunctions)
+    with Not_found -> raise (Failure "No main function in this program")
 

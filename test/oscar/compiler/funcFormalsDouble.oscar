@@ -1,5 +1,5 @@
 def foo(d: double) => unit = {
-	println(d);
+	Println(d);
 }
 
 def main() => unit = {

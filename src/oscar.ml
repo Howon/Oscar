@@ -16,7 +16,7 @@ let _ =
                 ("-l", LLVM_IR);    (* Generate LLVM, don't check *)
                 ("-c", Compile);    (* Generate, check LLVM IR *)
                 ("-p", Ast);        (* Don't gen LLVM, just prettyprint ast *)
-                ("-s", Sast) (* Don't generate LLVM, just prettyprint *)
+                ("-s", Sast)        (* Don't generate LLVM, just prettyprint *)
         ], open_in Sys.argv.(2))
     else
       (Compile, open_in Sys.argv.(1))
@@ -38,7 +38,7 @@ let _ =
     Ast       -> print_endline (Ast.str_program program)
   | Sast      -> print_endline (Sast.str_sprogram sprogram)
   | LLVM_IR   -> print_string
-      (Llvm.string_of_llmodule (Codegen.translate program))
-  | Compile  -> let m = Codegen.translate program in
+      (Llvm.string_of_llmodule (Codegen.translate sprogram))
+  | Compile  -> let m = Codegen.translate sprogram in
       Llvm_analysis.assert_valid_module m;
       print_string (Llvm.string_of_llmodule m)
