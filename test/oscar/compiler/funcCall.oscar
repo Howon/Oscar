@@ -3,5 +3,5 @@ def foo() => int = {
 }
 
 def main() => unit = {
-	println(foo());
+	Println(foo());
 }

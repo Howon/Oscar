@@ -1,7 +1,7 @@
 def main() => unit = {
   if (false) {
-	println("not brug");
+	Println("not brug");
   } else {
-    println("brug");
+    Println("brug");
   }
 }

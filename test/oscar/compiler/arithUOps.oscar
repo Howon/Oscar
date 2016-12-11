@@ -1,5 +1,4 @@
 def main() => unit = {
-  println(17);
-  println(-42.0);
-  println(!1);
+  Println(17);
+  Println(-42.0);
 }
