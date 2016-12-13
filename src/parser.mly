@@ -91,7 +91,8 @@ function_list:
 fdecl:
   TYPE_FUNC ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
   ASSIGN LBRACE stmts RBRACE
-    { { f_name = $2; f_formals = $4; f_return_t = $7; f_body = $10 } }
+    { { f_name = $2;
+        f_init = { f_formals = $4; f_return_t = $7; f_body = $10 } } }
 
 formals_opt:
     /* nothing */ { [] }
@@ -136,7 +137,7 @@ actor_typ:
   | TYPE_POOL LANGLE ID RANGLE   { Pool_t($3) }
 
 lambda_typ:
-  TYPE_LAMBDA LPAREN typ_opt RPAREN FUNC_RET_TYPE typ { Lambda_t($3, $6) }
+  TYPE_LAMBDA LPAREN typ_opt RPAREN FUNC_RET_TYPE typ { Func_t($3, $6) }
 
 message_typ:
   TYPE_MESSAGE LANGLE ID RANGLE { Message_t($3) }

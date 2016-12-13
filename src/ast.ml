@@ -8,7 +8,7 @@ type bin_op =
 type u_op = Not | Neg
 
 type types = Int_t | Bool_t | Double_t | Char_t | Unit_t | String_t
-  | Lambda_t   of types list * types
+  | Func_t     of types list * types
   | List_t     of types
   | Set_t      of types
   | Map_t      of types * types
@@ -25,7 +25,7 @@ and expr =
   | Unit_Lit     of unit
   | Id           of string
   | Access       of expr * expr
-  | Lambda       of lambda
+  | Lambda       of func
   | List_Lit     of types * expr list
   | Set_Lit      of types * expr list
   | Map_Lit      of types * types * (expr * expr) list
@@ -43,7 +43,7 @@ and stmt =
   | Return      of expr
   | Vdecl       of val_decl
   | Mutdecl     of mvar_decl
-  | Fdecl       of func
+  | Fdecl       of func_decl
   | If          of expr * stmt * stmt
   | Actor_send  of expr * expr
   | Pool_send   of expr * expr
@@ -67,10 +67,10 @@ and mvar_decl = {
     mv_init : expr;
 }
 
-and lambda = {
-  l_formals  : formal list;
-  l_return_t : types;
-  l_body     : stmt;
+and func = {
+  f_formals  : formal list;
+  f_return_t : types;
+  f_body     : stmt;
 }
 
 and pattern = {
@@ -79,11 +79,9 @@ and pattern = {
   p_body      : stmt;
 }
 
-and func = {
+and func_decl = {
   f_name     : string;
-  f_formals  : formal list;
-  f_return_t : types;
-  f_body     : stmt;
+  f_init     : func;
 }
 
 and actor = {
@@ -93,7 +91,7 @@ and actor = {
   a_receive   : pattern list;
 }
 
-type program = message list * actor list * func list
+type program = message list * actor list * func_decl list
 
 (* PRETTY PRINTER *)
 
