@@ -9,7 +9,7 @@ type sexpr =
   | SUnit_Lit     of unit
   | SId           of string
   | SAccess       of t_expr * t_expr
-  | SLambda       of slambda
+  | SLambda       of sfunc
   | SList_Lit     of types * t_expr list
   | SSet_Lit      of types * t_expr list
   | SMap_Lit      of types * types * (t_expr * t_expr) list
@@ -27,7 +27,7 @@ and sstmt =
   | SReturn      of t_expr
   | SVdecl       of sval_decl
   | SMutdecl     of smvar_decl
-  | SFdecl       of sfunc
+  | SFdecl       of sfunc_decl
   | SIf          of t_expr * sstmt * sstmt
   | SActor_send  of t_expr * t_expr
   | SPool_send   of t_expr * t_expr
@@ -46,10 +46,10 @@ and smvar_decl = {
     smv_init : t_expr;
 }
 
-and slambda = {
-  sl_formals  : formal list;
-  sl_return_t : types;
-  sl_body     : sstmt;
+and sfunc = {
+  sf_formals  : formal list;
+  sf_return_t : types;
+  sf_body     : sstmt;
 }
 
 and smessage = {
@@ -63,11 +63,9 @@ and spattern = {
   sp_body      : sstmt;
 }
 
-and sfunc = {
+and sfunc_decl {
   sf_name     : string;
-  sf_formals  : formal list;
-  sf_return_t : types;
-  sf_body     : sstmt;
+  sf_func     : sfunc;
 }
 
 and sactor = {
