@@ -769,22 +769,22 @@ and check_func_decl (fdecl : func) (env : scope) =
         (SFdecl sfdecl, nenv)
 
 and check_stmt_list (sl : stmt list) (ret : bool) (env : scope) =
-  let rec check_f_return (sll : stmt list) (rt : types) =
-    List.find (fun s -> match s with
-        Return _ -> true
-      | If()
-      | _ -> false) sll in
+  let rec check_f_return (sll : stmt list) =
+    try
+      let _ = List.find (fun s -> match s with
+          Return _ -> true
+        | If(_, Block(b1), Block(b2)) ->
+            check_f_return b1 || check_f_return b2
+        | _ -> false) sll in true
+    with Not_found -> false in
+
   let _ = (
-    if ret then
-      try ignore (List.find (fun s -> match s with
-            Return _ -> true
-          | _ -> false) sl)
-      with Not_found ->
-        raise (Failure ("This function must return " ^
-          (match env.return_t with
-              Some t -> str_types t
-            | None -> ""
-          )))
+    if ret && not (check_f_return sl) then
+      raise (Failure ("This function must return " ^
+        (match env.return_t with
+            Some t -> str_types t
+          | None -> ""
+        )))
     else ()
   ) in let (csl, nenv) = (List.fold_left (fun acc st ->
     let (sl', env') = (check_stmt st (snd acc)) in (sl' :: fst acc, env')
