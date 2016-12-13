@@ -386,9 +386,9 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
                        (str_types t2))))
       | Equal | Neq ->
             (if types_equal t1 t2 then
-              (SBinop(te1, op, te1), Bool_t)
+              (SBinop(te1, op, te2), Bool_t)
             else
-              match t1, t1 with
+              match t1, t2 with
                   Actor_t _, Actor_t _ ->
                     raise (Failure "Actors cannot be compared for equality")
                 | Pool_t _, Pool_t _ ->
