@@ -913,8 +913,8 @@ let check_program (p : program) =
           SFdecl sf -> (sf :: fst acc, nenv)
         | _ -> raise (Failure ("Not a valid function: " ^ f.f_name))
   ) ([], a_env) functions in
-    try
-      let _ = List.find (fun sf -> sf.sf_name = "main") sfunctions in
-      (smessages, sactors, sfunctions)
-    with Not_found -> raise (Failure "No main function in this program")
+  try
+    let _ = List.find (fun sf -> sf.sf_name = "main") sfunctions in
+    (smessages, sactors, sfunctions)
+  with Not_found -> raise (Failure "No main function in this program")
 
