@@ -92,7 +92,7 @@ fdecl:
   TYPE_FUNC ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
   ASSIGN LBRACE stmts RBRACE
     { { f_name = $2;
-        f_init = { f_formals = $4; f_return_t = $7; f_body = $10 } } }
+        f_func = { f_formals = $4; f_return_t = $7; f_body = $10 } } }
 
 formals_opt:
     /* nothing */ { [] }

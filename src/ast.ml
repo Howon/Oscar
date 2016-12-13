@@ -81,7 +81,7 @@ and pattern = {
 
 and func_decl = {
   f_name     : string;
-  f_init     : func;
+  f_func     : func;
 }
 
 and actor = {
