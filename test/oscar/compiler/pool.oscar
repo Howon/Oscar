@@ -12,5 +12,5 @@ actor Tester() {
 
 def main() => unit = {
   pool<Tester> testerPool = spawn pool<Tester>({}, 3);
-  message<testNow>() |>> testerPool;
+  list<message<testNow>>[message<testNow>(), message<testNow>(), message<testNow>()] |>> testerPool;
 }
