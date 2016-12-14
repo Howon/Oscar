@@ -73,12 +73,13 @@ let translate (messages, actors, functions) =
         and add to Hashtbl local_vars *)
     let add_local (n, t) p =
       let local = L.build_alloca (ltype_of_typ t) n builder in
-        ignore(L.build_store p local builder);
+        let () =  ignore(L.build_store p local builder) in
         Hashtbl.add local_vars n local;
         L.set_value_name n p;
     in
     (* add all the formals for the function to the Hashtbl local_vars *)
-    ignore(List.map2 add_local func.S.sf_formals (Array.to_list (L.params the_function)));
+    let () = ignore(List.map2 add_local func.S.sf_formals
+                      (Array.to_list (L.params the_function))) in
 
 
     (* Return the value for a variable or formal argument *)
@@ -209,13 +210,14 @@ let translate (messages, actors, functions) =
       (* make a function that handles anything with bool_t as an if *)
       let to_print_texpr texpr = match (snd texpr) with
           A.Bool_t  ->
-            let t = { S.sv_name = "_tmpBool";  S.sv_type = A.String_t;
+            (S.SFuncCall("AsString", [texpr]), A.String_t)
+            (*let t = { S.sv_name = "_tmpBool";  S.sv_type = A.String_t;
               S.sv_init = (S.SString_Lit("true"), A.String_t) }
             and f = { S.sv_name = "_tmpBool";  S.sv_type = A.String_t;
               S.sv_init = (S.SString_Lit("false"), A.String_t) } in
             let () = ignore (stmt builder (S.SIf(texpr,
                 S.SBlock([S.SVdecl(t)]), S.SBlock([S.SVdecl(f)])))) in
-            (S.SId("_tmpBool"), A.String_t)
+            (S.SId("_tmpBool"), A.String_t)*)
         | _     -> texpr
       in
 
@@ -249,8 +251,6 @@ let translate (messages, actors, functions) =
         let bool_val = t_expr builder predicate in
 
         let entry_bb = L.insertion_block builder in
-        let caller = L.block_parent entry_bb in
-
         let merge_bb = L.append_block context "finishif" the_function in
 
         (* build then block *)

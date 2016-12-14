@@ -22,7 +22,7 @@ let _ =
       (Compile, open_in Sys.argv.(1))
     ) in
   let lexbuf = Lexing.from_channel oscar
-  and stdlex = Lexing.from_channel (open_in "stdlib.oscar") in
+  and stdlex = Lexing.from_channel (open_in "include/stdlib.oscar") in
   let program = Parser.program Scanner.token lexbuf
   and stdlib = Parser.program Scanner.token stdlex in
   let sprogram =

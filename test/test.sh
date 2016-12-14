@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 
 
 # Globals
-oscar_compile="../oscar -c"
+oscar_compile="./oscar -c"
 TEST_DIR=$(pwd)
 
 case_passed=0
@@ -136,7 +136,6 @@ make_oscar(){
   make
   echo "Oscar Compiler created"
   echo ""
-  cd test/
 }
 
 
@@ -145,7 +144,7 @@ make_oscar(){
 echo "Oscar test started"
 make_oscar
 
-logFile=./logfile.log
+logFile=./test/logfile.log
 echo "" > $logFile
 
 #test_path="$TEST_DIR"/oscar/scanner/
@@ -153,12 +152,13 @@ echo "" > $logFile
 
 # test_scanner $test_path $scanner_extension
 
-test_path=oscar/compiler/
+test_path=./test/oscar/compiler/
 test_extension=.oscar
 compiler_extension=$test_extension.out
 test_compiler $test_path $compiler_extension $test_extension
 
-rm -f ../oscar
+make clean
+cd test
 
 
 # errorLines=$(cat $errorFile | wc -l)
