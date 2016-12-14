@@ -154,8 +154,8 @@ let translate (messages, actors, functions) =
     have a terminal (e.g., a branch). *)
     let add_terminal builder f =
       match L.block_terminator (L.insertion_block builder) with
-          Some _ -> ()
-        | None -> ignore (f builder) in
+          Some _ -> false
+        | None -> (let () = ignore (f builder) in true) in
 
     (* Construct code for an expression; return its value *)
     (* takes a t_expr, which is (sexpr, types) *)
@@ -257,19 +257,27 @@ let translate (messages, actors, functions) =
         let then_bb = L.append_block context "then" the_function in
         let () = L.position_at_end then_bb builder in
         let () = stmt builder then_stmt in
-        let () = add_terminal builder (L.build_br merge_bb) in
+        let t_mrg = add_terminal builder (L.build_br merge_bb) in
 
         (* build else block *)
         let else_bb = L.append_block context "else" the_function in
         let () = L.position_at_end else_bb builder in
         let () = stmt builder else_stmt in
-        let () = add_terminal builder (L.build_br merge_bb) in
+        let e_mrg = add_terminal builder (L.build_br merge_bb) in
+
 
         (* wherever our entry block was, go back there and cond branch *)
         let () = L.position_at_end entry_bb builder in
         let () = ignore(L.build_cond_br bool_val then_bb else_bb builder) in
 
-        L.position_at_end merge_bb builder
+        (* if we need to resolve to a merge, keep it and move builder,
+         * otherwise, delete the merge block and go back to caller *)
+
+        if (t_mrg || e_mrg) then
+          L.position_at_end merge_bb builder
+        else
+          let () = (L.delete_block merge_bb) in
+          L.position_at_end entry_bb builder
 
     (* Build the code for the given statement; return the builder for
        the statement's successor *)
@@ -289,21 +297,6 @@ let translate (messages, actors, functions) =
       | S.SFdecl(func) -> raise ( Failure ("TODO: funcs") )
       | S.SIf (predicate, then_stmt, else_stmt) ->
           stmt_if builder predicate then_stmt else_stmt
-          (*
-          let bool_val = t_expr builder predicate in
-          let merge_bb = L.append_block context "merge" the_function in
-
-          let then_bb = L.append_block context "then" the_function in
-            add_terminal (stmt (L.builder_at_end context then_bb) then_stmt)
-            (L.build_br merge_bb);
-
-          let else_bb = L.append_block context "else" the_function in
-            add_terminal (stmt (L.builder_at_end context else_bb) else_stmt)
-            (L.build_br merge_bb);
-
-          ignore (L.build_cond_br bool_val then_bb else_bb builder);
-          L.builder_at_end context merge_bb
-          *)
       | S.SActor_send(e1, e2) -> raise ( Failure ("TODO: act_send") )
       | S.SPool_send(e1, e2) -> raise ( Failure ("TODO: pool_broadcast") )
     in
@@ -313,7 +306,7 @@ let translate (messages, actors, functions) =
 
     (* Add a return if the last block falls off the end *)
     match func.S.sf_return_t with
-      A.Unit_t -> add_terminal builder L.build_ret_void
+      A.Unit_t -> ignore(add_terminal builder L.build_ret_void)
       | _ -> ()
   in
 
