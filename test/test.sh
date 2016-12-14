@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # Path to the LLVM interpreter
-#LLI="lli"
-LLI="/usr/local/opt/llvm/bin/lli"
+LLI="lli"
 
 # Colors
 RED='\033[0;31m'
@@ -12,7 +11,7 @@ NC='\033[0m' # No Color
 
 
 # Globals
-oscar_compile=../oscar
+oscar_compile="./oscar -c"
 TEST_DIR=$(pwd)
 
 case_passed=0
@@ -71,7 +70,7 @@ test_scanner() {
     echo "==================================" >> session_file
 
     # Create file to be tested (with tokens)
-    $oscar_compile -p < $oscar_test_file > oscar_test_output
+    $oscar_compile -s $oscar_test_file > oscar_test_output
 
     #Test output differences use the diff command and neglect screen output
     # diff $oscar_test_output $oscar_test_file$compiler_extension > /dev/null
@@ -95,7 +94,7 @@ test_compiler() {
 
     # compile program to test.ll, put any errors in the session
     echo -e "Oscar Compiler Messages:" >> session_file
-    $oscar_compile < $oscar_test_file 1> temp.ll 2>> session_file
+    $oscar_compile $oscar_test_file 1> temp.ll 2>> session_file
     echo "" >> session_file
 
     # run lli on the file and save the output and errors
@@ -137,7 +136,6 @@ make_oscar(){
   make
   echo "Oscar Compiler created"
   echo ""
-  cd test/
 }
 
 
@@ -146,7 +144,7 @@ make_oscar(){
 echo "Oscar test started"
 make_oscar
 
-logFile=./logfile.log
+logFile=./test/logfile.log
 echo "" > $logFile
 
 #test_path="$TEST_DIR"/oscar/scanner/
@@ -154,12 +152,13 @@ echo "" > $logFile
 
 # test_scanner $test_path $scanner_extension
 
-test_path=oscar/compiler/
+test_path=./test/oscar/compiler/
 test_extension=.oscar
 compiler_extension=$test_extension.out
 test_compiler $test_path $compiler_extension $test_extension
 
-rm -f ../oscar
+make clean
+cd test
 
 
 # errorLines=$(cat $errorFile | wc -l)

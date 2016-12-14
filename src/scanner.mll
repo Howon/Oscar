@@ -1,8 +1,21 @@
-{ open Parser }
+{
+  open Parser
+
+  let make_char c =
+    let ec = Char.escaped c in
+    let s = Scanf.unescaped (match String.length ec with
+        1 -> "\\" ^ ec
+      | _ -> ec) in
+    String.get s 0
+
+  let fail c = raise (Failure ("scanning failed on char " ^ (Char.escaped c)))
+}
 
 let digit = ['0' - '9']
 let double = ('-'?)((digit+'.'digit*) | ('.'digit+))
-let chr = ['a'-'z' 'A'-'Z' '_' '-' ' ' '\n' '\r' '\t' '\"' '\''] | digit
+let simp_chr = [' '-'!' '#'-'&' '('-'[' ']'-'~']
+let esc_chr = ['t' 'n' 'r' '\'' '\"' '\\']
+let all_chr = simp_chr | esc_chr
 
 rule token = parse
     [' ' '\t' '\r' '\n']  { token lexbuf }
@@ -28,7 +41,7 @@ rule token = parse
   | '/'                   { ARITH_DIVIDE }
   | '%'                   { ARITH_MOD }
 
-  (* comma, dot, semi *)
+  (* comma, semi *)
   | ','                   { PUNC_COMMA }
   | ';'                   { PUNC_SEMI }
 
@@ -89,12 +102,14 @@ rule token = parse
   (* literals *)
   | digit+ as lxm { INT_LIT(int_of_string lxm) }
   | double as lxm { DOUBLE_LIT(float_of_string lxm)}
-  | '\"' ([^'\"']* as lxm) '\"' { STRING_LIT(lxm) }
-  | '\'' (chr as lxm) '\'' { CHAR_LIT(lxm) }
+  | '\"' (all_chr* as lxm) '\"' { STRING_LIT(lxm) }
+  | '\'' (simp_chr as lxm) '\'' { CHAR_LIT(lxm) }
+  | "'\\" (esc_chr as ec) "'" { CHAR_LIT(make_char ec) }
   | "true" | "false" as lxm { BOOL_LIT(bool_of_string lxm) }
   (* identifiers *)
   | ['a'-'z' 'A'-'Z']['a'-'z' 'A'-'Z' '0'-'9' '_' '-']* as lxm { ID(lxm) }
   | eof { EOF }
+  | _ as bad { fail bad }
 
 and comment = parse
   | "*/" { token lexbuf }

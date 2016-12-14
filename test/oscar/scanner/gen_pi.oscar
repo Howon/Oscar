@@ -7,18 +7,22 @@ message piApproximation(pi: double)
 
 actor Worker() {
   def genRange(start: int, end: int) => list<int> = {
-    return listReverse(listPrepend(genRange(start + 1, end), list<int>[start]));
+    return Reverse(MergeFront(genRange(start + 1, end), list<int>[start]));
   }
 
   def calcPi(start: int, numElems: int) => double = {
     list<int> range = genRange(start, start + numElems);
-    return listReduce((x: int, y: int) => int = {return x + y;},
-      listMap((i: int) => int = {4.0 * (1 - (i % 2) * 2) / (2 * i + 1);}, range));
+
+    return Reduce((x: double, y: double) => double = {return x + y;},
+      Map((i: int) => double = {
+        return 4.0 * AsDouble((1 - (i % 2) * 2) / (2 * i + 1));
+      }, range));
   }
 
   receive = {
-    | work(start: int, numelems: int) => {
+    | work(start: int, numElems: int) => {
         double pi = calcPi(start, numElems);
+
         message<result>(pi) |> sender;
       }
   }
@@ -27,7 +31,7 @@ actor Worker() {
 actor Listener() {
   receive = {
     | piApproximation(value: double) => {
-        println("value of pi is approximately :" + value);
+        Println("value of pi is approximately :" + AsString(value));
         message<end>() |> sender;
     }
   }
@@ -36,8 +40,8 @@ actor Listener() {
 actor Master(numWorkers: int, numMsgs: int, numElems: int) {
   mut double pi = 0.0;
   mut int numResults = 0;
-  mut pool<Worker> workerPool = spawn pool<Worker>({}, numWorkers);
-  actor<Listener> listener = spawn actor<Listener>("pi listener");
+  pool<Worker> workerPool = spawn pool<Worker>({}, numWorkers);
+  actor<Listener> listener = spawn actor<Listener>();
 
   receive = {
     | start() => {
@@ -45,13 +49,13 @@ actor Master(numWorkers: int, numMsgs: int, numElems: int) {
           work(i * numElems, numElems);
         })*/
         message<work> msg = message<work>(0, 10);
-        msgList |>> workerPool;
+        msg |>> workerPool;
       }
     | result(value: double) => {
         pi = pi + value;
         numResults = numResults + 1;
         if (numResults == numMsgs) {
-          message<piApproximation>(pi) |>> listener;
+          message<piApproximation>(pi) |> listener;
         }
       }
     | end() => {

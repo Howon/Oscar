@@ -1,0 +1,12 @@
+
+def main() => unit = {
+  int a = 5;
+  {
+    Println(a);
+    int b = 6;
+    Println(b);
+  }
+  Println(a);
+  int b = 4;
+  Println(b);
+}

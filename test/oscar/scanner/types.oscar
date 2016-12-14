@@ -3,6 +3,7 @@
  */
 
 actor Types() {
+  int a = 4;
   int pos_i = 1;
   int neg_i = -1;
   double d = 2.5;
@@ -11,10 +12,12 @@ actor Types() {
   char c = 'a';
   string s = "test";
   list<int> intList = list<int>[1, 2, 3];
+  mut list<list<int> > intListList = list<list<int> >[intList];
+
   set<int> intSet = set<int>[1, 2, 3];
   map<int, char> intCharMap = map<int, char>[1 -> 'a', 2 -> 'b'];
 
-  int accList = inList[2];
+  int accList = intList[2];
   char accMap = intCharMap[3];
 
   mut int mI;
@@ -31,18 +34,22 @@ actor Types() {
   mut list<int> mIntList;
   mut set<int> mIntSet;
   mut map<int, char> mICM;
-  mICM[1] = 'a';
 
-  def println(s: string) => unit = { }
+  intListList[0][0] = mI;
 
-  def apply(f: lambda (double) => double, a: double) => double = {
+  def apply(f: lambda (double) => double , a: double) => double = {
+    def t(x : int) => unit = {
+    }
+
+    t(4);
     return f(a);
   }
+
   receive = {
 
   }
 }
 
 def main() => unit = {
-  println("Hello World!");
+  Println("Hello World!");
 }

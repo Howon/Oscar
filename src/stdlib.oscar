@@ -1,0 +1,7 @@
+def AsString(b: bool) => string = {
+  if(b) {
+    return "true";
+  } else {
+    return "false";
+  }
+}
