@@ -96,12 +96,12 @@ let rec str_texpr texpr =
   | SId se                     -> se
   | SAccess (scont, sit)       -> str_texpr scont ^ "[" ^ str_texpr sit ^ "]"
   | SLambda slambda            -> str_slambda slambda
-  | SList_Lit (t, sel)         -> "list<" ^ str_types t ^ ">[" ^
+  | SList_Lit (t, sel)         -> "list<" ^ str_cont_t t ^ "[" ^
                                     str_texprs sel ^ "]"
-  | SSet_Lit (t, sel)          -> "set<" ^ (str_types t) ^ ">[" ^
+  | SSet_Lit (t, sel)          -> "set<" ^ (str_cont_t t) ^ "[" ^
                                     str_texprs sel ^ "]"
   | SMap_Lit (kt, vt, skvs)    -> "map<" ^ str_types kt ^ ", " ^
-                                    str_types vt ^ ">[" ^
+                                    str_cont_t vt ^ "[" ^
                                       str_skvs skvs ^ "]"
   | SActor_Lit (sat, sel)      -> "spawn actor<" ^ sat ^ ">(" ^
                                     str_texprs sel ^ ")"
