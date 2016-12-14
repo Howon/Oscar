@@ -1,0 +1,10 @@
+def main() => unit = {
+  if (false) {
+	Println("not brug");
+  } else {
+  	Println("brug");
+    if (true) {
+      Println("brug");
+    }
+  }
+}

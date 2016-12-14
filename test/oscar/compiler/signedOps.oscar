@@ -1,0 +1,6 @@
+def main() => unit = {
+  Println(5 + -5);
+  Println(5 * -5);
+  Println(5 / -5);
+  Println(5 - -5);
+}

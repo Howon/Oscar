@@ -1,0 +1,71 @@
+message start()
+message end()
+message work(start: int, numElems: int)
+message result(value: double)
+message piApproximation(pi: double)
+
+
+actor Worker() {
+  def genRange(start: int, end: int) => list<int> = {
+    return Reverse(MergeFront(genRange(start + 1, end), list<int>[start]));
+  }
+
+  def calcPi(start: int, numElems: int) => double = {
+    list<int> range = genRange(start, start + numElems);
+
+    return Reduce((x: double, y: double) => double = {return x + y;},
+      Map((i: int) => double = {
+        return 4.0 * AsDouble((1 - (i % 2) * 2) / (2 * i + 1));
+      }, range));
+  }
+
+  receive = {
+    | work(start: int, numElems: int) => {
+        double pi = calcPi(start, numElems);
+
+        message<result>(pi) |> sender;
+      }
+  }
+}
+
+actor Listener() {
+  receive = {
+    | piApproximation(value: double) => {
+        Println("value of pi is approximately :" + AsString(value));
+        message<end>() |> sender;
+    }
+  }
+}
+
+actor Master(numWorkers: int, numMsgs: int, numElems: int) {
+  mut double pi = 0.0;
+  mut int numResults = 0;
+  pool<Worker> workerPool = spawn pool<Worker>({}, numWorkers);
+  actor<Listener> listener = spawn actor<Listener>();
+
+  receive = {
+    | start() => {
+        /*list<work> msgList = [int i <- 0 to numMsgs by 1].map(i => {
+          work(i * numElems, numElems);
+        })*/
+        message<work> msg = message<work>(0, 10);
+        msg |>> workerPool;
+      }
+    | result(value: double) => {
+        pi = pi + value;
+        numResults = numResults + 1;
+        if (numResults == numMsgs) {
+          message<piApproximation>(pi) |> listener;
+        }
+      }
+    | end() => {
+        die();
+      }
+  }
+}
+
+
+def main() => unit = {
+  actor<Master> master = spawn actor<Master>(5, 10000, 10000);
+  message<start>() |> master;
+}

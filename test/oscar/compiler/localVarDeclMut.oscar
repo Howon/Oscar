@@ -1,0 +1,8 @@
+def main() => unit = {
+	/* todo: place this into an Actor */
+	mut int x = 17;
+	Println(x);
+
+	x = 42;
+	Println(x);
+}

@@ -1,0 +1,13 @@
+def main() => unit = {
+  int x = 4;
+  int y = 10;
+  Println(x);
+  Println(x * -5);
+  Println(x / -5);
+  Println(x - -5);
+
+  Println(x - y);
+  Println(x + y);
+  Println(x * y);
+  Println(x / y);
+}

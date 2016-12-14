@@ -1,0 +1,14 @@
+def main() => unit = {
+  Println(5 == 5);
+  Println(4 == 5);
+  Println(4 != 5);
+  Println(5 != 5);
+  Println(4 < 5);
+  Println(5 < 4);
+  Println(5 <= 5);
+  Println(5 <= 4);
+  Println(5 > 4);
+  Println(4 > 5);
+  Println(5 >= 5);
+  Println(4 >= 5);
+}

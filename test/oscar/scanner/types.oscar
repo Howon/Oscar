@@ -1,0 +1,55 @@
+/*
+ * COMMENT BLOCK
+ */
+
+actor Types() {
+  int a = 4;
+  int pos_i = 1;
+  int neg_i = -1;
+  double d = 2.5;
+  bool b_t = true;
+  bool b_f = false;
+  char c = 'a';
+  string s = "test";
+  list<int> intList = list<int>[1, 2, 3];
+  mut list<list<int> > intListList = list<list<int> >[intList];
+
+  set<int> intSet = set<int>[1, 2, 3];
+  map<int, char> intCharMap = map<int, char>[1 -> 'a', 2 -> 'b'];
+
+  int accList = intList[2];
+  char accMap = intCharMap[3];
+
+  mut int mI;
+  mI = 2;
+  mut double mD;
+  mD = 5.0;
+  mut bool mB;
+  mB = true;
+  mB = false;
+  mut char mC;
+  mC = 'b';
+  mut string mS;
+  mS = "mut test";
+  mut list<int> mIntList;
+  mut set<int> mIntSet;
+  mut map<int, char> mICM;
+
+  intListList[0][0] = mI;
+
+  def apply(f: lambda (double) => double , a: double) => double = {
+    def t(x : int) => unit = {
+    }
+
+    t(4);
+    return f(a);
+  }
+
+  receive = {
+
+  }
+}
+
+def main() => unit = {
+  Println("Hello World!");
+}
