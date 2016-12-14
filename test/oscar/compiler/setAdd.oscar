@@ -1,0 +1,6 @@
+def main() => unit = {
+  set<int> intSet1 = set<int>[1, 2, 3, 4, 5];
+  Println(Add(intSet1, 6) == set<int>[1, 2, 3, 4, 5, 6]);
+  Println(intSet1 == set<int>[1, 2, 3, 4, 5]);
+  Println(Add(intSet1, 1) == intSet1);
+}

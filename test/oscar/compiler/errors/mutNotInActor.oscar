@@ -1,4 +1,3 @@
 def main() => unit = {
-	int x = 17;
-	x = 42;
+  mut int x = 1; 
 }

@@ -1,0 +1,19 @@
+message testNow()
+
+
+actor Tester() {
+  mut bool b = false;
+  
+  receive = {
+    | testNow() => {
+        Println(b);
+	    b = true;
+	    Println(b);
+    }
+  }
+}
+
+def main() => unit = {
+  actor<Tester> boolTester = spawn actor<Tester>();
+  message<testNow>() |> boolTester;
+}

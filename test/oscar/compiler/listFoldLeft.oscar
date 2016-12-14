@@ -1,0 +1,6 @@
+def main() => unit = {
+  list<int> intList = list<int>[1, 2, 3, 4, 5];
+  Println(FoldLeft(intList, (x:int, y:int) => int = {
+    return x + y; 
+  })); 
+}

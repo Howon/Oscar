@@ -94,40 +94,38 @@ test_compiler() {
 
     # compile program to test.ll, put any errors in the session
     echo -e "Oscar Compiler Messages:" >> session_file
-    $oscar_compile $oscar_test_file 1> temp.ll 2>> session_file
-    echo "" >> session_file
+    $oscar_compile $oscar_test_file 1> temp.ll 2> oscar_error_output
 
-    # run lli on the file and save the output and errors
-    echo -e "LLVM Messages:" >> session_file
-    $LLI temp.ll 1> oscar_test_output 2>> session_file
+    
 
-    echo "" >> session_file
+    echo "" > oscar_test_output
 
-    # Perform comparison of outputs
-    # why is this being done tho lol
-    #cat oscar_test_output
-    #cat "$test_path"$filename$compiler_extension
-    #diff oscar_test_output "$test_path"$filename$compiler_extension
-    diff oscar_test_output "$test_path"$filename$compiler_extension >> /dev/null
-    show_result $1 $filename $compiler_extension $test_extension
-  done
+    # if we had a error, then diff errors. Otherwise, run LLVM and diff outputs
+    if [ -s oscar_error_output ]; then
+      echo "" >> oscar_error_output
+      cat oscar_error_output >> session_file
+      echo "" >> session_file
+
+       # diff errors
+      diff oscar_error_output "$test_path"$filename$compiler_extension >> /dev/null
+      show_result $1 $filename $compiler_extension $test_extension
+
+    else
+
+      # run lli on the file and save the output and errors
+      echo -e "LLVM Messages:" >> session_file
+      $LLI temp.ll 1> oscar_test_output 2>> session_file
+      echo "" >> session_file
+
+      # diff outputs
+      diff oscar_test_output "$test_path"$filename$compiler_extension >> /dev/null
+      show_result $1 $filename $compiler_extension $test_extension
+
+    fi
+
+    done
 
   echo "" >> session_file
-
-  #Verbose flag actuated
-
-  # cat session_file
-  cat session_file >> "$logFile"
-
-  #Test status output
-  echo ""
-  echo -e "Tests Passed: $case_passed $"
-  echo -e "Tests Failed: $case_failed $"
-
-  #Clean up temp files
-  rm -f oscar_test_output;
-  rm -f session_file;
-  rm -f temp.ll;
 }
 
 make_oscar(){
@@ -147,27 +145,31 @@ make_oscar
 logFile=./test/logfile.log
 echo "" > $logFile
 
-#test_path="$TEST_DIR"/oscar/scanner/
-#scanner_extension=.scan
-
-# test_scanner $test_path $scanner_extension
-
+echo -e "\n\n${CYAN}----------Testing Valid----------${NC}\n"
 test_path=./test/oscar/compiler/
 test_extension=.oscar
 compiler_extension=$test_extension.out
 test_compiler $test_path $compiler_extension $test_extension
 
+echo -e "\n\n${CYAN}----------Testing Errors----------${NC}\n"
+# testing errors
+test_path=./test/oscar/compiler/errors/
+test_compiler $test_path $compiler_extension $test_extension
+
+# cat session_file
+cat session_file >> "$logFile"
+
+#Test status output
+echo ""
+echo -e "Tests Passed: $case_passed $"
+echo -e "Tests Failed: $case_failed $"
+
+#Clean up temp files
+rm -f oscar_test_output;
+rm -f oscar_error_output
+rm -f session_file;
+rm -f temp.ll;
+
 make clean
 cd test
-
-
-# errorLines=$(cat $errorFile | wc -l)
-# mv $errorFile Test\ Suite/$errorFile
-
-# if [ $errorLines -ne 0 ]; then
-#   echo "$errorLines lines of script errors reported. Please check $errorFile!"
-# else
-#   mv Test\ Suite/$errorFile
-# fi
-
 exit 0

@@ -1,0 +1,5 @@
+def main() => unit = {
+  Println(list<int>[]);
+  Println(list<int>[1, 2, 3, 4, 5]);
+  Println(list<string>["hey", "hi", "hello"]);
+}

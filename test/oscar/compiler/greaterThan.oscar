@@ -1,0 +1,4 @@
+def main() => unit = {
+  Println(2 > 1);
+  Println(1.0 > 2.0);
+}

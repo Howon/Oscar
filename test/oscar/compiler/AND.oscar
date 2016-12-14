@@ -1,0 +1,6 @@
+def main() => unit = {
+  Println(true && true);
+  Println(true && false);
+  Println(false && true);
+  Println(false && false);
+}

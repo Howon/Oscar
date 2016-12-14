@@ -1,0 +1,24 @@
+message testNow()
+
+
+actor Tester() {
+  
+  receive = {
+    | testNow() => {
+        Println(factorial(5));
+    }
+  }
+}
+
+def factorial(n: int) => int = {
+  if (n == 0) {
+    return 1;
+  } else {
+    return (n * factorial(n - 1)); 
+  } 
+}
+
+def main() => unit = {
+  actor<Tester> recursionTester = spawn actor<Tester>();
+  message<testNow>() |> recursionTester;
+}

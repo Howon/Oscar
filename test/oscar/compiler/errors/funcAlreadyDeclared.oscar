@@ -1,0 +1,11 @@
+def add5(x: int) => int = {
+  return (x + 5);
+}
+
+def add5(x: int) => int = {
+  return (x + 5);
+}
+
+def main() => unit = {
+  add5(1) 
+}
