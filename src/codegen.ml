@@ -24,6 +24,7 @@ let translate (messages, actors, functions) =
     | A.Unit_t    -> void_t
     | A.Double_t  -> f_t
     | A.String_t  -> L.pointer_type i8_t
+    | _           -> raise (Failure ("TODO implement types") )
   in
 
   (* Declare print(), which the print built-in function will call *)
@@ -108,12 +109,14 @@ let translate (messages, actors, functions) =
             | A.Bit_Xor     -> L.build_xor
             | A.Bit_RShift  -> L.build_lshr
             | A.Bit_LShift  -> L.build_shl
+            | _             -> raise (Failure ("bad int/char/bool binop") )
           )
       (* TODO: make void ops work *)
       | A.Unit_t                      ->
           (match op with
             | A.Equal       -> L.build_icmp L.Icmp.Eq
             | A.Neq         -> L.build_icmp L.Icmp.Ne
+            | _             -> raise (Failure ("bad unit binop") )
           )
       | A.Double_t                    ->
           (match op with
@@ -127,6 +130,7 @@ let translate (messages, actors, functions) =
             | A.Leq         -> L.build_fcmp L.Fcmp.Ole
             | A.Greater     -> L.build_fcmp L.Fcmp.Ogt
             | A.Geq         -> L.build_fcmp L.Fcmp.Oge
+            | _             -> raise (Failure ("bad double binop") )
           )
       (* TODO: make string ops work *)
       | A.String_t                    ->
@@ -134,21 +138,45 @@ let translate (messages, actors, functions) =
               A.Add         -> L.build_add
             | A.Equal       -> L.build_icmp L.Icmp.Eq
             | A.Neq         -> L.build_icmp L.Icmp.Ne
+            | _             -> raise (Failure ("bad string binop") )
           )
+
+      | A.List_t(t)         -> raise (Failure ("binop TODO") )
+      | A.Set_t(s)          -> raise (Failure ("binop TODO") )
+      | A.Map_t(kt, vt)     -> raise (Failure ("binop TODO") )
+      | _                   -> raise (Failure ("bad binop" ) )
+
     in
 
+
+
+    (* Invoke "f builder" if the current block doesn't already
+    have a terminal (e.g., a branch). *)
+    let add_terminal builder f =
+      match L.block_terminator (L.insertion_block builder) with
+          Some _ -> ()
+        | None -> ignore (f builder) in
 
     (* Construct code for an expression; return its value *)
     (* takes a t_expr, which is (sexpr, types) *)
     let rec t_expr builder (te : S.t_expr) =
       match te with
         (S.SInt_Lit(i), typ)          -> L.const_int i32_t i
-      | (S.SBool_Lit(b), typ)         -> L.const_int i1_t (if b then 1 else 0)
       | (S.SDouble_Lit(d), typ)       -> L.const_float f_t d
       | (S.SChar_Lit(c), typ)         -> L.const_int i8_t (Char.code c)
       | (S.SString_Lit(s), typ)       -> L.build_global_stringptr s "tmp" builder
+      | (S.SBool_Lit(b), typ)         -> L.const_int i1_t (if b then 1 else 0)
+      | (S.SUnit_Lit(u), typ)         -> raise (Failure ("no units") )
       | (S.SNoexpr, typ)              -> L.const_int i32_t 0
       | (S.SId(s), typ)               -> L.build_load (lookup s) s builder
+      | (S.SAccess(e1, e2), typ)      -> raise (Failure ("TODO: access") )
+      | (S.SLambda(func), typ)        -> raise (Failure ("TODO: lambdas") )
+      | (S.SList_Lit(t, exprs), typ)  -> raise (Failure ("TODO: lists") )
+      | (S.SSet_Lit(t, exprs), typ)  -> raise (Failure ("TODO: sets") )
+      | (S.SMap_Lit(kt, vt, kvs), typ)-> raise (Failure ("TODO: maps") )
+      | (S.SActor_Lit(n, exprs), typ) -> raise (Failure ("TODO: actors") )
+      | (S.SPool_Lit(n, exprs, c), typ) -> raise (Failure ("TODO: pools") )
+      | (S.SMessage_Lit(n, exprs), typ)-> raise (Failure ("TODO: messages") )
       | (S.SBinop(e1, op, e2), typ)   ->
         let e1' = t_expr builder e1
         and e2' = t_expr builder e2 in
@@ -159,7 +187,8 @@ let translate (messages, actors, functions) =
           (match op with
               A.Neg -> (match typ with
                   A.Int_t -> L.build_neg
-                | A.Double_t -> L.build_fneg)
+                | A.Double_t -> L.build_fneg
+                | _ -> raise (Failure ("bad unop") ))
             | A.Not -> L.build_not
           ) e' "tmp" builder
       | (S.SFuncCall("Println", t_el), typ) -> build_print_call t_el builder
@@ -177,11 +206,16 @@ let translate (messages, actors, functions) =
     (* t_el is list of t_exprs *)
     and build_print_call t_el builder =
 
-      (* special expression matcher that turns bools into strings,
-          but leaves everything else normal *)
-      let bool_to_string (te : S.t_expr) = match te with
-          (S.SBool_Lit(b), typ) -> (S.SString_Lit(if b then "true" else "false"), A.String_t)
-        | (se, typ) -> (se, typ)
+      (* make a function that handles anything with bool_t as an if *)
+      let to_print_texpr texpr = match (snd texpr) with
+          A.Bool_t  ->
+            let t = { S.sv_name = "_tmpBool";  S.sv_type = A.String_t;
+              S.sv_init = (S.SString_Lit("true"), A.String_t) }
+            and f = { S.sv_name = "_tmpBool";  S.sv_type = A.String_t;
+              S.sv_init = (S.SString_Lit("false"), A.String_t) } in
+            let () = ignore (stmt builder (S.SIf(texpr, S.SVdecl(t), S.SVdecl(f)))) in
+            (S.SId("_tmpBool"), A.String_t)
+        | _     -> texpr
       in
 
       (* type to string used to print *)
@@ -191,14 +225,15 @@ let translate (messages, actors, functions) =
         | A.Double_t        -> "%f"
         | A.Char_t          -> "%c"
         | A.String_t        -> "%s"
+        | _                 -> raise ( Failure("TODO: printing types"))
 
       in
 
       (* get the things to print *)
-      let new_t_el = List.map bool_to_string t_el in
-      let params = List.map (t_expr builder) new_t_el in
+      let pexprs_l = List.map to_print_texpr t_el in
+      let params = List.map (t_expr builder) pexprs_l in
       (* get their types *)
-      let param_types = List.map snd new_t_el in
+      let param_types = List.map snd pexprs_l in
 
       let const_str = List.fold_left
                         (fun s t -> s ^ map_type_to_string t) "" param_types
@@ -208,18 +243,10 @@ let translate (messages, actors, functions) =
                         (const_str ^ "\n") "tmp" builder in
       L.build_call print_func
                         (Array.of_list (fmt_str :: params)) "printf" builder
-      in
-
-    (* Invoke "f builder" if the current block doesn't already
-    have a terminal (e.g., a branch). *)
-    let add_terminal builder f =
-      match L.block_terminator (L.insertion_block builder) with
-          Some _ -> ()
-        | None -> ignore (f builder) in
 
     (* Build the code for the given statement; return the builder for
        the statement's successor *)
-    let rec stmt builder = function
+     and stmt builder = function
         S.SExpr(se, typ) -> ignore (t_expr builder (se, typ)); builder
       | S.SBlock(sl) -> List.fold_left stmt builder sl
       | S.SReturn(se, typ) -> ignore(
@@ -232,6 +259,8 @@ let translate (messages, actors, functions) =
             let tup = (sval_decl.sv_name, sval_decl.sv_type) in
               add_local tup init_val;
             builder;
+      | S.SMutdecl(smvar_decl) -> raise ( Failure ("TODO: mutdecl") )
+      | S.SFdecl(func) -> raise ( Failure ("TODO: funcs") )
       | S.SIf (predicate, then_stmt, else_stmt) ->
           let bool_val = t_expr builder predicate in
           let merge_bb = L.append_block context "merge" the_function in
@@ -246,6 +275,8 @@ let translate (messages, actors, functions) =
 
           ignore (L.build_cond_br bool_val then_bb else_bb builder);
           L.builder_at_end context merge_bb
+      | S.SActor_send(e1, e2) -> raise ( Failure ("TODO: act_send") )
+      | S.SPool_send(e1, e2) -> raise ( Failure ("TODO: pool_broadcast") )
     in
 
     (* Build the code for each statement in the function *)
