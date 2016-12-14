@@ -1,1 +1,1 @@
-Function add5 with signature (int, int) => int not found
+Error: Function add5 with signature (int, int) => int not found

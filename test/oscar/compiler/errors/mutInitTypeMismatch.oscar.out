@@ -1,1 +1,1 @@
-Variable initialization type mismatch: x is int but initialized as double
+Error: Variable initialization type mismatch: x is int but initialized as double

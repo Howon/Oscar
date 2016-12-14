@@ -1,1 +1,1 @@
-x declared as both mutable and immutable
+Error: x declared as both mutable and immutable

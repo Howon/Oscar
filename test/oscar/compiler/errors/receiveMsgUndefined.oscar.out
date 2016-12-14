@@ -1,1 +1,1 @@
-Actor Tester attempts to receive an undefined message
+Error: Actor Tester attempts to receive an undefined message

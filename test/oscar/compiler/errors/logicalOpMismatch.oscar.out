@@ -1,1 +1,1 @@
-Only boolean expressions are allowed for &&
+Error: Only boolean expressions are allowed for &&
