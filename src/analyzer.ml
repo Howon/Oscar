@@ -935,6 +935,6 @@ let check_program (p : program) =
   ) ([], a_env) functions in
   try
     let _ = List.find (fun sf -> sf.sf_name = "main") sfunctions in
-    (smessages, sactors, sfunctions)
+    (List.rev smessages, List.rev sactors, List.rev sfunctions)
   with Not_found -> raise (Failure "No main function in this program")
 
