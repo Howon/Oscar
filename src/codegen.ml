@@ -11,9 +11,9 @@ let local_vars = Hashtbl.create 50
 let translate (messages, actors, functions) =
   let context = L.global_context () in
   let the_module = L.create_module context "Oscar"
-  and i32_t  = L.i32_type  context
-  and i8_t   = L.i8_type   context
-  and i1_t   = L.i1_type   context
+  and i32_t  = L.i32_type context
+  and i8_t   = L.i8_type context
+  and i1_t   = L.i1_type context
   and f_t    = L.double_type context
   and void_t = L.void_type context in
 
@@ -62,20 +62,20 @@ let translate (messages, actors, functions) =
       (* todo: this assumes type is int; should grab type from semantic analysis *)
       | S.SId(_)           -> A.Int_t
     in
-    *) 
+    *)
 
     let (the_function, _) = StringMap.find func.S.sf_name function_decls in
     let builder = L.builder_at_end context (L.entry_block the_function) in
 
     (* Add a local varible to the Hashtbl local_vars:
-        Allocate on the stack, initialize its value, 
+        Allocate on the stack, initialize its value,
         and add to Hashtbl local_vars *)
-    let add_local (n, t) p = 
+    let add_local (n, t) p =
       let local = L.build_alloca (ltype_of_typ t) n builder in
         ignore(L.build_store p local builder);
         Hashtbl.add local_vars n local;
         L.set_value_name n p;
-    in 
+    in
     (* add all the formals for the function to the Hashtbl local_vars *)
     ignore(List.map2 add_local func.S.sf_formals (Array.to_list (L.params the_function)));
 
@@ -86,20 +86,9 @@ let translate (messages, actors, functions) =
           | Not_found -> raise (Failure ("undefined local variable: " ^ n))
     in
 
-    (* Construct code for an expression; return its value *)
-    (* takes a t_expr, which is (sexpr, types) *)
-    let rec t_expr builder (te : S.t_expr) = 
-      match te with
-        (S.SInt_Lit(i), typ)          -> L.const_int i32_t i
-      | (S.SBool_Lit(b), typ)         -> L.const_int i1_t (if b then 1 else 0)
-      | (S.SDouble_Lit(d), typ)       -> L.const_float f_t d
-      | (S.SChar_Lit(c), typ)         -> L.const_int i8_t (Char.code c)
-      | (S.SString_Lit(s), typ)       -> L.build_global_stringptr s "tmp" builder
-      | (S.SNoexpr, typ)              -> L.const_int i32_t 0
-      | (S.SId(s), typ)               -> L.build_load (lookup s) s builder
-      | (S.SBinop(e1, op, e2), typ)   ->
-        let e1' = t_expr builder e1 
-        and e2' = t_expr builder e2 in
+    let ll_binop op typ =
+      match typ with
+        A.Int_t | A.Char_t | A.Bool_t ->
           (match op with
               A.Add         -> L.build_add
             | A.Sub         -> L.build_sub
@@ -119,14 +108,60 @@ let translate (messages, actors, functions) =
             | A.Bit_Xor     -> L.build_xor
             | A.Bit_RShift  -> L.build_lshr
             | A.Bit_LShift  -> L.build_shl
-          ) e1' e2' "tmp" builder
+          )
+      (* TODO: make void ops work *)
+      | A.Unit_t                      ->
+          (match op with
+            | A.Equal       -> L.build_icmp L.Icmp.Eq
+            | A.Neq         -> L.build_icmp L.Icmp.Ne
+          )
+      | A.Double_t                    ->
+          (match op with
+              A.Add         -> L.build_fadd
+            | A.Sub         -> L.build_fsub
+            | A.Mult        -> L.build_fmul
+            | A.Div         -> L.build_fdiv
+            | A.Equal       -> L.build_fcmp L.Fcmp.Oeq
+            | A.Neq         -> L.build_fcmp L.Fcmp.One
+            | A.Less        -> L.build_fcmp L.Fcmp.Olt
+            | A.Leq         -> L.build_fcmp L.Fcmp.Ole
+            | A.Greater     -> L.build_fcmp L.Fcmp.Ogt
+            | A.Geq         -> L.build_fcmp L.Fcmp.Oge
+          )
+      (* TODO: make string ops work *)
+      | A.String_t                    ->
+          (match op with
+              A.Add         -> L.build_add
+            | A.Equal       -> L.build_icmp L.Icmp.Eq
+            | A.Neq         -> L.build_icmp L.Icmp.Ne
+          )
+    in
+
+
+    (* Construct code for an expression; return its value *)
+    (* takes a t_expr, which is (sexpr, types) *)
+    let rec t_expr builder (te : S.t_expr) =
+      match te with
+        (S.SInt_Lit(i), typ)          -> L.const_int i32_t i
+      | (S.SBool_Lit(b), typ)         -> L.const_int i1_t (if b then 1 else 0)
+      | (S.SDouble_Lit(d), typ)       -> L.const_float f_t d
+      | (S.SChar_Lit(c), typ)         -> L.const_int i8_t (Char.code c)
+      | (S.SString_Lit(s), typ)       -> L.build_global_stringptr s "tmp" builder
+      | (S.SNoexpr, typ)              -> L.const_int i32_t 0
+      | (S.SId(s), typ)               -> L.build_load (lookup s) s builder
+      | (S.SBinop(e1, op, e2), typ)   ->
+        let e1' = t_expr builder e1
+        and e2' = t_expr builder e2 in
+          (ll_binop op (snd e1)) e1' e2' "tmp" builder
+
       | (S.SUop(op, e), typ) ->
         let e' = t_expr builder e in
           (match op with
               A.Neg -> (match typ with
-                  A.Int_t -> L.const_neg
-                | A.Double_t -> L.const_fneg)
-          ) e'
+                  A.Int_t -> L.build_neg
+                | A.Double_t -> L.build_fneg)
+            | A.Not -> L.build_not
+          ) e' "tmp" builder
       | (S.SFuncCall("Println", t_el), typ) -> build_print_call t_el builder
       | (S.SFuncCall(f, act), typ) ->
           let (fdef, fdecl) = StringMap.find f function_decls in
@@ -193,7 +228,7 @@ let translate (messages, actors, functions) =
             | _ -> L.build_ret (t_expr builder (se, typ)) builder
           ); builder
       | S.SVdecl(sval_decl) ->
-          let init_val = t_expr builder sval_decl.sv_init in 
+          let init_val = t_expr builder sval_decl.sv_init in
             let tup = (sval_decl.sv_name, sval_decl.sv_type) in
               add_local tup init_val;
             builder;
@@ -206,7 +241,7 @@ let translate (messages, actors, functions) =
             (L.build_br merge_bb);
 
           let else_bb = L.append_block context "else" the_function in
-            add_terminal (stmt (L.builder_at_end context else_bb) else_stmt) 
+            add_terminal (stmt (L.builder_at_end context else_bb) else_stmt)
             (L.build_br merge_bb);
 
           ignore (L.build_cond_br bool_val then_bb else_bb builder);
