@@ -482,6 +482,15 @@ let spread_arg (args : formal list) (vals : sval_decl list)
   ) (vals, funcs) args
 
 let rec check_expr (e : expr) (env : scope) =
+  let type_consistent (typ : types) (tel : types list) (cont : string) =
+    try
+      (let _ = List.find (fun t ->
+        not (types_equal typ t)
+      ) tel in
+      raise (Failure (cont ^ " of type " ^ str_types typ ^ " cannot be " ^
+        "initialized with parameters of type[s]" ^ str_types_list tel)))
+    with Not_found -> () in
+
   match e with
       Int_Lit i           -> (SInt_Lit i, Int_t)
     | Double_Lit d        -> (SDouble_Lit d, Double_t)
@@ -525,9 +534,13 @@ let rec check_expr (e : expr) (env : scope) =
         } in (slambda, Lambda_t (get_list_snd l_formals, l_return_t))
     | List_Lit (lt, ex) ->
         let te_list = check_expr_list ex env in
+        let te_list_types = get_list_snd te_list in
+        let _ = type_consistent lt te_list_types "List" in
           (SList_Lit (lt, te_list), List_t lt)
     | Set_Lit (st, ex) ->
         let te_list = check_expr_list ex env in
+        let te_list_types = get_list_snd te_list in
+        let _ = type_consistent st te_list_types "Set" in
           (SSet_Lit (st, te_list), Set_t st)
     | Map_Lit (kt, vt, kvx) ->
         let tkv_list = List.map (fun (k, v) ->
