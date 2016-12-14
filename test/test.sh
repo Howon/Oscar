@@ -145,10 +145,13 @@ make_oscar
 logFile=./test/logfile.log
 echo "" > $logFile
 
+echo -e "\n\n${CYAN}----------Testing Valid----------${NC}\n"
 test_path=./test/oscar/compiler/
 test_extension=.oscar
 compiler_extension=$test_extension.out
 test_compiler $test_path $compiler_extension $test_extension
+
+echo -e "\n\n${CYAN}----------Testing Errors----------${NC}\n"
 # testing errors
 test_path=./test/oscar/compiler/errors/
 test_compiler $test_path $compiler_extension $test_extension
