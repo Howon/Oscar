@@ -96,14 +96,16 @@ test_compiler() {
     echo -e "Oscar Compiler Messages:" >> session_file
     $oscar_compile $oscar_test_file 1> temp.ll 2> oscar_error_output
 
-    echo "" >> oscar_error_output
-    cat oscar_error_output >> session_file
-    echo "" >> session_file
+    
 
     echo "" > oscar_test_output
 
     # if we had a error, then diff errors. Otherwise, run LLVM and diff outputs
     if [ -s oscar_error_output ]; then
+      echo "" >> oscar_error_output
+      cat oscar_error_output >> session_file
+      echo "" >> session_file
+
        # diff errors
       diff oscar_error_output "$test_path"$filename$compiler_extension >> /dev/null
       show_result $1 $filename $compiler_extension $test_extension
@@ -146,7 +148,7 @@ echo "" > $logFile
 test_path=./test/oscar/compiler/
 test_extension=.oscar
 compiler_extension=$test_extension.out
-# test_compiler $test_path $compiler_extension $test_extension
+test_compiler $test_path $compiler_extension $test_extension
 # testing errors
 test_path=./test/oscar/compiler/errors/
 test_compiler $test_path $compiler_extension $test_extension
@@ -161,6 +163,7 @@ echo -e "Tests Failed: $case_failed $"
 
 #Clean up temp files
 rm -f oscar_test_output;
+rm -f oscar_error_output
 rm -f session_file;
 rm -f temp.ll;
 
