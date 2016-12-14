@@ -1,0 +1,11 @@
+def main() => unit = {
+  def test(a: int) => unit = {
+    Println(a);
+    int b = 12;
+  }
+
+  test(5);
+
+  int b = 4;
+  Println(b);
+}
