@@ -2,6 +2,7 @@
    check the resulting AST, generate LLVM IR, and dump the module *)
 
 open Sast
+open Printf
 
 type action = LLVM_IR | Compile | Ast | Sast
 
@@ -30,8 +31,8 @@ let _ =
       Analyzer.check_program program stdlib
     with
       Failure f ->
-        print_endline("Error: " ^ f);
-        flush stdout;
+        Printf.eprintf "%s" ("Error: " ^ f);
+        flush stderr;
         exit 1;
   in
 (* let ast = Parser.program Scanner.token lexbuf in
