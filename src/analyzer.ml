@@ -371,10 +371,17 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
             | _ -> raise (Failure ("operand type mismatch: " ^
                      (str_types t1) ^ " " ^ str_binop op ^ " " ^
                        (str_types t2))))
-      | Sub | Mult | Div | Less | Leq | Greater | Geq ->
+      | Sub | Mult | Div ->
           (match t1, t2 with
               Int_t, Int_t       -> (SBinop (te1, op, te2), Int_t)
             | Double_t, Double_t -> (SBinop (te1, op, te2), Double_t)
+            | _ -> raise (Failure ("operand type mismatch: " ^
+                     (str_types t1) ^ " " ^ str_binop op ^ " " ^
+                       (str_types t2))))
+      | Less | Leq | Greater | Geq ->
+          (match t1, t2 with
+              Int_t, Int_t       -> (SBinop (te1, op, te2), Bool_t)
+            | Double_t, Double_t -> (SBinop (te1, op, te2), Bool_t)
             | _ -> raise (Failure ("operand type mismatch: " ^
                      (str_types t1) ^ " " ^ str_binop op ^ " " ^
                        (str_types t2))))
