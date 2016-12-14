@@ -371,10 +371,17 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
             | _ -> raise (Failure ("operand type mismatch: " ^
                      (str_types t1) ^ " " ^ str_binop op ^ " " ^
                        (str_types t2))))
-      | Sub | Mult | Div | Less | Leq | Greater | Geq ->
+      | Sub | Mult | Div ->
           (match t1, t2 with
               Int_t, Int_t       -> (SBinop (te1, op, te2), Int_t)
             | Double_t, Double_t -> (SBinop (te1, op, te2), Double_t)
+            | _ -> raise (Failure ("operand type mismatch: " ^
+                     (str_types t1) ^ " " ^ str_binop op ^ " " ^
+                       (str_types t2))))
+      | Less | Leq | Greater | Geq ->
+          (match t1, t2 with
+              Int_t, Int_t       -> (SBinop (te1, op, te2), Bool_t)
+            | Double_t, Double_t -> (SBinop (te1, op, te2), Bool_t)
             | _ -> raise (Failure ("operand type mismatch: " ^
                      (str_types t1) ^ " " ^ str_binop op ^ " " ^
                        (str_types t2))))
@@ -386,9 +393,9 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
                        (str_types t2))))
       | Equal | Neq ->
             (if types_equal t1 t2 then
-              (SBinop(te1, op, te1), Bool_t)
+              (SBinop(te1, op, te2), Bool_t)
             else
-              match t1, t1 with
+              match t1, t2 with
                   Actor_t _, Actor_t _ ->
                     raise (Failure "Actors cannot be compared for equality")
                 | Pool_t _, Pool_t _ ->
@@ -915,6 +922,6 @@ let check_program (p : program) =
   ) ([], a_env) functions in
   try
     let _ = List.find (fun sf -> sf.sf_name = "main") sfunctions in
-    (smessages, sactors, sfunctions)
+    (List.rev smessages, List.rev sactors, List.rev sfunctions)
   with Not_found -> raise (Failure "No main function in this program")
 
