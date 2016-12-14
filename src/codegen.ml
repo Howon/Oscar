@@ -212,12 +212,14 @@ let translate (messages, actors, functions) =
           A.Bool_t  ->
             (S.SFuncCall("AsString", [texpr]), A.String_t)
             (*let t = { S.sv_name = "_tmpBool";  S.sv_type = A.String_t;
+
               S.sv_init = (S.SString_Lit("true"), A.String_t) }
             and f = { S.sv_name = "_tmpBool";  S.sv_type = A.String_t;
               S.sv_init = (S.SString_Lit("false"), A.String_t) } in
             let () = ignore (stmt builder (S.SIf(texpr,
                 S.SBlock([S.SVdecl(t)]), S.SBlock([S.SVdecl(f)])))) in
             (S.SId("_tmpBool"), A.String_t)*)
+
         | _     -> texpr
       in
 
