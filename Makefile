@@ -1,4 +1,5 @@
 TARGET=oscar
+STDLIB=stdlib.oscar
 
 CXX= clang
 CXXFLAGS = -std=c++14 -Wall -g -c -O3
@@ -21,6 +22,7 @@ oscar :
 	cd ../ && \
 	mkdir -p $(BUILDDIR) && \
 	mv ./src/$(TARGET) ./$(TARGET) && \
+	cp ./src/$(STDLIB) ./$(BUILDDIR) && \
 	echo 'Oscar Compiler Succesfully Built'
 
 scanner.ml : scanner.mll
@@ -38,7 +40,10 @@ parser.ml parser.mli : parser.mly
 %.cmx : %.ml
 	ocamlfind ocamlopt -c -package llvm $<
 
-.PHONY : clean
+.PHONY : all clean
+
+all: clean oscar
+
 clean :
 	@echo 'Cleaning Oscar build'
 	@cd ./src/ && \

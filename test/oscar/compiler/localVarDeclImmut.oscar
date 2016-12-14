@@ -6,7 +6,7 @@ def main() => unit = {
 	Println(c);
 
 	double d = 42.0;
-	Println(d);	
+	Println(d);
 
 	bool b = true;
 	Println(b);
