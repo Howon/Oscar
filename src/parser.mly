@@ -91,9 +91,11 @@ function_list:
 fdecl:
   FUNC_DECL ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
   ASSIGN LBRACE stmts RBRACE
-    { { v_name = $2;
+    {
+      { v_name = $2;
         v_type = Func_t((List.map (fun (i,t) -> t) $4), $7);
-        v_init = Func_Lit({ f_formals = $4; f_return_t = $7; f_body = $10 }) } }
+        v_init = Func_Lit({ f_formals = $4; f_return_t = $7; f_body = $10 }) }
+    }
 
 formals_opt:
     /* nothing */ { [] }
