@@ -240,8 +240,7 @@ let check_builtin (f : string) (tel : t_expr list) (env : scope) =
           (match tel with
               [(_, tail_t)] ->
                 (match tail_t with
-                    List_t _ | Set_t _ | Map_t (_, _) ->
-                      (SFuncCall(f, tel), tail_t)
+                    List_t _ -> (SFuncCall(f, tel), tail_t)
                   | _ -> raise (Builtin_arg_type_err (f, tel)))
             | _ -> raise (Builtin_arg_num_err (f, 1, args_len)))
       | "Size" ->
@@ -296,9 +295,6 @@ let check_builtin (f : string) (tel : t_expr list) (env : scope) =
                     Map_t (kt, vt) when
                       types_equal head_t kt && types_equal v_t vt ->
                         (SFuncCall(f, tel), tail_t)
-                  | List_t lt when
-                    types_equal head_t Int_t && types_equal v_t lt ->
-                      (SFuncCall(f, tel), tail_t)
                   | _ -> raise (Builtin_arg_type_err (f, tel)))
             | _ -> raise (Builtin_arg_num_err (f, 2, args_len)))
       | "ForEach" ->
@@ -342,7 +338,7 @@ let check_builtin (f : string) (tel : t_expr list) (env : scope) =
           (match tel with
               (_, head_t) :: [(_, acc) ; (_, tail_t)] ->
                 (match head_t, tail_t with
-                    Lambda_t (ft :: [acct], rt), (List_t ct | Set_t ct) when
+                    Lambda_t (ft :: [acct], rt), List_t ct when
                       types_equal ft ct && types_equal acc acct &&
                         types_equal acc rt -> (SFuncCall(f, tel), rt)
                   | _ -> raise (Builtin_arg_type_err (f, tel)))
@@ -351,7 +347,7 @@ let check_builtin (f : string) (tel : t_expr list) (env : scope) =
           (match tel with
               (_, head_t) :: [(_, tail_t)] ->
                 (match head_t, tail_t with
-                    Lambda_t (ft :: [acc], rt), (List_t ct | Set_t ct) when
+                    Lambda_t (ft :: [acc], rt), List_t ct  when
                       types_equal ft ct && types_equal acc rt ->
                         (SFuncCall(f, tel), rt)
                   | _ -> raise (Builtin_arg_type_err (f, tel)))
@@ -935,6 +931,6 @@ let check_program (p : program) =
   ) ([], a_env) functions in
   try
     let _ = List.find (fun sf -> sf.sf_name = "main") sfunctions in
-    (smessages, sactors, sfunctions)
+    (List.rev smessages, List.rev sactors, List.rev sfunctions)
   with Not_found -> raise (Failure "No main function in this program")
 
