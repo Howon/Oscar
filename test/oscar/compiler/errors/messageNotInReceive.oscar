@@ -1,0 +1,17 @@
+message testNow()
+message testLater()
+
+
+actor Tester() {
+  
+  receive = {
+    | testNow() => {
+        Println("Error");
+    }
+  }
+}
+
+def main() => unit = {
+  actor<Tester> tester1 = spawn actor<Tester>();
+  message<testLater>() |> tester1;
+}

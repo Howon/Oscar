@@ -1,0 +1,7 @@
+def main() => unit = {
+  list<int> intList = list<int>[1, 2, 3, 4, 5];
+  Foreach(intList, (x:int) => unit = {
+    Println(x) 
+  }); 
+}
+  

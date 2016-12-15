@@ -130,15 +130,20 @@ let rec str_types = function
   | Lambda_t (args, rt)  -> "lambda (" ^ (String.concat ", " (List.map
                               (fun arg -> str_types arg) args)) ^ ") => " ^
                                 str_types rt
-  | List_t t             -> "list<" ^ str_types t ^ ">"
-  | Set_t t              -> "set<" ^ str_types t ^ ">"
-  | Map_t (t1, t2)       -> "map<" ^ str_types t1 ^ ", " ^ str_types t2 ^ ">"
+  | List_t t             -> "list<" ^ str_cont_t t
+  | Set_t t              -> "set<" ^ str_cont_t t
+  | Map_t (t1, t2)       -> "map<" ^ str_types t1 ^ ", " ^ str_cont_t t2
   | Actor_t t            -> "actor<" ^ t ^ ">"
   | Pool_t t             -> "pool<" ^ t ^ ">"
   | Message_t t          -> "message<" ^ t ^ ">"
 
 and str_types_list types =
   String.concat ", " (List.map str_types types)
+
+and str_cont_t types =
+  match types with
+      List_t _ | Set_t _ | Map_t (_, _) -> str_types types ^ " >"
+    | _ -> str_types types ^ ">"
 
 and str_formal  = function
   (name, typ) -> name ^ " : " ^ str_types typ
@@ -160,12 +165,12 @@ and str_expr = function
   | Id s                    -> s
   | Access (cont, it)       -> str_expr cont ^ "[" ^ str_expr it ^ "]"
   | Lambda lambda           -> str_lambda lambda
-  | List_Lit (t, ex)        -> "list<" ^  str_types t  ^ ">[" ^
+  | List_Lit (t, ex)        -> "list<" ^ str_cont_t t  ^ ">[" ^
                                  str_exprs ex  ^ "]"
-  | Set_Lit (t, ex)         -> "set<" ^  str_types t  ^ ">[" ^
+  | Set_Lit (t, ex)         -> "set<" ^  str_cont_t t  ^ ">[" ^
                                  str_exprs ex  ^ "]"
   | Map_Lit (kt, vt, kvs)   -> "map<" ^ str_types kt ^ ", " ^
-                                 str_types vt ^ ">[" ^ str_kvs kvs ^ "]"
+                                 str_cont_t vt ^ ">[" ^ str_kvs kvs ^ "]"
   | Actor_Lit (at, ex)      -> "spawn actor<" ^ at ^ ">(" ^
                                  str_exprs ex ^ ")"
   | Pool_Lit (at, ex, num)  -> "spawn pool<" ^ at ^ ">({" ^

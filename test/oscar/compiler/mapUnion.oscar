@@ -1,0 +1,5 @@
+def main() => unit = {
+  map<int, double> tMap1 = map<int, double>[0 -> 1.1, 4 -> 5.3, -3 -> 5.3, 12 -> 1.0];
+  map<int, double> tMap2 = map<int, double>[0 -> 1.1, 4 -> 5.3, -7 -> 0.9];
+  Println(Union(tMap1, tMap2) == map<int, double>[0 -> 1.1, 4 -> 5.3, -3 -> 5.3, 12 -> 1.0, -7 -> 0.9]);
+}

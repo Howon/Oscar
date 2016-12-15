@@ -1,0 +1,25 @@
+message testNow()
+
+
+actor Tester() {
+  
+  receive = {
+    | testNow() => {
+        Println("Error");
+    }
+  }
+}
+
+actor Tester() {
+  
+  receive = {
+    | testNow() => {
+        Println("Error");
+    }
+  }
+}
+
+def main() => unit = {
+  actor<Tester> tester1 = spawn actor<Tester>();
+  message<testNow>() |> tester1;
+}

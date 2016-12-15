@@ -371,10 +371,17 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
             | _ -> raise (Failure ("operand type mismatch: " ^
                      (str_types t1) ^ " " ^ str_binop op ^ " " ^
                        (str_types t2))))
-      | Sub | Mult | Div | Less | Leq | Greater | Geq ->
+      | Sub | Mult | Div ->
           (match t1, t2 with
               Int_t, Int_t       -> (SBinop (te1, op, te2), Int_t)
             | Double_t, Double_t -> (SBinop (te1, op, te2), Double_t)
+            | _ -> raise (Failure ("operand type mismatch: " ^
+                     (str_types t1) ^ " " ^ str_binop op ^ " " ^
+                       (str_types t2))))
+      | Less | Leq | Greater | Geq ->
+          (match t1, t2 with
+              Int_t, Int_t       -> (SBinop (te1, op, te2), Bool_t)
+            | Double_t, Double_t -> (SBinop (te1, op, te2), Bool_t)
             | _ -> raise (Failure ("operand type mismatch: " ^
                      (str_types t1) ^ " " ^ str_binop op ^ " " ^
                        (str_types t2))))
@@ -386,9 +393,9 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
                        (str_types t2))))
       | Equal | Neq ->
             (if types_equal t1 t2 then
-              (SBinop(te1, op, te1), Bool_t)
+              (SBinop(te1, op, te2), Bool_t)
             else
-              match t1, t1 with
+              match t1, t2 with
                   Actor_t _, Actor_t _ ->
                     raise (Failure "Actors cannot be compared for equality")
                 | Pool_t _, Pool_t _ ->
@@ -475,6 +482,15 @@ let spread_arg (args : formal list) (vals : sval_decl list)
   ) (vals, funcs) args
 
 let rec check_expr (e : expr) (env : scope) =
+  let type_consistent (typ : types) (tel : types list) (cont : string) =
+    try
+      (let _ = List.find (fun t ->
+        not (types_equal typ t)
+      ) tel in
+      raise (Failure (cont ^ " of type " ^ str_types typ ^ " cannot be " ^
+        "initialized with parameters of type[s]" ^ str_types_list tel)))
+    with Not_found -> () in
+
   match e with
       Int_Lit i           -> (SInt_Lit i, Int_t)
     | Double_Lit d        -> (SDouble_Lit d, Double_t)
@@ -518,9 +534,13 @@ let rec check_expr (e : expr) (env : scope) =
         } in (slambda, Lambda_t (get_list_snd l_formals, l_return_t))
     | List_Lit (lt, ex) ->
         let te_list = check_expr_list ex env in
+        let te_list_types = get_list_snd te_list in
+        let _ = type_consistent lt te_list_types "List" in
           (SList_Lit (lt, te_list), List_t lt)
     | Set_Lit (st, ex) ->
         let te_list = check_expr_list ex env in
+        let te_list_types = get_list_snd te_list in
+        let _ = type_consistent st te_list_types "Set" in
           (SSet_Lit (st, te_list), Set_t st)
     | Map_Lit (kt, vt, kvx) ->
         let tkv_list = List.map (fun (k, v) ->
@@ -879,8 +899,10 @@ let check_actor_decl (adecl : actor) (env : scope) =
           let nenv = { env with actors = new_actor_scope :: env.actors } in
             (new_actor_scope, nenv))
 
-let check_program (p : program) =
-  let (messages, actors, functions) = p in
+let check_program (p : program) (slib : program) =
+  let (messages, actors, functions) = p
+  and (sl_messages, sl_actors, sl_functions) = slib in
+
   let sender_ref =  {
     sv_name = "sender";
     sv_type = Unit_t;
@@ -899,6 +921,22 @@ let check_program (p : program) =
     in_actor = false;
     actor_init = false;
   } in
+
+  let (sl_smessages, sl_m_env) = List.fold_left (fun acc m ->
+    let (sl_smessage, sl_nenv) = check_message_decl m (snd acc) in
+    (sl_smessage :: fst acc, sl_nenv)
+  ) ([], seed_env) sl_messages in
+  let (sl_sactors, sl_a_env) = List.fold_left (fun acc a ->
+    let (sl_a_scope, sl_nenv) = check_actor_decl a (snd acc) in
+      (sl_a_scope.a_actor :: fst acc, sl_nenv)
+  ) ([], sl_m_env) sl_actors in
+  let (sl_sfunctions, _) = List.fold_left (fun acc f ->
+    let (sl_sfunc, sl_nenv) = check_func_decl f (snd acc) in
+      match sl_sfunc with
+          SFdecl sf -> (sf :: fst acc, sl_nenv)
+        | _ -> raise (Failure ("Not a valid function: " ^ f.f_name))
+  ) ([], sl_a_env) sl_functions in
+
   let (smessages, m_env) = List.fold_left (fun acc m ->
     let (smessage, nenv) = check_message_decl m (snd acc) in
     (smessage :: fst acc, nenv)
@@ -913,8 +951,14 @@ let check_program (p : program) =
           SFdecl sf -> (sf :: fst acc, nenv)
         | _ -> raise (Failure ("Not a valid function: " ^ f.f_name))
   ) ([], a_env) functions in
-  try
-    let _ = List.find (fun sf -> sf.sf_name = "main") sfunctions in
-    (smessages, sactors, sfunctions)
-  with Not_found -> raise (Failure "No main function in this program")
 
+  let smessages = sl_smessages @ smessages in
+  let sactors = sl_sactors @ sactors in
+  let sfunctions = sl_sfunctions @ sfunctions in
+
+  let main_cnt = List.fold_left (fun acc sf -> if sf.sf_name = "main"
+                                  then acc + 1 else acc) 0 sfunctions in
+  match main_cnt with
+      0 -> raise (Failure "No main function found in this program")
+    | 1 -> (List.rev smessages, List.rev sactors, List.rev sfunctions)
+    | n -> raise (Failure (string_of_int n ^ " main functions found") )

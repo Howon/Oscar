@@ -1,0 +1,14 @@
+def main() => unit = {
+  Println(5.0 == 5.0);
+  Println(5.0 == 5.1);
+  Println(5.0 != 5.1);
+  Println(5.0 != 5.0);
+  Println(5.0 <= 5.1);
+  Println(5.1 <= 5.0);
+
+  Println('a' == 'a');
+  Println('a' == 'b');
+
+  Println(true == true);
+  Println(true == false);
+}

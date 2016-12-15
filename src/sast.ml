@@ -82,36 +82,39 @@ type sprogram = smessage list * sactor list * sfunc list
 let str_smessage smessage =
   "message " ^ smessage.sm_name ^ "(" ^ (str_formals smessage.sm_formals) ^ ")"
 
-let rec str_texpr = function
-    SInt_Lit i, _                 -> string_of_int i
-  | SDouble_Lit f, _              -> string_of_float f
-  | SChar_Lit c, _                -> "\'" ^ Char.escaped c ^ "\'"
-  | SString_Lit s, _              -> "\"" ^ s ^ "\""
-  | SBool_Lit true, _             -> "true"
-  | SBool_Lit false, _            -> "false"
-  | SUnit_Lit u, _                -> "unit"
-  | SId se, _                     -> se
-  | SAccess (scont, sit), _       -> str_texpr scont ^ "[" ^ str_texpr sit ^ "]"
-  | SLambda slambda, _            -> str_slambda slambda
-  | SList_Lit (t, sel), _         -> "list<" ^ str_types t ^ ">[" ^
+let rec str_texpr texpr =
+  (match (fst texpr) with
+    SInt_Lit i                 -> string_of_int i
+  | SDouble_Lit f              -> string_of_float f
+  | SChar_Lit c                -> "\'" ^ Char.escaped c ^ "\'"
+  | SString_Lit s              -> "\"" ^ s ^ "\""
+  | SBool_Lit true             -> "true"
+  | SBool_Lit false            -> "false"
+  | SUnit_Lit u                -> "unit"
+  | SId se                     -> se
+  | SAccess (scont, sit)       -> str_texpr scont ^ "[" ^ str_texpr sit ^ "]"
+  | SLambda slambda            -> str_slambda slambda
+
+  | SList_Lit (t, sel)         -> "list<" ^ str_cont_t t ^ "[" ^
                                     str_texprs sel ^ "]"
-  | SSet_Lit (t, sel), _          -> "set<" ^ (str_types t) ^ ">[" ^
+  | SSet_Lit (t, sel)          -> "set<" ^ (str_cont_t t) ^ "[" ^
                                     str_texprs sel ^ "]"
-  | SMap_Lit (kt, vt, skvs), _    -> "map<" ^ str_types kt ^ ", " ^
-                                    str_types vt ^ ">[" ^
+  | SMap_Lit (kt, vt, skvs)    -> "map<" ^ str_types kt ^ ", " ^
+                                    str_cont_t vt ^ "[" ^
                                       str_skvs skvs ^ "]"
-  | SActor_Lit (sat, sel), _      -> "spawn actor<" ^ sat ^ ">(" ^
+  | SActor_Lit (sat, sel)      -> "spawn actor<" ^ sat ^ ">(" ^
                                     str_texprs sel ^ ")"
-  | SPool_Lit (sat, sel, num), _  -> "spawn pool<" ^ sat ^ ">({" ^
+  | SPool_Lit (sat, sel, num)  -> "spawn pool<" ^ sat ^ ">({" ^
                                     str_texprs sel ^ "}, " ^
                                       str_texpr num ^ ")"
-  | SMessage_Lit (m, sel), _      -> "message<" ^ m ^ ">(" ^
+  | SMessage_Lit (m, sel)      -> "message<" ^ m ^ ">(" ^
                                     str_texprs sel ^ ")"
-  | SBinop (se1, o, se2), _       -> "(" ^ str_texpr se1 ^ " " ^ str_binop o ^ " " ^
-                                    str_texpr se2 ^ ")"
-  | SUop (o, se), _               -> str_uop o ^ str_texpr se
-  | SFuncCall (se, sel), _        -> se ^ "(" ^ str_texprs sel ^ ")"
-  | SNoexpr, _                    -> ""
+  | SBinop (se1, o, se2)       -> "(" ^ str_texpr se1 ^ " " ^ str_binop o
+                                      ^ " " ^ str_texpr se2 ^ ")"
+  | SUop (o, se)               -> str_uop o ^ str_texpr se
+  | SFuncCall (se, sel)        -> se ^ "(" ^ str_texprs sel ^ ")"
+  | SNoexpr                    -> ""
+  ) (*^ "{{TYPE: "^ str_types (snd texpr) ^ "}}" *)
 
 and str_texprs sel =
   String.concat ", " (List.map str_texpr sel)

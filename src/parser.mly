@@ -22,7 +22,7 @@
 %token <string> ID
 %token EOF
 
-%nonassoc NOELSE
+%nonassoc NOELSE LBRACKET
 %left ACT_SEND ACT_BROADCAST
 %right ASSIGN
 %left FUNC_ARG_TYPE ARROW FUNC_RET_TYPE

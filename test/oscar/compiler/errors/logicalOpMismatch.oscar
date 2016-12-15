@@ -1,0 +1,3 @@
+def main() => unit = {
+  Println(1 && true);
+}

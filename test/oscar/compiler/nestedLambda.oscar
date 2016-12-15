@@ -1,0 +1,20 @@
+message testNow()
+
+
+actor Tester() {
+  
+  receive = {
+    | testNow() => {
+        Println(apply((x:int) => int = { return x - 10; }, apply((x:int) => int = { return x - 10; }, 21)));
+    }
+  }
+}
+
+def apply(f: lambda (int) => int, input: int) => int = {
+  return f(input);
+}
+
+def main() => unit = {
+  actor<Tester> lambdaTester = spawn actor<Tester>();
+  message<testNow>() |> lambdaTester;
+}

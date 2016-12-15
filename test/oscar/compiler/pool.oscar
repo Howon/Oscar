@@ -1,0 +1,16 @@
+message testNow()
+
+
+actor Tester() {
+  
+  receive = {
+    | testNow() => {
+        Println(10);
+    }
+  }
+}
+
+def main() => unit = {
+  pool<Tester> testerPool = spawn pool<Tester>({}, 3);
+  list<message<testNow>>[message<testNow>(), message<testNow>(), message<testNow>()] |>> testerPool;
+}
