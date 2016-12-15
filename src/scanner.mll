@@ -99,7 +99,6 @@ rule token = parse
   | "message"             { TYPE_MESSAGE }
   | "actor"               { TYPE_ACTOR }
   | "pool"                { TYPE_POOL }
-  | "f"                   { TYPE_FUNC }
 
   (* literals *)
   | digit+ as lxm { INT_LIT(int_of_string lxm) }

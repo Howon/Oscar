@@ -196,10 +196,7 @@ and str_stmt = function
                             mv.mv_name ^ (match mv.mv_init with
                                Noexpr -> ""
                              | _ -> " = " ^ str_expr mv.mv_init) ^ ";"
-  | Vdecl v            -> (match v.v_init with
-                            Func_Lit(f) -> str_func v.v_name f
-                            | _ -> str_types v.v_type ^ " " ^ v.v_name ^ " = " ^
-                            str_expr v.v_init ^ ";")
+  | Vdecl v            -> str_vdecl v
   | If (e, s1, s2)     -> str_if e s1 s2
   | Actor_send (e, a)  -> str_expr e ^ " |> " ^ str_expr a ^ ";"
   | Pool_send (e, p)   -> str_expr e ^ " |>> " ^ str_expr p ^ ";"
@@ -217,12 +214,16 @@ and str_fl fl =
   "(" ^ str_formals fl.f_formals ^ ") => " ^ str_types
     fl.f_return_t ^ " = " ^ str_stmt fl.f_body
 
+and str_vdecl v =
+  (match v.v_init with
+    Func_Lit(f) ->
+        "def " ^ v.v_name ^ "(" ^ str_formals f.f_formals ^ ") => " ^
+        str_types f.f_return_t ^ " = " ^ str_stmt f.f_body
+    | _ ->
+        str_types v.v_type ^ " " ^ v.v_name ^ " = " ^ str_expr v.v_init ^ ";")
+
 and str_pattern p =
   "| " ^ p.p_mid ^ "(" ^ str_formals p.p_mformals ^ ") => " ^ str_stmt p.p_body
-
-and str_func name func =
-  "def " ^ name ^ "(" ^ str_formals func.f_formals ^ ") => " ^
-    str_types func.f_return_t ^ " = " ^ str_stmt func.f_body
 
 let str_actor actor =
   "actor " ^ actor.a_name ^ "(" ^ str_formals actor.a_formals ^ ") {\n" ^
@@ -232,4 +233,4 @@ let str_actor actor =
 let str_program (messages, actors, funcs) =
   String.concat "\n" (List.map str_message messages) ^ "\n\n" ^
     String.concat "\n\n" (List.map str_actor actors) ^ "\n\n" ^
-      String.concat "\n\n" (List.map str_stmt funcs)
+      String.concat "\n\n" (List.map str_vdecl funcs)

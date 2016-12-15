@@ -126,10 +126,7 @@ and str_sstmt = function
                               smv.smv_name ^ (match smv.smv_init with
                                   SNoexpr, _ -> ""
                                 | _ -> " = " ^ (str_texpr smv.smv_init)) ^ ";"
-  | SVdecl sv            -> (match sv.sv_init with
-                              (SFunc_Lit(sf), _) -> str_sfunc sv.sv_name sf
-                              | _ -> (str_types sv.sv_type) ^ " " ^ sv.sv_name
-                              ^ " = " ^ (str_texpr sv.sv_init) ^ ";")
+  | SVdecl sv            -> str_svdecl sv
   | SIf (se, s1, s2)     -> str_sif se s1 s2
   | SActor_send (se, a)  -> str_texpr se ^ " |> " ^ str_texpr a ^ ";"
   | SPool_send (se, p)   -> str_texpr se ^ " |>> " ^ str_texpr p ^ ";"
@@ -147,6 +144,15 @@ and str_sfl sfl =
   "(" ^ str_formals sfl.sf_formals ^ ") => " ^ str_types
     sfl.sf_return_t ^ " = " ^ str_sstmt sfl.sf_body
 
+and str_svdecl sv =
+  (match sv.sv_init with
+    (SFunc_Lit(sf), _) ->
+        "def " ^ sv.sv_name ^ "(" ^ str_formals sf.sf_formals ^ ") => " ^
+        str_types sf.sf_return_t ^ " = " ^ str_sstmt sf.sf_body
+    | _ ->
+        str_types sv.sv_type ^ " " ^ sv.sv_name ^ " = "
+        ^ str_texpr sv.sv_init ^ ";")
+
 and str_spattern sp =
   "| " ^ sp.sp_smid ^ "(" ^ str_formals sp.sp_smformals ^ ") => " ^
     str_sstmt sp.sp_body
@@ -163,4 +169,4 @@ let str_sactor sactor =
 let str_sprogram (smessages, sactors, sfuncs) =
   String.concat "\n" (List.map str_smessage smessages) ^ "\n\n" ^
     String.concat "\n\n" (List.map str_sactor sactors) ^ "\n\n" ^
-      String.concat "\n\n" (List.map str_sstmt sfuncs)
+      String.concat "\n\n" (List.map str_svdecl sfuncs)

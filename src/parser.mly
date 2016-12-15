@@ -229,6 +229,9 @@ message_lit:
 func_lit:
   LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
     { Func_Lit({ f_formals = $2; f_return_t = $5; f_body = $8; }) }
+  | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN expr
+    { Func_Lit({ f_formals = $2; f_return_t = $5; f_body = Block([Return $7]); }) }
+
 
 expr:
     ID                                            { Id($1) }
