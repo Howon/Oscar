@@ -211,14 +211,36 @@ and str_if e s1 s2 =
     | _            -> " else " ^ str_stmt s2)
 
 and str_fl fl =
-  "(" ^ str_formals fl.f_formals ^ ") => " ^ str_types
-    fl.f_return_t ^ " = " ^ str_stmt fl.f_body
+  let { f_formals = formals; f_return_t = rt; f_body = body } = fl in
+  let s = match body with
+      Block stmts -> stmts
+    | _ -> [] in
+
+  match (List.length s, List.hd s) with
+      (1, Return e) ->
+        "(" ^ str_formals formals ^ ") => " ^
+        str_types rt ^ " = " ^ str_expr e
+    | _               ->
+        "(" ^ str_formals formals ^ ") => " ^
+          str_types rt ^ " = " ^ str_stmt fl.f_body
+
+and str_func name f =
+  let { f_formals = formals; f_return_t = rt; f_body = body } = f in
+  let s = match body with
+      Block stmts -> stmts
+    | _ -> [] in
+
+  match (List.length s, List.hd s) with
+      (1, Return e) ->
+        "func " ^ name ^ " = (" ^ str_formals formals ^ ") => " ^
+        str_types rt ^ " = " ^ str_expr e ^ ";"
+    | _               ->
+        "def " ^ name ^ "(" ^ str_formals formals ^ ") => " ^
+        str_types rt ^ " = " ^ str_stmt body
 
 and str_vdecl v =
   (match v.v_init with
-    Func_Lit(f) ->
-        "def " ^ v.v_name ^ "(" ^ str_formals f.f_formals ^ ") => " ^
-        str_types f.f_return_t ^ " = " ^ str_stmt f.f_body
+    Func_Lit(f) -> str_func v.v_name f
     | _ ->
         str_types v.v_type ^ " " ^ v.v_name ^ " = " ^ str_expr v.v_init ^ ";")
 

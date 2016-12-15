@@ -141,25 +141,43 @@ and str_sif se s1 s2 =
     | _  -> " else " ^ str_sstmt s2)
 
 and str_sfl sfl =
-  "(" ^ str_formals sfl.sf_formals ^ ") => " ^ str_types
-    sfl.sf_return_t ^ " = " ^ str_sstmt sfl.sf_body
+  let { sf_formals = sformals; sf_return_t = srt; sf_body = sbody } = sfl in
+  let s = match sbody with
+      SBlock sstmts -> sstmts
+    | _ -> [] in
+
+  match (List.length s, List.hd s) with
+      (1, SReturn te) ->
+        "(" ^ str_formals sformals ^ ") => " ^
+        str_types srt ^ " = " ^ str_texpr te
+    | _               ->
+        "(" ^ str_formals sformals ^ ") => " ^
+          str_types srt ^ " = " ^ str_sstmt sfl.sf_body
 
 and str_svdecl sv =
   (match sv.sv_init with
-    (SFunc_Lit(sf), _) ->
-        "def " ^ sv.sv_name ^ "(" ^ str_formals sf.sf_formals ^ ") => " ^
-        str_types sf.sf_return_t ^ " = " ^ str_sstmt sf.sf_body
+    (SFunc_Lit(sf), _) -> str_sfunc sv.sv_name sf
     | _ ->
         str_types sv.sv_type ^ " " ^ sv.sv_name ^ " = "
         ^ str_texpr sv.sv_init ^ ";")
 
+and str_sfunc name sf =
+  let { sf_formals = sformals; sf_return_t = srt; sf_body = sbody } = sf in
+  let s = match sbody with
+      SBlock sstmts -> sstmts
+    | _ -> [] in
+
+  match (List.length s, List.hd s) with
+      (1, SReturn te) ->
+        "func " ^ name ^ " = (" ^ str_formals sformals ^ ") => " ^
+        str_types srt ^ " = " ^ str_texpr te ^ ";"
+    | _               ->
+        "def " ^ name ^ "(" ^ str_formals sformals ^ ") => " ^
+        str_types srt ^ " = " ^ str_sstmt (SBlock s)
+
 and str_spattern sp =
   "| " ^ sp.sp_smid ^ "(" ^ str_formals sp.sp_smformals ^ ") => " ^
     str_sstmt sp.sp_body
-
-and str_sfunc name sfunc =
-  "def " ^ name ^ "(" ^ str_formals sfunc.sf_formals ^ ") => " ^
-    str_types sfunc.sf_return_t ^ " = " ^ str_sstmt sfunc.sf_body
 
 let str_sactor sactor =
   "actor " ^ sactor.sa_name ^ "(" ^ str_formals sactor.sa_formals ^ ") {\n" ^
