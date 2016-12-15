@@ -1,0 +1,5 @@
+def main() => unit = {
+  list<int> l1 = list<int>[1, 2, 3, 4, 5];
+  list<int> l2 = list<int>[5, 4, 3, 2, 1];
+  Println(l2 == Reverse(l1));
+}

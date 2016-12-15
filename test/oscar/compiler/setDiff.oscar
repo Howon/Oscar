@@ -1,0 +1,7 @@
+def main() => unit = {
+  set<int> intSet1 = set<int>[1, 2, 3, 4, 5];
+  set<int> intSet2 = set<int>[0, 3, 4, 6];
+  Println(Diff(intSet1, intSet2) == set<int>[1, 2, 5]);
+  Println(Diff(intSet2, intSet1) == set<int>[0, 6]);
+  Println(Diff(intSet1, intSet1) == set<int>[]);
+}

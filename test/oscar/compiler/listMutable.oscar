@@ -1,0 +1,20 @@
+message testNow()
+
+
+actor Tester() {
+  mut list<int> l1 = list<int>[1, 2, 3, 4, 5];
+  list<int> l2 = list<int>[0, 2, 3, 4, 5];
+  
+  receive = {
+    | testNow() => {
+        Println(l1 == l2);
+		list<int> l3 = (l1[0] = 0);
+		Println(l1 == l2);
+    }
+  }
+}
+
+def main() => unit = {
+  actor<Tester> listTester = spawn actor<Tester>();
+  message<testNow>() |> listTester;
+}

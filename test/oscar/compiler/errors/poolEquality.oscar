@@ -1,0 +1,18 @@
+message testNow()
+
+
+actor Tester() {
+  
+  receive = {
+    | testNow() => {
+        Println("Error");
+    }
+  }
+}
+
+def main() => unit = {
+  pool<Tester> pool1 = spawn pool<Tester>({}, 3);
+  pool<Tester> pool2 = spawn pool<Tester>({}, 3);
+  bool b = (pool1 == pool2);
+  message<testNow>() |>> pool1;
+}

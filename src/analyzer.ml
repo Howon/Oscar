@@ -895,8 +895,10 @@ let check_actor_decl (adecl : actor) (env : scope) =
           let nenv = { env with actors = new_actor_scope :: env.actors } in
             (new_actor_scope, nenv))
 
-let check_program (p : program) =
-  let (messages, actors, functions) = p in
+let check_program (p : program) (slib : program) =
+  let (messages, actors, functions) = p
+  and (sl_messages, sl_actors, sl_functions) = slib in
+
   let sender_ref =  {
     sv_name = "sender";
     sv_type = Unit_t;
@@ -915,6 +917,22 @@ let check_program (p : program) =
     in_actor = false;
     actor_init = false;
   } in
+
+  let (sl_smessages, sl_m_env) = List.fold_left (fun acc m ->
+    let (sl_smessage, sl_nenv) = check_message_decl m (snd acc) in
+    (sl_smessage :: fst acc, sl_nenv)
+  ) ([], seed_env) sl_messages in
+  let (sl_sactors, sl_a_env) = List.fold_left (fun acc a ->
+    let (sl_a_scope, sl_nenv) = check_actor_decl a (snd acc) in
+      (sl_a_scope.a_actor :: fst acc, sl_nenv)
+  ) ([], sl_m_env) sl_actors in
+  let (sl_sfunctions, _) = List.fold_left (fun acc f ->
+    let (sl_sfunc, sl_nenv) = check_func_decl f (snd acc) in
+      match sl_sfunc with
+          SFdecl sf -> (sf :: fst acc, sl_nenv)
+        | _ -> raise (Failure ("Not a valid function: " ^ f.f_name))
+  ) ([], sl_a_env) sl_functions in
+
   let (smessages, m_env) = List.fold_left (fun acc m ->
     let (smessage, nenv) = check_message_decl m (snd acc) in
     (smessage :: fst acc, nenv)
@@ -929,8 +947,14 @@ let check_program (p : program) =
           SFdecl sf -> (sf :: fst acc, nenv)
         | _ -> raise (Failure ("Not a valid function: " ^ f.f_name))
   ) ([], a_env) functions in
-  try
-    let _ = List.find (fun sf -> sf.sf_name = "main") sfunctions in
-    (List.rev smessages, List.rev sactors, List.rev sfunctions)
-  with Not_found -> raise (Failure "No main function in this program")
 
+  let smessages = sl_smessages @ smessages in
+  let sactors = sl_sactors @ sactors in
+  let sfunctions = sl_sfunctions @ sfunctions in
+
+  let main_cnt = List.fold_left (fun acc sf -> if sf.sf_name = "main"
+                                  then acc + 1 else acc) 0 sfunctions in
+  match main_cnt with
+      0 -> raise (Failure "No main function found in this program")
+    | 1 -> (List.rev smessages, List.rev sactors, List.rev sfunctions)
+    | n -> raise (Failure (string_of_int n ^ " main functions found") )

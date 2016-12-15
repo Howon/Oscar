@@ -1,0 +1,18 @@
+message testNow()
+
+
+actor Tester() {
+  
+  receive = {
+    | testNow() => {
+        Println("Error");
+    }
+  }
+}
+
+def main() => unit = {
+  actor<Tester> tester1 = spawn actor<Tester>();
+  actor<Tester> tester2 = spawn actor<Tester>();
+  bool b = (tester1 == tester2);
+  message<testNow>() |> tester1;
+}

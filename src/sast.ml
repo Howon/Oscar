@@ -96,6 +96,7 @@ let rec str_texpr texpr =
   | SId se                     -> se
   | SAccess (scont, sit)       -> str_texpr scont ^ "[" ^ str_texpr sit ^ "]"
   | SLambda slambda            -> str_slambda slambda
+
   | SList_Lit (t, sel)         -> "list<" ^ str_cont_t t ^ "[" ^
                                     str_texprs sel ^ "]"
   | SSet_Lit (t, sel)          -> "set<" ^ (str_cont_t t) ^ "[" ^
