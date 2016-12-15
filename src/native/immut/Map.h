@@ -1,68 +1,84 @@
 #ifndef __MAP_H__
 #define __MAP_H__
 
-#include <iostream>
-#include <cassert>
-#include <memory>
-
+#include <vector>
 #include "collection.h"
 
 using namespace std;
 
 namespace immut {
     template <typename K, typename V>
-    class map : public u_collection<K>
+    class map : public collection<K>
     {
         Type type = M;
 
-        struct KVNode : Node<K>
+        struct KVNode
         {
-            KVNode(Color c, shared_ptr<const KVNode> const &lft, K key, V val,
-                shared_ptr<const KVNode> const & rgt) :
-              Node<K>(c, lft, key, rgt) {
+            KVNode(Color c, shared_ptr<const KVNode> const &lft,
+                K key, V val, shared_ptr<const KVNode> const & rgt)
+            {
+                _hash = rand();
+                _c = c;
+                _lft = lft;
+                _rgt = rgt;
+                _key = key;
                 _val = val;
-              }
+            }
 
+            int _hash;
+
+            Color _c;
+            K _key;
             V _val;
-        };
 
-        shared_ptr<const KVNode> _root;
+            shared_ptr<const KVNode> _lft;
+            shared_ptr<const KVNode> _rgt;
+        };
 
         explicit map(shared_ptr<const KVNode> const &node) {
             _root = node;
         }
 
-        map paint(Color c) const
+        shared_ptr<const KVNode> _root;
+
+        Color rootColor() const
         {
             assert(!isEmpty());
 
-            return map(c, left(), front(), front(), right());
+            return _root->_c;
+        }
+
+        map paint(Color c) const
+        {
+            assert(!this->isEmpty());
+
+            return map(c, left(), this->rootKey(), this->rootValue(), right());
         }
 
         int countB() const
         {
-            if (isEmpty())
+            if (this->isEmpty())
                 return 0;
 
             int lft = left().countB();
 
             assert(lft == right().countB());
 
-            return (rootColor() == B)? 1 + lft: lft;
+            return (this->rootColor() == B)? 1 + lft: lft;
         }
 
         map left() const
         {
-            assert(!isEmpty());
+            assert(!this->isEmpty());
 
-            return set(_root->_lgt);
+            return map(_root->_lft);
         }
 
         map right() const
         {
-            assert(!isEmpty());
+            assert(!this->isEmpty());
 
-            return set(_root->_rgt);
+            return map(_root->_rgt);
         }
 
         bool doubledLeft() const
@@ -77,23 +93,23 @@ namespace immut {
                 !this->right().isEmpty() && this->right().rootColor() == R;
         }
 
-        map balance(map const & lft, K x, V v, map const & rgt)
+        map balance(const map &lft, K x, V v, const map &rgt) const
         {
             if (lft.doubledLeft()) {
-                return map(R, lft.left().paint(B), lft.front(),
+                return map(R, lft.left().paint(B), lft.rootKey(),
                     lft.rootValue(), map(B, lft.right(), x, v, rgt));
             } else if (lft.doubledRight()) {
-                return map(R, map(B, lft.left(), lft.front(), lft.rootValue(),
-                    lft.right().left()), lft.right().rootKe(),
+                return map(R, map(B, lft.left(), lft.rootKey(), lft.rootValue(),
+                    lft.right().left()), lft.right().rootKey(),
                     lft.right().rootValue(), map(B, lft.right().right(),
                     x, v, rgt));
             } else if (rgt.doubledLeft()) {
                 return map(R, map(B, lft, x, v, rgt.left().left()),
-                    rgt.left().front(), rgt.left().rootValue(),
-                    map(B, rgt.left().right(), rgt.front(),
+                    rgt.left().rootKey(), rgt.left().rootValue(),
+                    map(B, rgt.left().right(), rgt.rootKey(),
                     rgt.rootValue(), rgt.right()));
             } else if (rgt.doubledRight()) {
-                return map(R, map(B, lft, x, v, rgt.left()), rgt.front(),
+                return map(R, map(B, lft, x, v, rgt.left()), rgt.rootKey(),
                     rgt.rootValue(), rgt.right().paint(B));
             } else
                 return map(B, lft, x, v, rgt);
@@ -116,10 +132,32 @@ namespace immut {
         }
 
     public:
-        map(Color c, const map &lft, K key, V val, const map &rgt)
-            : u_collection<K>(c, lft._root, key, key, rgt._root)
+        map() {}
+
+        map(Color c, const map &lft, K key, V val, const map &rgt) :
+            _root(make_shared<const KVNode>(c, lft._root, key, val, rgt._root))
         {
-            _root._val = val;
+            assert(lft.isEmpty() || lft.rootKey() < key);
+            assert(rgt.isEmpty() || key < rgt.rootKey());
+        }
+
+        map(initializer_list<pair<K, V> > initMap)
+        {
+            map<K, V> m;
+
+            for (auto it = initMap.begin(); it != initMap.end(); ++it)
+                m = m.inserted(it->first, it->second);
+
+            this->_root = m.get_root();
+        }
+
+        shared_ptr<const KVNode> get_root() { return _root; }
+
+        K rootKey() const
+        {
+            assert(!this->isEmpty());
+
+            return _root->_key;
         }
 
         V rootValue() const
@@ -129,17 +167,20 @@ namespace immut {
             return _root->_val;
         }
 
+        bool isEmpty() const { return !_root; }
+
         template <typename F>
-        void forEach(F f) {
+        void forEach(F f)  const
+        {
             static_assert(is_convertible<F, function<void(K, V)>>::value,
-                 "ForEach requires a function type void(T, K)");
+                 "ForEach requires a function type void(K, V)");
 
-            if (!this->isempty()) {
-                foreach(f, this->left());
+            if (!this->isEmpty()) {
+                this->left().forEach(f);
 
-                f(this->front(), this->rootvalue());
+                f(this->rootKey(), rootValue());
 
-                foreach(f, this->right());
+                this->right().forEach(f);
             }
         }
 
@@ -150,7 +191,7 @@ namespace immut {
             if (this->isEmpty())
                 return map(R, map(), x, v, map());
 
-            K y = this->front();
+            K y = this->rootKey();
             V yv = this->rootValue();
 
             if (x == y)
@@ -175,15 +216,72 @@ namespace immut {
             }
         }
 
-        ostream &operator<<(ostream &os)
+        map  inserted(K x, V v) const
+        {
+            auto t = insert(x, v);
+
+            return map(B, t.left(), t.rootKey(), t.rootValue(), t.right());
+        }
+
+        virtual bool contains(K x) const
+        {
+            if (this->isEmpty())
+                return false;
+
+            K y = this->rootKey();
+
+            if (x < y)
+                return left().contains(x);
+            else if (y < x)
+                return right().contains(x);
+            else
+                return true;
+        }
+
+        V find(K key) const
+        {
+            if (this->isEmpty())
+                throw out_of_range("Key not found");
+
+            K y = this->rootKey();
+
+            if (key < y)
+                return left().find(key);
+            else if (y < key)
+                return right().find(key);
+            else
+                return rootValue();
+        }
+
+        bool operator==(const map &rhs)
+        {
+            forEach([&rhs](K k, V v) {
+                if (!rhs.contains(k) || rhs.find(k) != v)
+                    return false;
+            });
+
+            return true;
+        }
+
+        bool operator > (const map &rhs)
+        {
+            return get_root().get()->_hash > rhs.get_root().get()->_hash;
+        }
+
+        bool operator < (const map &rhs)
+        {
+            return get_root().get()->_hash < rhs.get_root().get()->_hash;
+        }
+
+        friend ostream &operator<<(ostream &os, const map &m)
         {
             os << "[ ";
 
-            forEach([&os](K k, V v) {
-                os << k << " -> " << v << " ";
+            m.forEach([&os](K k, V v) {
+                os << "(" << k << " -> " << v << ") ";
             });
 
-            os << "]" << endl;
+            os << "]";
 
             return os;
         }

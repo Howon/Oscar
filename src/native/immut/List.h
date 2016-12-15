@@ -1,145 +1,175 @@
 #ifndef __LIST_H__
 #define __LIST_H__
 
-#include <iostream>
-#include <cassert>
-#include <memory>
-#include <functional>
-#include <initializer_list>
-#include <iterator>
-
 #include "collection.h"
 
 using namespace std;
 
 namespace immut {
-  template <typename T>
-  class list : public collection<T> {
-      Type type = L;
+    template <typename T>
+    class list : public collection<T> {
+        Type type = L;
 
-      struct Item {
-          Item(T v, shared_ptr<const Item> tail)
-              : _val(v), _next(move(tail))
-          {}
+        struct Item {
+            Item(T v, shared_ptr<const Item> tail) :
+                _hash(rand()), _val(v), _next(move(tail)) {}
 
-          explicit Item(T v) : _val(v) {}
+            explicit Item(T v) : _val(v) {}
 
-          T _val;
+            int _hash;
+            T _val;
 
-          shared_ptr<const Item> _next;
-      };
+            shared_ptr<const Item> _next;
+        };
 
-      friend Item;
+        friend Item;
 
-      explicit list(shared_ptr<const Item> items) : _head(move(items)) {}
+        shared_ptr<const Item> _head;
 
-      shared_ptr<const Item> _head;
+        explicit list(shared_ptr<const Item> items) : _head(move(items)) {}
 
-  public:
-      list(T v, list const &tail) : _head(make_shared<Item>(v, tail._head)) {}
+    public:
+        list() {}
 
-      list(list const &head, T v) : _head(make_shared<Item>(head._head, v)) {}
+        list(T v, list const &tail) :
+            _head(make_shared<Item>(v, tail._head)) {}
 
-      explicit list(T v) : _head(make_shared<Item>(v)) {}
+        explicit list(T v) : _head(make_shared<Item>(v)) {}
 
-      list(initializer_list<T> init)
-      {
-          for (auto it = rbegin(init); it != rend(init); ++it) {
-              _head = make_shared<Item>(*it, _head);
-          }
-      }
+        list(initializer_list<T> init)
+        {
+            for (auto it = rbegin(init); it != rend(init); ++it) {
+                _head = make_shared<Item>(*it, _head);
+            }
+        }
 
-      virtual bool isEmpty() const { return !_head; } // conversion to bool
+        shared_ptr<const Item> get_root() const { return _head; }
 
-      virtual T front() const
-      {
-          assert(!isEmpty());
+        virtual bool isEmpty() const { return !_head; }
 
-          return _head->_val;
-      }
+        virtual T front() const
+        {
+            assert(!isEmpty());
 
-      list pop_front() const
-      {
-          assert(!isEmpty());
+            return _head->_val;
+        }
 
-          return list(_head->_next);
-      }
+        list pop_front() const
+        {
+            assert(!isEmpty());
 
-      list push_front(T v) const
-      {
-          return list(v, *this);
-      }
+            return list(_head->_next);
+        }
 
-      list push_back(T v) const
-      {
-          return list(*this, v);
-      }
+        list push_front(T v) const { return list(v, *this); }
 
-      list take(int n)
-      {
-          if (n <= 0 || isEmpty())
-            return list();
+        list take(int n)
+        {
+            if (n <= 0 || isEmpty())
+              return list();
 
-          return pop_front().take(n - 1).push_front(front());
-      }
+            return pop_front().take(n - 1).push_front(front());
+        }
 
-      list insertedAt(int i, T v) const
-      {
-          if (i == 0)
-              return push_front(v);
-          else {
-              assert(!isEmpty());
+        list insertedAt(int i, T v) const
+        {
+            if (i == 0)
+                return push_front(v);
+            else {
+                assert(!isEmpty());
 
-              return list<T>(front(), pop_front().insertedAt(i - 1, v));
-          }
-      }
+                return list<T>(front(), pop_front().insertedAt(i - 1, v));
+            }
+        }
 
-      list removed(T v) const
-      {
-          if (isEmpty())
-            return list();
-          if (v == front())
-              return pop_front();
+        list removeAt(int i, int j) const
+        {
+            if (isEmpty())
+              return list();
 
-          return list(front(), pop_front().removed(v));
-      }
+            if (i == j)
+                return pop_front();
 
-      bool contains(T v) const
-      {
-          if (isEmpty())
-            return false;
+            return list(front(), pop_front().removeAt(i + 1, j));
+        }
 
-          if (v == front())
+        list removed(T v) const
+        {
+            if (isEmpty())
+              return list();
+
+            if (v == front())
+                return pop_front();
+
+            return list(front(), pop_front().removed(v));
+        }
+
+        bool contains(T v) const
+        {
+            if (isEmpty())
+              return false;
+
+            if (v == front())
+              return true;
+
+            return pop_front().contains(v);
+        };
+
+        template <typename F>
+        void forEach(const F f) const
+        {
+            Item const *it = get_root().get();
+
+            while (it != nullptr) {
+                f(it->_val);
+
+                it = it->_next.get();
+            }
+        }
+
+        bool operator==(const list &rhs)
+        {
+            Item const *it1 = get_root().get();
+            Item const *it2 = rhs.get_root().get();
+
+            while (!(it1 == nullptr || it2 == nullptr)) {
+                if (it1->_val != it2->_val)
+                    return false;
+
+                it1 = it1->_next.get();
+                it2 = it2->_next.get();
+            }
+
+            if ((it1 == nullptr && it2 != nullptr) ||
+                  (it1 != nullptr && it2 == nullptr))
+              return false;
+
             return true;
+        }
 
-          return pop_front().contains(v);
-      };
+        bool operator > (const list &rhs)
+        {
+            return get_root().get()->_hash > rhs.get_root().get()->_hash;
+        }
 
-      template <typename F>
-      void forEach(const F f) const
-      {
-        cout << " hererr" << endl;
-          Item const * it = _head.get();
-    cout << it->_val << endl;
-          while (it != nullptr) {
-              f(it->_val);
-              it = it->_next.get();
-          }
-      }
+        bool operator < (const list &rhs)
+        {
+            return get_root().get()->_hash < rhs.get_root().get()->_hash;
+        }
 
-      virtual ostream &operator<<(ostream &os)
-      {
-          os << "[ ";
+        friend ostream &operator<<(ostream &os, const list &t)
+        {
+            os << "[ ";
 
-          forEach([&os](T v) {
-              os << v << " ";
-          });
+            t.forEach([&os](T v) {
+                os << v << " ";
+            });
 
-          os << "]";
+            os << "]";
 
-          return os;
-      }
-  };
+            return os;
+        }
+    };
 }
 
 #endif
