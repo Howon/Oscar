@@ -9,7 +9,7 @@ type sexpr =
   | SUnit_Lit     of unit
   | SId           of string
   | SAccess       of t_expr * t_expr
-  | SLambda       of sfunc
+  | SFunc_Lit     of sfunc
   | SList_Lit     of types * t_expr list
   | SSet_Lit      of types * t_expr list
   | SMap_Lit      of types * types * (t_expr * t_expr) list
@@ -27,7 +27,6 @@ and sstmt =
   | SReturn      of t_expr
   | SVdecl       of sval_decl
   | SMutdecl     of smvar_decl
-  | SFdecl       of sfunc_decl
   | SIf          of t_expr * sstmt * sstmt
   | SActor_send  of t_expr * t_expr
   | SPool_send   of t_expr * t_expr
@@ -63,11 +62,6 @@ and spattern = {
   sp_body      : sstmt;
 }
 
-and sfunc_decl {
-  sf_name     : string;
-  sf_func     : sfunc;
-}
-
 and sactor = {
   sa_name      : string;
   sa_formals   : formal list;
@@ -75,7 +69,7 @@ and sactor = {
   sa_receive   : spattern list;
 }
 
-type sprogram = smessage list * sactor list * sfunc list
+type sprogram = smessage list * sactor list * sval_decl list
 
 (* ========== *)
 
@@ -93,7 +87,7 @@ let rec str_texpr texpr =
   | SUnit_Lit u                -> "unit"
   | SId se                     -> se
   | SAccess (scont, sit)       -> str_texpr scont ^ "[" ^ str_texpr sit ^ "]"
-  | SLambda slambda            -> str_slambda slambda
+  | SFunc_Lit sfl              -> str_sfl sfl
 
   | SList_Lit (t, sel)         -> "list<" ^ str_cont_t t ^ "[" ^
                                     str_texprs sel ^ "]"
@@ -132,9 +126,10 @@ and str_sstmt = function
                               smv.smv_name ^ (match smv.smv_init with
                                   SNoexpr, _ -> ""
                                 | _ -> " = " ^ (str_texpr smv.smv_init)) ^ ";"
-  | SVdecl sv            -> (str_types sv.sv_type) ^ " " ^ sv.sv_name ^ " = " ^
-                              (str_texpr sv.sv_init) ^ ";"
-  | SFdecl sf            -> str_sfunc sf
+  | SVdecl sv            -> (match sv.sv_init with
+                              (SFunc_Lit(sf), _) -> str_sfunc sv.sv_name sf
+                              | _ -> (str_types sv.sv_type) ^ " " ^ sv.sv_name
+                              ^ " = " ^ (str_texpr sv.sv_init) ^ ";")
   | SIf (se, s1, s2)     -> str_sif se s1 s2
   | SActor_send (se, a)  -> str_texpr se ^ " |> " ^ str_texpr a ^ ";"
   | SPool_send (se, p)   -> str_texpr se ^ " |>> " ^ str_texpr p ^ ";"
@@ -148,16 +143,16 @@ and str_sif se s1 s2 =
       SExpr (SNoexpr, _)  -> ""
     | _  -> " else " ^ str_sstmt s2)
 
-and str_slambda slambda =
-  "(" ^ str_formals slambda.sl_formals ^ ") => " ^ str_types
-    slambda.sl_return_t ^ " = " ^ str_sstmt slambda.sl_body
+and str_sfl sfl =
+  "(" ^ str_formals sfl.sf_formals ^ ") => " ^ str_types
+    sfl.sf_return_t ^ " = " ^ str_sstmt sfl.sf_body
 
 and str_spattern sp =
   "| " ^ sp.sp_smid ^ "(" ^ str_formals sp.sp_smformals ^ ") => " ^
     str_sstmt sp.sp_body
 
-and str_sfunc sfunc =
-  "def " ^ sfunc.sf_name ^ "(" ^ str_formals sfunc.sf_formals ^ ") => " ^
+and str_sfunc name sfunc =
+  "def " ^ name ^ "(" ^ str_formals sfunc.sf_formals ^ ") => " ^
     str_types sfunc.sf_return_t ^ " = " ^ str_sstmt sfunc.sf_body
 
 let str_sactor sactor =
@@ -168,4 +163,4 @@ let str_sactor sactor =
 let str_sprogram (smessages, sactors, sfuncs) =
   String.concat "\n" (List.map str_smessage smessages) ^ "\n\n" ^
     String.concat "\n\n" (List.map str_sactor sactors) ^ "\n\n" ^
-      String.concat "\n\n" (List.map str_sfunc sfuncs)
+      String.concat "\n\n" (List.map str_sstmt sfuncs)
