@@ -44,22 +44,25 @@ let _ =
       Parsing.Parse_error ->
         let () = ignore(parse_error lexbuf) in exit(1)
   and stdlib = Parser.program Scanner.token stdlex in
-  let sprogram =
-    try
-      Analyzer.check_program program stdlib
-    with
-      Failure f ->
-        Printf.eprintf "%s" ("Error: " ^ f);
-        flush stderr;
-        exit 1;
-  in
-(* let ast = Parser.program Scanner.token lexbuf in
-  Semant.check ast; *)
   match action with
     Ast       -> print_endline (Ast.str_program program)
-  | Sast      -> print_endline (Sast.str_sprogram sprogram)
-  | LLVM_IR   -> print_string
-      (Llvm.string_of_llmodule (Codegen.translate sprogram))
-  | Compile  -> let m = Codegen.translate sprogram in
-      Llvm_analysis.assert_valid_module m;
-      print_string (Llvm.string_of_llmodule m)
+    | _       ->
+        let sprogram =
+          try
+            Analyzer.check_program program stdlib
+          with
+            Failure f ->
+              Printf.eprintf "%s" ("Error: " ^ f);
+              flush stderr;
+              exit 1;
+        in
+      (* let ast = Parser.program Scanner.token lexbuf in
+        Semant.check ast; *)
+        match action with
+          Ast       -> ()
+        | Sast      -> print_endline (Sast.str_sprogram sprogram)
+        | LLVM_IR   -> print_string
+            (Llvm.string_of_llmodule (Codegen.translate sprogram))
+        | Compile  -> let m = Codegen.translate sprogram in
+            Llvm_analysis.assert_valid_module m;
+            print_string (Llvm.string_of_llmodule m)
