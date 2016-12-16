@@ -583,21 +583,22 @@ let rec check_expr (e : expr) (env : scope) =
             | Not_found ->
                 (try
 
-                  let sf =
+                  let (fts, rt) =
                     let v =
                       let decl = find_value_decl f env.env_vtable in
                     decl.sv_init in
-                    (match (fst v) with
-                        SFunc_Lit sf -> sf
+                    (match (snd v) with
+                        Func_t (fts, rt) -> (fts, rt)
                       | _ ->
-                          raise (Failure ("Attempting to call invalid" ^
-                            "invalid type " ^ str_types (snd v)))) in
+                          raise (Failure ("Attempting to call " ^
+                            "invalid type: " ^ f ^ " is type " ^
+                            str_types (snd v)))) in
 
-                  if check_args (get_list_snd sf.sf_formals) checked_args then
-                    (SFuncCall(f, checked_args), sf.sf_return_t)
+                  if check_args fts checked_args then
+                    (SFuncCall(f, checked_args), rt)
                   else
                     raise (Failure ("Function " ^ f ^ " has signature (" ^
-                      str_types_list (get_list_snd sf.sf_formals) ^ ") => " ^
+                      str_types_list fts ^ ") => " ^
                         str_types (match env.return_t with
                             Some rt -> rt
                           | None    -> Unit_t
