@@ -142,7 +142,8 @@ let rec build_expr builder (te : S.t_expr) =
   | (S.SAccess(e1, e2), typ)      -> raise (Failure ("TODO: access") )
   | (S.SFunc_Lit(f), typ)      ->
       let func = define_func "tmp" typ in
-      build_func builder func f
+      let tmp_builder = L.builder_at_end context (L.insertion_block builder) in
+      build_func tmp_builder func f
   | (S.SList_Lit(t, exprs), typ)  -> raise (Failure ("TODO: lists") )
   | (S.SSet_Lit(t, exprs), typ)  -> raise (Failure ("TODO: sets") )
   | (S.SMap_Lit(kt, vt, kvs), typ)-> raise (Failure ("TODO: maps") )
@@ -165,7 +166,8 @@ let rec build_expr builder (te : S.t_expr) =
       ) e' "tmp" builder
   | (S.SFuncCall("Println", t_el), typ) -> build_print_call t_el builder
   | (S.SFuncCall(f, act), typ) ->
-      let fdef = lookup f in
+      let fptr = lookup f in
+      let fdef = L.build_load fptr "tmpfunc" builder in
       let actuals = List.rev (List.map (build_expr builder) (List.rev act)) in
       let result = (
         match typ with
