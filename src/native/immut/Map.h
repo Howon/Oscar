@@ -6,16 +6,15 @@
 
 using namespace std;
 
-namespace immut {
-    template <typename K, typename V>
-    class map : public collection<K>
-    {
-        Type type = M;
+enum Color { R, B };
 
+namespace immut {
+    class map
+    {
         struct KVNode
         {
             KVNode(Color c, shared_ptr<const KVNode> const &lft,
-                K key, V val, shared_ptr<const KVNode> const & rgt)
+                OscarType key, OscarType val, shared_ptr<const KVNode> const &rgt)
             {
                 _hash = rand();
                 _c = c;
@@ -28,8 +27,8 @@ namespace immut {
             int _hash;
 
             Color _c;
-            K _key;
-            V _val;
+            OscarType _key;
+            OscarType _val;
 
             shared_ptr<const KVNode> _lft;
             shared_ptr<const KVNode> _rgt;
@@ -93,7 +92,7 @@ namespace immut {
                 !this->right().isEmpty() && this->right().rootColor() == R;
         }
 
-        map balance(const map &lft, K x, V v, const map &rgt) const
+        map balance(const map &lft, OscarType x, OscarType v, const map &rgt) const
         {
             if (lft.doubledLeft()) {
                 return map(R, lft.left().paint(B), lft.rootKey(),
@@ -115,7 +114,7 @@ namespace immut {
                 return map(B, lft, x, v, rgt);
         }
 
-        virtual void assert1() const
+        void assert1() const
         {
             if (!this->isEmpty()) {
                 auto lft = left();
@@ -134,16 +133,16 @@ namespace immut {
     public:
         map() {}
 
-        map(Color c, const map &lft, K key, V val, const map &rgt) :
+        map(Color c, const map &lft, OscarType key, OscarType val, const map &rgt) :
             _root(make_shared<const KVNode>(c, lft._root, key, val, rgt._root))
         {
             assert(lft.isEmpty() || lft.rootKey() < key);
             assert(rgt.isEmpty() || key < rgt.rootKey());
         }
 
-        map(initializer_list<pair<K, V> > initMap)
+        map(initializer_list<pair<OscarType, OscarType> > initMap)
         {
-            map<K, V> m;
+            map m;
 
             for (auto it = initMap.begin(); it != initMap.end(); ++it)
                 m = m.inserted(it->first, it->second);
@@ -151,16 +150,16 @@ namespace immut {
             this->_root = m.get_root();
         }
 
-        shared_ptr<const KVNode> get_root() { return _root; }
+        shared_ptr<const KVNode> get_root() const { return _root; }
 
-        K rootKey() const
+        OscarType rootKey() const
         {
             assert(!this->isEmpty());
 
             return _root->_key;
         }
 
-        V rootValue() const
+        OscarType rootValue() const
         {
             assert(!this->isEmpty());
 
@@ -172,8 +171,8 @@ namespace immut {
         template <typename F>
         void forEach(F f)  const
         {
-            static_assert(is_convertible<F, function<void(K, V)>>::value,
-                 "ForEach requires a function type void(K, V)");
+            static_assert(is_convertible<F, function<void(OscarType, OscarType)>>::value,
+                 "ForEach requires a function OscarType void(K, V)");
 
             if (!this->isEmpty()) {
                 this->left().forEach(f);
@@ -184,15 +183,15 @@ namespace immut {
             }
         }
 
-        map insert(K x, V v) const
+        map insert(OscarType x, OscarType v) const
         {
             this->assert1();
 
             if (this->isEmpty())
                 return map(R, map(), x, v, map());
 
-            K y = this->rootKey();
-            V yv = this->rootValue();
+            OscarType y = this->rootKey();
+            OscarType yv = this->rootValue();
 
             if (x == y)
                 return map(B, this->left(), x, yv, this->right());
@@ -216,19 +215,19 @@ namespace immut {
             }
         }
 
-        map  inserted(K x, V v) const
+        map  inserted(OscarType x, OscarType v) const
         {
             auto t = insert(x, v);
 
             return map(B, t.left(), t.rootKey(), t.rootValue(), t.right());
         }
 
-        virtual bool contains(K x) const
+        bool contains(OscarType x) const
         {
             if (this->isEmpty())
                 return false;
 
-            K y = this->rootKey();
+            OscarType y = this->rootKey();
 
             if (x < y)
                 return left().contains(x);
@@ -238,12 +237,12 @@ namespace immut {
                 return true;
         }
 
-        V find(K key) const
+        OscarType find(OscarType key) const
         {
             if (this->isEmpty())
                 throw out_of_range("Key not found");
 
-            K y = this->rootKey();
+            OscarType y = this->rootKey();
 
             if (key < y)
                 return left().find(key);
@@ -255,9 +254,11 @@ namespace immut {
 
         bool operator==(const map &rhs)
         {
-            forEach([&rhs](K k, V v) {
+            bool return_v = true;
+
+            forEach([&return_v, &rhs](OscarType k, OscarType v) {
                 if (!rhs.contains(k) || rhs.find(k) != v)
-                    return false;
+                    return return_v ;
             });
 
             return true;
@@ -277,7 +278,7 @@ namespace immut {
         {
             os << "[ ";
 
-            m.forEach([&os](K k, V v) {
+            m.forEach([&os](OscarType k, OscarType v) {
                 os << "(" << k << " -> " << v << ") ";
             });
 

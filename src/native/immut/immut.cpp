@@ -1,258 +1,217 @@
-#include "list.h"
-#include "map.h"
-#include "set.h"
+#include "collection.h"
 
 #include <vector>
 #include <string>
 
-template <typename T, typename F>
-void ForEach(const F f, const immut::list<T> &t)
+using namespace immut;
+
+template <typename F>
+void ForEach(const F f, OscarType *t)
 {
-    t.forEach(f);
+    switch (t->t) {
+        case CL : t->cl->forEach(f);
+        case CS : t->cs->forEach(f);
+        case CM : t->cm->forEach(f);
+        default : {
+          throw invalid_argument("ForEach can only be used with containers");
+        }
+    }
 }
 
-template <typename T, typename F>
-void ForEach(const F f, const immut::set<T> &t)
+template <typename F>
+OscarType *FoldLeft(F f, OscarType *acc, OscarType *lst)
 {
-    t.forEach(f);
-}
+    assert(lst->c == CL);
 
-template <typename K, typename V, typename F>
-void ForEach(const F f, const immut::map<K, V> &t)
-{
-    t.forEach(f);
-}
-
-template<class T, class U, class F>
-U FoldLeft(F f, U acc, immut::list<T> lst)
-{
-    static_assert(is_convertible<F, function<U(U, T)>>::value,
-        "FoldLeft requires a function type U(U, T)");
-
-    ForEach([&f, &acc](const T &v){
+    ForEach([&f, &acc](const OscarType &v){
         acc = f(acc, v);
     }, lst);
 
     return acc;
 }
 
-template<class T>
-immut::list<T> Reverse(immut::list<T> const &lst)
+OscarType *Reverse(OscarType *lst)
 {
-    return FoldLeft([](immut::list<T> const &acc, T v) {
-        return immut::list<T>(v, acc);
-    }, immut::list<T>(), lst);
+    assert(lst->c == CL);
+
+    return FoldLeft([](const OscarType *acc, OscarType v) {
+        return list(v, *acc->cl);
+    }, new OscarType(), lst);
 }
 
-template <typename T>
-size_t Size(immut::list<T> l)
+size_t Size(OscarType *c)
 {
-    return FoldLeft([](size_t acc, T t) -> size_t {
-        return acc + 1;
-    }, 0, l);
-}
+    assert(c->t == CL || c->t == CS || c->t == CM);
 
-template <typename T>
-size_t Size(immut::set<T> s)
-{
     size_t size = 0;
 
-    ForEach([&size](T t) {
-        size++;
-    }, s);
+    if (c->t == CL || c->t == CS) {
+        ForEach([&size](OscarType t) {
+            size++;
+        }, c);
+    } else {
+        ForEach([&size](OscarType k, OscarType v) {
+            size++;
+        }, c);
+    }
 
     return size;
 }
 
-template <typename K, typename V>
-size_t Size(immut::map<K, V> m)
+OscarType *Put(OscarType x, OscarType *s)
 {
-    size_t size = 0;
+    assert(c->t == CS);
 
-    ForEach([&size](K k, V v) {
-        size++;
-    }, m);
-
-    return size;
-}
-
-
-template <typename T>
-immut::set<T> Put(T x, immut::set<T> s)
-{
-    return s.inserted(x);
-}
-
-template <typename K, typename V>
-immut::map<K, V> Put(K k, V v, immut::map<K, V> m)
-{
-    return m.inserted(k, v);
-}
-
-template <typename T, typename F>
-immut::list<T> Filter(F f, immut::list<T> t)
-{
-    static_assert(is_convertible<F, function<bool(T)>>::value,
-        "Filter requires a function type bool(T)");
-
-    immut::list<T> res;
-
-    ForEach([&f, &res, &t](T const &v){
-        if (f(v))
-            res = res.push_front(v);
-    }, t);
-
-    return Reverse<T>(res);
-}
-
-template <typename T, typename F>
-immut::set<T> Filter(F f, immut::set<T> t)
-{
-    static_assert(is_convertible<F, function<bool(T)>>::value,
-        "Filter requires a function type bool(T)");
-
-    immut::set<T> res;
-
-    ForEach([&f, &res, &t](T const &v){
-        if (f(v))
-            res = Put(v, res.inserted(v));
-    }, t);
+    OscarType *res = new OscarType();
+    *res->cs = s->cs->inserted(x);
 
     return res;
 }
 
-template <typename K, typename V, typename F>
-immut::map<K, V> Filter(F f, immut::map<K, V> t)
+OscarType Put(OscarType k, OscarType v, OscarType *m)
 {
-    static_assert(is_convertible<F, function<bool(K, V)>>::value,
-        "Filter requires a function type bool(K, V)");
+    assert(c->t == CM);
 
-    immut::map<K, V> res;
-
-    ForEach([&f, &res, &t](const K &k, const V &v){
-        if (f(k, v))
-            res = Put(k, v, res);
-    }, t);
+    OscarType *res = new OscarType();
+    *res->cm = m->cm->inserted(k, v);
 
     return res;
 }
 
-template <typename T>
-bool Contains(T t, immut::list<T> l)
+template <typename F>
+OscarType *Filter(F f, OscarType t)
 {
-    return l.contains(t);
+    assert(c->t == CL || c->t == CS || c->t == CM);
+
+    OscarType *res = new OscarType();
+
+    if (t.t == CL) {
+        ForEach([&f, &res, &t](OscarType const &v){
+            if (f(v))
+                *res->cl = res->cl->push_front(v);
+        }, t);
+
+        return Reverse(res);
+    } else if (t.t == CS) {
+        ForEach([&f, &res, &t](OscarType const &v){
+            if (f(v))
+                *res->cs = res->cs->inserted(v);
+        }, t);
+    } else {
+        ForEach([&f, &res, &t](const OscarType &k, const OscarType &v){
+            if (f(k, v))
+                *res->cm = res->cm->inserted(k, v);
+        }, t);
+    }
+
+    return res;
 }
 
-template <typename T>
-bool Contains(T t, immut::set<T> s)
+bool Contains(OscarType t, OscarType *c)
+{
+    assert(c->t == CL || c->t == CS || c->t == CM);
+
+    if (c->t == CL)
+        return c->cl->contains(t);
+    if (c->t == CS)
+        return c->cs->contains(t);
+
+    return c->cm->contains(t);
+}
+
+bool Contains(OscarType t, set s)
 {
     return s.contains(t);
 }
 
-template <typename K, typename V>
-bool Contains(K k, immut::map<K, V> m)
+bool Contains(OscarType k, map m)
 {
     return m.contains(k);
 }
 
-template<class T, class F>
-auto Map(F f, immut::list<T> t) -> immut::list<decltype(f(t.front()))>
+template <typename F>
+OscarType *Map(F f, OscarType *t)
 {
-    using U = decltype(f(t.front()));
+    OscarType *res = new OscarType();
 
-    static_assert(is_convertible<F, function<U(T)>>::value,
-        "Map requires a function type U(T)");
+    ForEach([&f, &res](const OscarType &v) {
+        res = res->push_front(f(v));
+    }, t);
 
-    immut::list<U> res;
-
-    t.forEach([&f, &res](const T &v) { res = res.push_front(f(v)); });
-
-    return Reverse<U>(res);
+    return Reverse(res);
 }
 
-template<class T, class F>
-auto Map(F f, immut::set<T> t) -> immut::set<decltype(f(t.front()))>
+template <typename F>
+auto Map(F f, set t) -> immut::set<decltype(f(t.front()))>
 {
     using U = decltype(f(t.front()));
 
-    static_assert(is_convertible<F, function<U(T)>>::value,
-        "Met requires a function type U(T)");
+    static_assert(is_convertible<F, function<U(OscarType)>>::value,
+        "Met requires a function OscarType U(OscarType)");
 
     immut::set<U> res;
 
-    t.forEach([&f, &res](const T &v) { res = Put<U>(f(v), res); });
+    t.forEach([&f, &res](const OscarType &v) { res = Put<U>(f(v), res); });
 
     return res;
 }
 
-template <typename K, typename V, typename F>
-auto Map(F f, immut::map<K, V> t) ->
-    immut::map<K, decltype(f(t.rootKey(), t.rootValue()))>
+template <typename F>
+auto Map(F f, map t) -> map<OscarType, decltype(f(t.rootKey(), t.rootValue()))>
 {
     using U = decltype(f(t.rootKey(), t.rootValue()));
 
-    static_assert(is_convertible<F, function<U(K, V)>>::value,
-        "Map requires a function type U(K, V)");
+    static_assert(is_convertible<F, function<U(OscarType, OscarType)>>::value,
+        "Map requires a function OscarType U(OscarType, OscarType)");
 
-    immut::map<K, U> res;
+    immut::map<OscarType, U> res;
 
-    t.forEach([&f, &res](K const &k, V const &v) {
+    t.forEach([&f, &res](OscarType const &k, OscarType const &v) {
         res = Put(k, f(k, v), res);
     });
 
     return res;
 }
 
-template <typename T, typename U, typename F>
-U Reduce(F f, immut::list<T> lst)
+template <typename F>
+OscarType Reduce(F f, list lst)
 {
-    static_assert(is_convertible<F, function<U(T, T)>>::value,
-        "Reduce requires a function type U(T, T)");
-    static_assert(!lst.isEmpty(),
-        "Reduce requires a nonempty collection");
+    auto next = lst.pop_front();
 
-    auto next = lst.popped_front;
-
-    return FoldLeft(f, f(lst.front(), next.front()), next.popped_front());
+    return FoldLeft(f, f(lst.front(), next.front()), next.pop_front());
 }
 
-template <typename T>
-immut::list<T> MergeFront(immut::list<T> const &a, immut::list<T> const &b)
+list MergeFront(list const &a, list const &b)
 {
     if (a.isEmpty())
         return b;
 
-    return immut::list<T>(a.front(), MergeFront(a.pop_front(), b));
+    return list(a.front(), MergeFront(a.pop_front(), b));
 }
 
-template <typename T>
-immut::list<T> MergeBack(immut::list<T> const &a, immut::list<T> const &b)
+list MergeBack(list const &a, list const &b)
 {
     return MergeFront(b, a);
 }
 
-template <typename T>
-immut::list<T> PopFront(immut::list<T> const l)
+list PopFront(list const l)
 {
     return l.pop_front();
 }
 
-template <typename T>
-immut::list<T> PopBack(immut::list<T> const l)
+list PopBack(list const l)
 {
     size_t size = Size(l) - 1;
 
     return l.removeAt(0, size);
 }
 
-template <typename T>
-immut::list<T> PushFront(T t, immut::list<T> const l)
+list PushFront(OscarType t, list const l)
 {
     return l.push_front(t);
 }
 
-template <typename T>
-immut::list<T> PushBack(T t, immut::list<T> const l)
+list PushBack(OscarType t, list const l)
 {
     auto r1 = Reverse(l);
     auto r2 = r1.push_front(t);
@@ -260,12 +219,11 @@ immut::list<T> PushBack(T t, immut::list<T> const l)
     return Reverse(r2);
 }
 
-template <typename T>
-immut::set<T> Union(immut::set<T> const & a, immut::set<T> const & b)
+set Union(set const & a, set const & b)
 {
-    immut::set<T> res = a;
+    set res = a;
 
-    ForEach([&res, &a](const T &v){
+    ForEach([&res, &a](const OscarType &v){
         if (!a.contains(v))
             res = res.inserted(v);
     }, b);
@@ -273,12 +231,11 @@ immut::set<T> Union(immut::set<T> const & a, immut::set<T> const & b)
     return res;
 }
 
-template<class T>
-immut::set<T> Diff(immut::set<T> const & a, immut::set<T> const & b)
+set Diff(set const & a, set const & b)
 {
-    immut::set<T> res;
+    set res;
 
-    ForEach([&res, &a](const T &v){
+    ForEach([&res, &a](const OscarType &v){
         if (!a.contains(v))
             res = res.inserted(v);
     }, b);
@@ -286,12 +243,11 @@ immut::set<T> Diff(immut::set<T> const & a, immut::set<T> const & b)
     return res;
 }
 
-template<class T>
-immut::set<T> Intersection(immut::set<T> const & a, immut::set<T> const & b)
+set Intersection(const set &a, const set &b)
 {
-    immut::set<T> res;
+    set res;
 
-    ForEach([&res, &a](const T &v){
+    ForEach([&res, &a](const OscarType &v){
         if (a.contains(v))
             res = res.inserted(v);
     }, b);
@@ -299,12 +255,11 @@ immut::set<T> Intersection(immut::set<T> const & a, immut::set<T> const & b)
     return res;
 }
 
-template<class T>
-bool SubSet(immut::set<T> const & a, immut::set<T> const & b)
+bool SubSet(const set &a, const set &b)
 {
     bool is_subset = true;
 
-    ForEach([&is_subset, &b](const T &v) {
+    ForEach([&is_subset, &b](const OscarType &v) {
         if (!b.contains(v))
             is_subset = false;
     }, a);
@@ -426,5 +381,4 @@ int main(void)
     test_map();
 
     return 0;
-}
-*/
+}*/

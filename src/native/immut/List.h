@@ -6,18 +6,15 @@
 using namespace std;
 
 namespace immut {
-    template <typename T>
-    class list : public collection<T> {
-        Type type = L;
-
+    class list {
         struct Item {
-            Item(T v, shared_ptr<const Item> tail) :
+            Item(type v, shared_ptr<const Item> tail) :
                 _hash(rand()), _val(v), _next(move(tail)) {}
 
-            explicit Item(T v) : _val(v) {}
+            explicit Item(type v) : _val(v) {}
 
             int _hash;
-            T _val;
+            type _val;
 
             shared_ptr<const Item> _next;
         };
@@ -31,12 +28,12 @@ namespace immut {
     public:
         list() {}
 
-        list(T v, list const &tail) :
+        list(type v, list const &tail) :
             _head(make_shared<Item>(v, tail._head)) {}
 
-        explicit list(T v) : _head(make_shared<Item>(v)) {}
+        explicit list(type v) : _head(make_shared<Item>(v)) {}
 
-        list(initializer_list<T> init)
+        list(initializer_list<type> init)
         {
             for (auto it = rbegin(init); it != rend(init); ++it) {
                 _head = make_shared<Item>(*it, _head);
@@ -45,9 +42,9 @@ namespace immut {
 
         shared_ptr<const Item> get_root() const { return _head; }
 
-        virtual bool isEmpty() const { return !_head; }
+        bool isEmpty() const { return !_head; }
 
-        virtual T front() const
+        type front() const
         {
             assert(!isEmpty());
 
@@ -61,7 +58,7 @@ namespace immut {
             return list(_head->_next);
         }
 
-        list push_front(T v) const { return list(v, *this); }
+        list push_front(type v) const { return list(v, *this); }
 
         list take(int n)
         {
@@ -71,14 +68,14 @@ namespace immut {
             return pop_front().take(n - 1).push_front(front());
         }
 
-        list insertedAt(int i, T v) const
+        list insertedAt(int i, type v) const
         {
             if (i == 0)
                 return push_front(v);
             else {
                 assert(!isEmpty());
 
-                return list<T>(front(), pop_front().insertedAt(i - 1, v));
+                return list(front(), pop_front().insertedAt(i - 1, v));
             }
         }
 
@@ -93,7 +90,7 @@ namespace immut {
             return list(front(), pop_front().removeAt(i + 1, j));
         }
 
-        list removed(T v) const
+        list removed(type v) const
         {
             if (isEmpty())
               return list();
@@ -104,7 +101,7 @@ namespace immut {
             return list(front(), pop_front().removed(v));
         }
 
-        bool contains(T v) const
+        bool contains(type v) const
         {
             if (isEmpty())
               return false;
@@ -129,8 +126,8 @@ namespace immut {
 
         bool operator==(const list &rhs)
         {
-            Item const *it1 = get_root().get();
-            Item const *it2 = rhs.get_root().get();
+            const Item *it1 = get_root().get();
+            const Item *it2 = rhs.get_root().get();
 
             while (!(it1 == nullptr || it2 == nullptr)) {
                 if (it1->_val != it2->_val)
@@ -161,7 +158,7 @@ namespace immut {
         {
             os << "[ ";
 
-            t.forEach([&os](T v) {
+            t.forEach([&os](type v) {
                 os << v << " ";
             });
 

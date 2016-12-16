@@ -6,25 +6,24 @@
 #include <memory>
 #include <functional>
 
-#include "collection.h"
-
 using namespace std;
 
-namespace immut {
-    template <typename T>
-    class set : public collection<T> {
-        Type type = S;
+enum Color { R, B };
 
+namespace immut {
+    class set {
         struct Node {
-            Node(Color c, shared_ptr<const Node> const &lft, T val,
-                shared_ptr<const Node> const & rgt) :
+            Node(Color c, shared_ptr<const Node> const &lft, OscarType val,
+                shared_ptr<const Node> const &rgt) :
                 _hash(rand()), _c(c), _lft(lft), _val(val), _rgt(rgt) {}
 
             int _hash;
             Color _c;
-            T _val;
 
             shared_ptr<const Node> _lft;
+
+            OscarType _val;
+
             shared_ptr<const Node> _rgt;
         };
 
@@ -72,7 +71,7 @@ namespace immut {
                 !this->right().isEmpty() && this->right().rootColor() == R;
         }
 
-        set balance(set const & lft, T x, set const & rgt) const
+        set balance(set const & lft, OscarType x, set const & rgt) const
         {
             if (lft.doubledLeft()) {
                 return set(R, lft.left().paint(B), lft.front(),
@@ -92,7 +91,7 @@ namespace immut {
                 return set(B, lft, x, rgt);
         }
 
-        virtual void assert1() const
+        void assert1() const
         {
             if (!this->isEmpty()) {
                 auto lft = left();
@@ -111,33 +110,33 @@ namespace immut {
     public:
         set() {}
 
-        set(Color c, const set &lft, T val, const set &rgt)
+        set(Color c, const set &lft, OscarType val, const set &rgt)
             : _root(make_shared<const Node>(c, lft._root, val, rgt._root))
         {
             assert(lft.isEmpty() || lft.front() < val);
             assert(rgt.isEmpty() || val < rgt.front());
         }
 
-        set<T> (initializer_list<T> init)
+        set (initializer_list<OscarType> init)
         {
-            set<T> t;
+            set t;
 
-            for (T v : init)
+            for (OscarType v : init)
                 t = t.inserted(v);
 
             this->_root = t.get_root();
         }
 
-        shared_ptr<const Node> get_root() { return _root; }
+        shared_ptr<const Node> get_root() const { return _root; }
 
-        T front() const { return _root->_val; }
+        OscarType front() const { return _root->_val; }
 
         bool isEmpty() const { return !_root; }
 
         template <typename F>
         void forEach(F f) const {
-            static_assert(is_convertible<F, function<void(T)>>::value,
-                 "ForEach requires a function type void(T)");
+            static_assert(is_convertible<F, function<void(OscarType)>>::value,
+                 "ForEach requires a function OscarType void(T)");
 
             if (!this->isEmpty()) {
                 this->left().forEach(f);
@@ -148,14 +147,14 @@ namespace immut {
             }
         }
 
-        set<T> insert(T x) const
+        set insert(OscarType x) const
         {
             this->assert1();
 
             if (this->isEmpty())
                 return set(R, set(), x, set());
 
-            T y = this->front();
+            OscarType y = this->front();
 
             if (x == y)
                 return *this;
@@ -175,19 +174,19 @@ namespace immut {
             }
         }
 
-        set inserted(T x) const
+        set inserted(OscarType x) const
         {
           auto s = insert(x);
 
           return set(B, s.left(), s.front(), s.right());
         }
 
-        virtual bool contains(T x) const
+        bool contains(OscarType x) const
         {
             if (this->isEmpty())
                 return false;
 
-            T y = this->front();
+            OscarType y = this->front();
 
             if (x < y)
                 return left().contains(x);
@@ -199,12 +198,14 @@ namespace immut {
 
         bool operator==(const set &rhs)
         {
-            forEach([&rhs](T t) {
+            bool return_v = true;
+
+            forEach([&return_v, &rhs](OscarType t) {
                 if (!rhs.contains(t))
-                    return false;
+                    return_v = false;
             });
 
-            return true;
+            return return_v;
         }
 
         bool operator > (const set &rhs)
@@ -221,7 +222,7 @@ namespace immut {
         {
             os << "[ ";
 
-            s.forEach([&os](T t) {
+            s.forEach([&os](OscarType t) {
                 os << t << " ";
             });
 
