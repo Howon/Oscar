@@ -963,9 +963,9 @@ let check_program (p : program) (slib : program) =
         | _ -> raise (Failure ("Not a valid function: " ^ f.v_name))
   ) ([], a_env) functions in
 
-  let smessages = sl_smessages @ smessages in
-  let sactors = sl_sactors @ sactors in
-  let sfunctions = sl_sfunctions @ sfunctions in
+  let smessages = smessages @ sl_smessages in
+  let sactors = sactors @ sl_sactors in
+  let sfunctions = sfunctions @ sl_sfunctions in
 
   let main_cnt = List.fold_left (fun acc sf -> if sf.sv_name = "main"
                                   then acc + 1 else acc) 0 sfunctions in
