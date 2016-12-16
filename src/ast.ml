@@ -8,7 +8,7 @@ type bin_op =
 type u_op = Not | Neg
 
 type types = Int_t | Bool_t | Double_t | Char_t | Unit_t | String_t
-  | Lambda_t   of types list * types
+  | Func_t     of types list * types
   | List_t     of types
   | Set_t      of types
   | Map_t      of types * types
@@ -25,7 +25,7 @@ and expr =
   | Unit_Lit     of unit
   | Id           of string
   | Access       of expr * expr
-  | Lambda       of lambda
+  | Func_Lit     of func
   | List_Lit     of types * expr list
   | Set_Lit      of types * expr list
   | Map_Lit      of types * types * (expr * expr) list
@@ -43,7 +43,6 @@ and stmt =
   | Return      of expr
   | Vdecl       of val_decl
   | Mutdecl     of mvar_decl
-  | Fdecl       of func
   | If          of expr * stmt * stmt
   | Actor_send  of expr * expr
   | Pool_send   of expr * expr
@@ -67,23 +66,16 @@ and mvar_decl = {
     mv_init : expr;
 }
 
-and lambda = {
-  l_formals  : formal list;
-  l_return_t : types;
-  l_body     : stmt;
+and func = {
+  f_formals  : formal list;
+  f_return_t : types;
+  f_body     : stmt;
 }
 
 and pattern = {
   p_mid       : string;
   p_mformals  : formal list;
   p_body      : stmt;
-}
-
-and func = {
-  f_name     : string;
-  f_formals  : formal list;
-  f_return_t : types;
-  f_body     : stmt;
 }
 
 and actor = {
@@ -93,7 +85,7 @@ and actor = {
   a_receive   : pattern list;
 }
 
-type program = message list * actor list * func list
+type program = message list * actor list * val_decl list
 
 (* PRETTY PRINTER *)
 
@@ -129,9 +121,9 @@ let rec str_types = function
   | Char_t               -> "char"
   | Unit_t               -> "unit"
   | String_t             -> "string"
-  | Lambda_t (args, rt)  -> "lambda (" ^ (String.concat ", " (List.map
+  | Func_t (args, rt)    -> "[(" ^ (String.concat ", " (List.map
                               (fun arg -> str_types arg) args)) ^ ") => " ^
-                                str_types rt
+                                str_types rt ^ "]"
   | List_t t             -> "list<" ^ str_cont_t t
   | Set_t t              -> "set<" ^ str_cont_t t
   | Map_t (t1, t2)       -> "map<" ^ str_types t1 ^ ", " ^ str_cont_t t2
@@ -166,7 +158,7 @@ and str_expr = function
   | Unit_Lit u              -> "unit"
   | Id s                    -> s
   | Access (cont, it)       -> str_expr cont ^ "[" ^ str_expr it ^ "]"
-  | Lambda lambda           -> str_lambda lambda
+  | Func_Lit fl             -> str_fl fl
   | List_Lit (t, ex)        -> "list<" ^ str_cont_t t  ^ ">[" ^
                                  str_exprs ex  ^ "]"
   | Set_Lit (t, ex)         -> "set<" ^  str_cont_t t  ^ ">[" ^
@@ -204,9 +196,7 @@ and str_stmt = function
                             mv.mv_name ^ (match mv.mv_init with
                                Noexpr -> ""
                              | _ -> " = " ^ str_expr mv.mv_init) ^ ";"
-  | Vdecl v            -> str_types v.v_type ^ " " ^ v.v_name ^ " = " ^
-                            str_expr v.v_init ^ ";"
-  | Fdecl f            -> str_func f
+  | Vdecl v            -> str_vdecl v
   | If (e, s1, s2)     -> str_if e s1 s2
   | Actor_send (e, a)  -> str_expr e ^ " |> " ^ str_expr a ^ ";"
   | Pool_send (e, p)   -> str_expr e ^ " |>> " ^ str_expr p ^ ";"
@@ -220,16 +210,42 @@ and str_if e s1 s2 =
       Expr Noexpr  -> ""
     | _            -> " else " ^ str_stmt s2)
 
-and str_lambda lambda =
-  "(" ^ str_formals lambda.l_formals ^ ") => " ^ str_types
-    lambda.l_return_t ^ " = " ^ str_stmt lambda.l_body
+and str_fl fl =
+  let { f_formals = formals; f_return_t = rt; f_body = body } = fl in
+  let s = match body with
+      Block stmts -> stmts
+    | _ -> [] in
+
+  match (List.length s, List.hd s) with
+      (1, Return e) ->
+        "(" ^ str_formals formals ^ ") => " ^
+        str_types rt ^ " = " ^ str_expr e
+    | _               ->
+        "(" ^ str_formals formals ^ ") => " ^
+          str_types rt ^ " = " ^ str_stmt fl.f_body
+
+and str_func name f =
+  let { f_formals = formals; f_return_t = rt; f_body = body } = f in
+  let s = match body with
+      Block stmts -> stmts
+    | _ -> [] in
+
+  match (List.length s, List.hd s) with
+      (1, Return e) ->
+        "func " ^ name ^ " = (" ^ str_formals formals ^ ") => " ^
+        str_types rt ^ " = " ^ str_expr e ^ ";"
+    | _               ->
+        "def " ^ name ^ "(" ^ str_formals formals ^ ") => " ^
+        str_types rt ^ " = " ^ str_stmt body
+
+and str_vdecl v =
+  (match v.v_init with
+    Func_Lit(f) -> str_func v.v_name f
+    | _ ->
+        str_types v.v_type ^ " " ^ v.v_name ^ " = " ^ str_expr v.v_init ^ ";")
 
 and str_pattern p =
   "| " ^ p.p_mid ^ "(" ^ str_formals p.p_mformals ^ ") => " ^ str_stmt p.p_body
-
-and str_func func =
-  "def " ^ func.f_name ^ "(" ^ str_formals func.f_formals ^ ") => " ^
-    str_types func.f_return_t ^ " = " ^ str_stmt func.f_body
 
 let str_actor actor =
   "actor " ^ actor.a_name ^ "(" ^ str_formals actor.a_formals ^ ") {\n" ^
@@ -239,4 +255,4 @@ let str_actor actor =
 let str_program (messages, actors, funcs) =
   String.concat "\n" (List.map str_message messages) ^ "\n\n" ^
     String.concat "\n\n" (List.map str_actor actors) ^ "\n\n" ^
-      String.concat "\n\n" (List.map str_func funcs)
+      String.concat "\n\n" (List.map str_vdecl funcs)

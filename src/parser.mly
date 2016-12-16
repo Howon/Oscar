@@ -13,7 +13,7 @@
 %token MUTABLE
 %token TYPE_INT TYPE_DOUBLE TYPE_CHAR TYPE_BOOL TYPE_UNIT TYPE_STR
 %token TYPE_LIST TYPE_SET TYPE_MAP
-%token TYPE_MESSAGE TYPE_ACTOR TYPE_POOL TYPE_FUNC TYPE_LAMBDA
+%token TYPE_MESSAGE TYPE_ACTOR TYPE_POOL FUNC_DECL TYPE_FUNC
 %token <int> INT_LIT
 %token <float> DOUBLE_LIT
 %token <string> STRING_LIT
@@ -89,9 +89,18 @@ function_list:
   | function_list fdecl  { $2::$1 }
 
 fdecl:
-  TYPE_FUNC ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
-  ASSIGN LBRACE stmts RBRACE
-    { { f_name = $2; f_formals = $4; f_return_t = $7; f_body = $10 } }
+    FUNC_DECL ID LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
+      ASSIGN LBRACE stmts RBRACE
+        { { v_name = $2;
+            v_type = Func_t((List.map (fun (i,t) -> t) $4), $7);
+            v_init = Func_Lit({ f_formals = $4; f_return_t = $7;
+                                f_body = $10 }) } }
+  | TYPE_FUNC ID ASSIGN LPAREN formals_opt RPAREN FUNC_RET_TYPE typ
+      ASSIGN expr PUNC_SEMI
+        { { v_name = $2;
+            v_type = Func_t((List.map (fun (i,t) -> t) $5), $8);
+            v_init = Func_Lit({ f_formals = $5; f_return_t = $8;
+                                f_body = Block([Return $10]); }) } }
 
 formals_opt:
     /* nothing */ { [] }
@@ -115,7 +124,7 @@ typ:
     simple_typ   { $1 }
   | cont_typ     { $1 }
   | actor_typ    { $1 }
-  | lambda_typ   { $1 }
+  | func_typ   { $1 }
   | message_typ  { $1 }
 
 simple_typ:
@@ -135,8 +144,9 @@ actor_typ:
     TYPE_ACTOR LANGLE ID RANGLE  { Actor_t($3) }
   | TYPE_POOL LANGLE ID RANGLE   { Pool_t($3) }
 
-lambda_typ:
-  TYPE_LAMBDA LPAREN typ_opt RPAREN FUNC_RET_TYPE typ { Lambda_t($3, $6) }
+func_typ:
+  LBRACKET LPAREN typ_opt RPAREN FUNC_RET_TYPE typ RBRACKET
+      { Func_t($3, $6) }
 
 message_typ:
   TYPE_MESSAGE LANGLE ID RANGLE { Message_t($3) }
@@ -178,12 +188,12 @@ stmt:
   | typ ID ASSIGN expr PUNC_SEMI  { Vdecl({ v_name = $2;
                                       v_type = $1;
                                       v_init = $4}) }
-  | mut_vdecl PUNC_SEMI          { $1 }
-  | fdecl                        { Fdecl($1) }
-  | RETURN PUNC_SEMI             { Return Noexpr }
-  | RETURN expr PUNC_SEMI        { Return $2 }
-  | LBRACE stmts RBRACE          { $2 }
-  | stmt_cond                    { $1 }
+  | mut_vdecl PUNC_SEMI           { $1 }
+  | fdecl                         { Vdecl($1) }
+  | RETURN PUNC_SEMI              { Return Noexpr }
+  | RETURN expr PUNC_SEMI         { Return $2 }
+  | LBRACE stmts RBRACE           { $2 }
+  | stmt_cond                     { $1 }
   | expr ACT_SEND ID PUNC_SEMI
                                  { Actor_send($1, Id($3)) }
   | expr ACT_BROADCAST ID PUNC_SEMI
@@ -221,6 +231,13 @@ message_lit:
   TYPE_MESSAGE LANGLE ID RANGLE LPAREN actuals_opt RPAREN
       { Message_Lit($3, $6) }
 
+func_lit:
+  LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
+    { Func_Lit({ f_formals = $2; f_return_t = $5; f_body = $8; }) }
+  | LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN expr
+    { Func_Lit({ f_formals = $2; f_return_t = $5; f_body = Block([Return $7]); }) }
+
+
 expr:
     ID                                            { Id($1) }
   | INT_LIT                                       { Int_Lit($1) }
@@ -234,6 +251,7 @@ expr:
   | cont_lit                                      { $1 }
   | actor_lit                                     { $1 }
   | message_lit                                   { $1 }
+  | func_lit                                      { $1 }
   | expr ARITH_PLUS     expr                      { Binop($1, Add, $3) }
   | expr ARITH_MINUS    expr                      { Binop($1, Sub, $3) }
   | expr ARITH_TIMES    expr                      { Binop($1, Mult, $3) }
@@ -256,13 +274,8 @@ expr:
   | LOGIC_NOT expr                                { Uop(Not, $2) }
   | ID LPAREN actuals_opt RPAREN                  { FuncCall($1, $3) }
   | LPAREN expr RPAREN                            { $2 }
-  | lambda                                        { $1 }
   | expr ASSIGN expr                              { Binop($1, Assign, $3) }
   | expr LBRACKET expr RBRACKET                   { Access($1, $3) }
-
-lambda:
-  LPAREN formals_opt RPAREN FUNC_RET_TYPE typ ASSIGN LBRACE stmts RBRACE
-    { Lambda({ l_formals = $2; l_return_t = $5; l_body = $8; }) }
 
 actuals_opt:
     /* nothing */ { [] }
