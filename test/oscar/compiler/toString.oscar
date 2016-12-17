@@ -1,3 +1,3 @@
 def main() => unit = {
-  Println(ToString(123) == "123");
+  Println(AsString(123) == "123");
 }

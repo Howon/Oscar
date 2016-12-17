@@ -84,11 +84,10 @@ let rec str_texpr texpr =
   | SString_Lit s              -> "\"" ^ s ^ "\""
   | SBool_Lit true             -> "true"
   | SBool_Lit false            -> "false"
-  | SUnit_Lit u                -> "unit"
+  | SUnit_Lit _                -> "unit"
   | SId se                     -> se
   | SAccess (scont, sit)       -> str_texpr scont ^ "[" ^ str_texpr sit ^ "]"
   | SFunc_Lit sfl              -> str_sfl sfl
-
   | SList_Lit (t, sel)         -> "list<" ^ str_cont_t t ^ "[" ^
                                     str_texprs sel ^ "]"
   | SSet_Lit (t, sel)          -> "set<" ^ (str_cont_t t) ^ "[" ^

@@ -36,7 +36,6 @@ actor Types() {
   mut map<int, char> mICM;
 
   intListList[0][0] = mI;
-
 }
 
 def main() => unit = {

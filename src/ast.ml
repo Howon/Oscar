@@ -155,7 +155,7 @@ and str_expr = function
   | String_Lit s            -> "\"" ^ s ^ "\""
   | Bool_Lit true           -> "true"
   | Bool_Lit false          -> "false"
-  | Unit_Lit u              -> "unit"
+  | Unit_Lit _              -> "unit"
   | Id s                    -> s
   | Access (cont, it)       -> str_expr cont ^ "[" ^ str_expr it ^ "]"
   | Func_Lit fl             -> str_fl fl

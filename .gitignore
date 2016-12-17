@@ -1,4 +1,6 @@
 *~
+*.ll
+*.out
 include/*
 ./oscar
 src/oscar
@@ -10,6 +12,7 @@ scanner.ml
 *.cmo
 *.cmx
 ./src/*.out
+./src/_build
 *.output
 *.o
 *.swp

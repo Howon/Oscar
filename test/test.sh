@@ -2,7 +2,7 @@
 
 # Path to the LLVM interpreter
 LLI="lli"
-
+CXXCOMPILE="clang++ -Wall -pedantic -fsanitize=address -std=c++1y -O2 -I/usr/local/include/ -L/usr/local/lib/"
 # Colors
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -94,9 +94,8 @@ test_compiler() {
 
     # compile program to test.ll, put any errors in the session
     echo -e "Oscar Compiler Messages:" >> session_file
-    $oscar_compile $oscar_test_file 1> temp.ll 2> oscar_error_output
-
-    
+    $oscar_compile $oscar_test_file 1> temp.cpp 2> oscar_error_output
+    $CXXCOMPILE temp.cpp
 
     echo "" > oscar_test_output
 
@@ -114,7 +113,7 @@ test_compiler() {
 
       # run lli on the file and save the output and errors
       echo -e "LLVM Messages:" >> session_file
-      $LLI temp.ll 1> oscar_test_output 2>> session_file
+      ./a.out 1> oscar_test_output 2>> session_file
       echo "" >> session_file
 
       # diff outputs
@@ -131,7 +130,7 @@ test_compiler() {
 make_oscar(){
   echo "Oscar Compiler"
   cd ../
-  make
+  make all
   echo "Oscar Compiler created"
   echo ""
 }
@@ -169,6 +168,7 @@ rm -f oscar_test_output;
 rm -f oscar_error_output
 rm -f session_file;
 rm -f temp.ll;
+rm -f *.cpp
 
 make clean
 cd test

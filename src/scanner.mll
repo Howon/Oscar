@@ -104,7 +104,7 @@ rule token = parse
   (* literals *)
   | digit+ as lxm { INT_LIT(int_of_string lxm) }
   | double as lxm { DOUBLE_LIT(float_of_string lxm)}
-  | '\"' (all_chr* as lxm) '\"' { STRING_LIT(lxm) }
+  | '\"' ((simp_chr | '\\' esc_chr)* as lxm) '\"' { STRING_LIT(lxm) }
   | '\'' (simp_chr as lxm) '\'' { CHAR_LIT(lxm) }
   | "'\\" (esc_chr as ec) "'" { CHAR_LIT(make_char ec) }
   | "true" | "false" as lxm { BOOL_LIT(bool_of_string lxm) }
