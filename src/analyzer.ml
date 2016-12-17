@@ -972,5 +972,8 @@ let check_program (p : program) (slib : program) =
                                   then acc + 1 else acc) 0 sfunctions in
   match main_cnt with
       0 -> raise (Failure "No main function found in this program")
-    | 1 -> (List.rev smessages, List.rev sactors, List.rev sfunctions)
+    | 1 -> (List.rev smessages,
+            List.rev sactors,
+            List.rev (List.filter (fun sf -> not (sf.sv_name = "main")) sfunctions),
+            (List.find (fun sf -> sf.sv_name = "main") sfunctions).sv_init)
     | n -> raise (Failure (string_of_int n ^ " main functions found") )
