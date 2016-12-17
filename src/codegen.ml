@@ -22,7 +22,7 @@ let print_scope scope =
   let () = print_endline ("ifs: " ^ string_of_int scope.if_cnt) in
   print_endline ("funcs: " ^ string_of_int scope.func_cnt)
 
-let local_vars = Hashtbl.create 50
+let local_vars = Hashtbl.create 100
 
 let context = L.global_context ()
 let the_module = L.create_module context "Oscar"
@@ -394,7 +394,6 @@ let translate (messages, actors, functions, main) =
   let nscope = List.fold_left (fun nscope f ->
       (build_vdecl builder nscope f)) scope functions
   in
-  let () = print_endline "making main!" in
   (* build out actual main function *)
   let () = L.position_at_end (L.entry_block main_f) builder in
   let () = (match (fst main) with
