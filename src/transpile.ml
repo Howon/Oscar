@@ -45,7 +45,7 @@ and c_texpr tex =
     (match se with
         SInt_Lit _ | SDouble_Lit _ | SChar_Lit _
       | SBool_Lit _ | SId _ | SNoexpr -> str_texpr tex
-      | SUnit_Lit _                -> "unit"
+      | SUnit_Lit _                -> "void"
       | SString_Lit s              -> std ^ "string(\"" ^ s ^ "\")"
       | SAccess (scont, sit)       -> c_texpr scont ^ "[" ^ c_texpr sit ^ "]"
       | SFuncCall (se, sel)        -> se ^ "(" ^ init_list sel ^ ")"
