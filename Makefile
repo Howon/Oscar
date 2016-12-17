@@ -1,5 +1,8 @@
 TARGET=oscar
 STDLIB=stdlib.oscar
+NATIVE=native
+ACTOR=NATIVE/actor
+IMMUT=NATIVE/immut
 
 CXX= clang
 CXXFLAGS = -std=c++14 -Wall -g -c -O3
@@ -23,6 +26,7 @@ oscar :
 	mkdir -p $(BUILDDIR) && \
 	mv ./src/$(TARGET) ./$(TARGET) && \
 	cp ./src/$(STDLIB) ./$(BUILDDIR) && \
+	cp ./src/$(IMMUT)/* ./$(BUILDDIR) && \
 	echo 'Oscar Compiler Succesfully Built'
 
 scanner.ml : scanner.mll

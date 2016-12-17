@@ -1,20 +1,23 @@
-#ifndef __LIST_H__
-#define __LIST_H__
+#ifndef __LIST_HPP__
+#define __LIST_HPP__
 
-#include "collection.h"
+#include "collection.hpp"
 
 using namespace std;
 
 namespace immut {
-    class list {
+    template <typename T>
+    class list : public collection<T> {
+        Type type = L;
+
         struct Item {
-            Item(type v, shared_ptr<const Item> tail) :
+            Item(T v, shared_ptr<const Item> tail) :
                 _hash(rand()), _val(v), _next(move(tail)) {}
 
-            explicit Item(type v) : _val(v) {}
+            explicit Item(T v) : _val(v) {}
 
             int _hash;
-            type _val;
+            T _val;
 
             shared_ptr<const Item> _next;
         };
@@ -28,12 +31,12 @@ namespace immut {
     public:
         list() {}
 
-        list(type v, list const &tail) :
+        list(T v, list const &tail) :
             _head(make_shared<Item>(v, tail._head)) {}
 
-        explicit list(type v) : _head(make_shared<Item>(v)) {}
+        explicit list(T v) : _head(make_shared<Item>(v)) {}
 
-        list(initializer_list<type> init)
+        list(initializer_list<T> init)
         {
             for (auto it = rbegin(init); it != rend(init); ++it) {
                 _head = make_shared<Item>(*it, _head);
@@ -42,9 +45,9 @@ namespace immut {
 
         shared_ptr<const Item> get_root() const { return _head; }
 
-        bool isEmpty() const { return !_head; }
+        virtual bool isEmpty() const { return !_head; }
 
-        type front() const
+        virtual T front() const
         {
             assert(!isEmpty());
 
@@ -58,7 +61,7 @@ namespace immut {
             return list(_head->_next);
         }
 
-        list push_front(type v) const { return list(v, *this); }
+        list push_front(T v) const { return list(v, *this); }
 
         list take(int n)
         {
@@ -68,14 +71,14 @@ namespace immut {
             return pop_front().take(n - 1).push_front(front());
         }
 
-        list insertedAt(int i, type v) const
+        list insertedAt(int i, T v) const
         {
             if (i == 0)
                 return push_front(v);
             else {
                 assert(!isEmpty());
 
-                return list(front(), pop_front().insertedAt(i - 1, v));
+                return list<T>(front(), pop_front().insertedAt(i - 1, v));
             }
         }
 
@@ -90,7 +93,7 @@ namespace immut {
             return list(front(), pop_front().removeAt(i + 1, j));
         }
 
-        list removed(type v) const
+        list removed(T v) const
         {
             if (isEmpty())
               return list();
@@ -101,7 +104,7 @@ namespace immut {
             return list(front(), pop_front().removed(v));
         }
 
-        bool contains(type v) const
+        bool contains(T v) const
         {
             if (isEmpty())
               return false;
@@ -126,8 +129,8 @@ namespace immut {
 
         bool operator==(const list &rhs)
         {
-            const Item *it1 = get_root().get();
-            const Item *it2 = rhs.get_root().get();
+            Item const *it1 = get_root().get();
+            Item const *it2 = rhs.get_root().get();
 
             while (!(it1 == nullptr || it2 == nullptr)) {
                 if (it1->_val != it2->_val)
@@ -154,17 +157,24 @@ namespace immut {
             return get_root().get()->_hash < rhs.get_root().get()->_hash;
         }
 
-        friend ostream &operator<<(ostream &os, const list &t)
+        string str() const
         {
+            stringstream os;
+
             os << "[ ";
 
-            t.forEach([&os](type v) {
+            forEach([&os](T v) {
                 os << v << " ";
             });
 
             os << "]";
 
-            return os;
+            return os.str();
+        }
+
+        friend ostream &operator<<(ostream &os, const list &t)
+        {
+            return os << t.str();
         }
     };
 }

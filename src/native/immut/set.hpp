@@ -1,29 +1,25 @@
-#ifndef __SET_H__
-#define __SET_H__
+#ifndef __SET_HPP__
+#define __SET_HPP__
 
-#include <iostream>
-#include <cassert>
-#include <memory>
-#include <functional>
+#include "collection.hpp"
 
 using namespace std;
 
-enum Color { R, B };
-
 namespace immut {
-    class set {
+    template <typename T>
+    class set : public collection<T> {
+        Type type = S;
+
         struct Node {
-            Node(Color c, shared_ptr<const Node> const &lft, OscarType val,
-                shared_ptr<const Node> const &rgt) :
+            Node(Color c, shared_ptr<const Node> const &lft, T val,
+                shared_ptr<const Node> const & rgt) :
                 _hash(rand()), _c(c), _lft(lft), _val(val), _rgt(rgt) {}
 
             int _hash;
             Color _c;
+            T _val;
 
             shared_ptr<const Node> _lft;
-
-            OscarType _val;
-
             shared_ptr<const Node> _rgt;
         };
 
@@ -71,7 +67,7 @@ namespace immut {
                 !this->right().isEmpty() && this->right().rootColor() == R;
         }
 
-        set balance(set const & lft, OscarType x, set const & rgt) const
+        set balance(set const & lft, T x, set const & rgt) const
         {
             if (lft.doubledLeft()) {
                 return set(R, lft.left().paint(B), lft.front(),
@@ -91,7 +87,7 @@ namespace immut {
                 return set(B, lft, x, rgt);
         }
 
-        void assert1() const
+        virtual void assert1() const
         {
             if (!this->isEmpty()) {
                 auto lft = left();
@@ -110,33 +106,33 @@ namespace immut {
     public:
         set() {}
 
-        set(Color c, const set &lft, OscarType val, const set &rgt)
+        set(Color c, const set &lft, T val, const set &rgt)
             : _root(make_shared<const Node>(c, lft._root, val, rgt._root))
         {
             assert(lft.isEmpty() || lft.front() < val);
             assert(rgt.isEmpty() || val < rgt.front());
         }
 
-        set (initializer_list<OscarType> init)
+        set<T> (initializer_list<T> init)
         {
-            set t;
+            set<T> t;
 
-            for (OscarType v : init)
+            for (T v : init)
                 t = t.inserted(v);
 
             this->_root = t.get_root();
         }
 
-        shared_ptr<const Node> get_root() const { return _root; }
+        shared_ptr<const Node> get_root() { return _root; }
 
-        OscarType front() const { return _root->_val; }
+        T front() const { return _root->_val; }
 
         bool isEmpty() const { return !_root; }
 
         template <typename F>
         void forEach(F f) const {
-            static_assert(is_convertible<F, function<void(OscarType)>>::value,
-                 "ForEach requires a function OscarType void(T)");
+            static_assert(is_convertible<F, function<void(T)>>::value,
+                 "ForEach requires a function type void(T)");
 
             if (!this->isEmpty()) {
                 this->left().forEach(f);
@@ -147,14 +143,14 @@ namespace immut {
             }
         }
 
-        set insert(OscarType x) const
+        set<T> insert(T x) const
         {
             this->assert1();
 
             if (this->isEmpty())
                 return set(R, set(), x, set());
 
-            OscarType y = this->front();
+            T y = this->front();
 
             if (x == y)
                 return *this;
@@ -174,19 +170,19 @@ namespace immut {
             }
         }
 
-        set inserted(OscarType x) const
+        set inserted(T x) const
         {
           auto s = insert(x);
 
           return set(B, s.left(), s.front(), s.right());
         }
 
-        bool contains(OscarType x) const
+        virtual bool contains(T x) const
         {
             if (this->isEmpty())
                 return false;
 
-            OscarType y = this->front();
+            T y = this->front();
 
             if (x < y)
                 return left().contains(x);
@@ -198,14 +194,14 @@ namespace immut {
 
         bool operator==(const set &rhs)
         {
-            bool return_v = true;
+            bool ret = true;
 
-            forEach([&return_v, &rhs](OscarType t) {
+            forEach([&ret, &rhs](T t) {
                 if (!rhs.contains(t))
-                    return_v = false;
+                    ret = false;
             });
 
-            return return_v;
+            return ret;
         }
 
         bool operator > (const set &rhs)
@@ -218,17 +214,24 @@ namespace immut {
             return get_root().get()->_hash < rhs.get_root().get()->_hash;
         }
 
-        friend ostream &operator<<(std::ostream& os, const set &s)
+        string str() const
         {
+            stringstream os;
+
             os << "[ ";
 
-            s.forEach([&os](OscarType t) {
-                os << t << " ";
+            forEach([&os](T v) {
+                os << v << " ";
             });
 
             os << "]";
 
-            return os;
+            return os.str();
+        }
+
+        friend ostream &operator<<(std::ostream& os, const set &s)
+        {
+            return os << s.str();
         }
     };
 }

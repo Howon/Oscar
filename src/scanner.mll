@@ -88,6 +88,9 @@ rule token = parse
   | "bool"                { TYPE_BOOL }
   | "unit"                { TYPE_UNIT }
 
+  (* function declaration *)
+  | "def"                 { FUNC_DECL }
+
   (* non-primitive types *)
   | "string"              { TYPE_STR }
   | "list"                { TYPE_LIST }
@@ -96,8 +99,7 @@ rule token = parse
   | "message"             { TYPE_MESSAGE }
   | "actor"               { TYPE_ACTOR }
   | "pool"                { TYPE_POOL }
-  | "def"                 { TYPE_FUNC }
-  | "lambda"              { TYPE_LAMBDA }
+  | "func"                { TYPE_FUNC }
 
   (* literals *)
   | digit+ as lxm { INT_LIT(int_of_string lxm) }

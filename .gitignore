@@ -1,4 +1,6 @@
 *~
+*.ll
+*.out
 include/*
 ./oscar
 src/oscar
