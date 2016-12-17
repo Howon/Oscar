@@ -6,6 +6,7 @@ open Sast
 open Lexing
 open Printf
 open Transpile
+open Sys
 
 type action = Compile | Ast | Sast
 
@@ -33,13 +34,13 @@ let _ =
                 ("-c", Compile);  (* Generate, check LLVM IR *)
                 ("-p", Ast);      (* Don't gen LLVM, just prettyprint ast *)
                 ("-s", Sast);     (* Don't generate LLVM, just prettyprint *)
-        ] Sys.argv.(1), open_in Sys.argv.(2))
+        ] Sys.argv.(1), Sys.argv.(2))
       with Not_found ->
         raise (Failure ("Invalid flag " ^ Sys.argv.(1)))
     else
-      (Compile, open_in Sys.argv.(1))
+      (Compile, Sys.argv.(1))
     ) in
-  let lexbuf = make_lexbuf oscar
+  let lexbuf = make_lexbuf (open_in oscar)
   and stdlex = make_lexbuf (open_in "include/stdlib.oscar") in
   let program =
     try
@@ -67,7 +68,24 @@ let _ =
           | Sast  -> print_endline (Sast.str_sprogram sprogram)
           | _ ->
               let program = Transpile.c_program sprogram in
+              let exec_file =
+                  let rdot = String.rindex oscar '.' in
+                  let rslash = String.rindex oscar '/' in
+                  let length = String.length oscar in
+                  String.sub oscar (match rslash with
+                                          Some(i) -> i+1
+                                        | None -> 0)
+                                        ((match rdot with
+                          Some(i) -> i-1
+                        | None -> raise (Failure ("Filename should be .oscar")))
+                      - (match rslash with
+                                          Some(i) -> i
+                                        | None -> 0))
+              in
+              let cpp_file = exec_file ^ ".cpp" in
               let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
               let cxx_incls = "-I/usr/local/include/ -L/usr/local/lib/ " in
-              let cxx = sprintf "clang++ %s %s " c_op cxx_incls in
-                print_endline program
+              let cxx = sprintf "clang++ %s %s " c_op cxx_incls ^ cpp_file ^ " -o " ^ exec_file in
+              Out_channel.write_all cpp_file ~data:program;
+              let ch = Unix.open_process_out cxx in
+                Out_channel.output_string ch program;
