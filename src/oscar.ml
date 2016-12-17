@@ -67,10 +67,8 @@ let _ =
           | Sast  -> print_endline (Sast.str_sprogram sprogram)
           | _ ->
               let program = Transpile.c_program sprogram in
-              let c_op = "-Wall -pedantic -fsanitize=address -std=c++14 -O2" in
-              let cxx = sprintf "clang++ %s " c_op in
+              let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
+              let cxx_incls = "-I/usr/local/include/ -L/usr/local/lib/ " in
+              let cxx = sprintf "clang++ %s %s " c_op cxx_incls in
               let ch = Unix.open_process_out cxx in
                 Out_channel.output_string ch program;
-                if Unix.close_process_out ch <> Result.Ok( ()  ) then
-                  failwith "Internal error: C++ compilation failed"
-                else ();

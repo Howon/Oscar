@@ -289,7 +289,7 @@ immut::set<T> Diff(immut::set<T> const & a, immut::set<T> const & b)
 }
 
 template<class T>
-immut::set<T> int64_tersection(immut::set<T> const & a, immut::set<T> const & b)
+immut::set<T> intersection(immut::set<T> const & a, immut::set<T> const & b)
 {
     immut::set<T> res;
 
@@ -314,11 +314,11 @@ bool SubSet(immut::set<T> const & a, immut::set<T> const & b)
     return is_subset;
 }
 
-int64_t Asint64_t(double d) { return int64_t(d); }
+int Asint(double d) { return int(d); }
 
-double AsDouble(int64_t i) { return double(i); }
+double AsDouble(int i) { return double(i); }
 
-std::string AsString(int64_t i) { return std::to_string(i); }
+std::string AsString(int i) { return std::to_string(i); }
 
 std::string AsString(char c) { return std::to_string(c); }
 
@@ -335,7 +335,7 @@ std::string AsString(immut::set<T> s) { return s.str(); }
 template <typename K, typename V>
 std::string AsString(immut::map<K, V> m) { return m.str(); }
 
-void Println(int64_t i) { std::cout << i << std::endl; }
+void Println(int i) { std::cout << i << std::endl; }
 
 void Println(char c) { std::cout << c << std::endl; }
 
