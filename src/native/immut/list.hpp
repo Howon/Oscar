@@ -157,6 +157,20 @@ namespace immut {
             return get_root().get()->_hash < rhs.get_root().get()->_hash;
         }
 
+        const T operator[](int idx) const
+        {
+            const Item *it1 = get_root().get();
+
+            while (idx--) {
+                if (it1 == nullptr)
+                    throw invalid_argument("Index out of bound");
+
+                it1 = it1->_next.get();
+            }
+
+            return it1->_val;
+        }
+
         string str() const
         {
             stringstream os;

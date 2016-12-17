@@ -1,5 +1,5 @@
 def main() => unit = {
   list<int> intList = list<int>[1, 2, 3, 4, 5];
-  Println(Contains(intList, 1));
-  Println(Contains(intList, 0));
+  Println(Contains(1, intList));
+  Println(Contains(0, intList));
 }

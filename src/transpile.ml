@@ -12,7 +12,7 @@ let immut_include = "#include \"include/immut.hpp\"\n"
 let rec c_type (t : types) =
   match t with
       Int_t | Bool_t | Double_t | Char_t -> str_types t
-    | String_t -> std ^ str_types t
+    | String_t           -> std ^ str_types t
     | Unit_t             -> "void"
     | Func_t (args, rt)  -> std ^ "function<" ^ c_type rt ^ "(" ^
                               (String.concat ", " (List.map
@@ -109,7 +109,14 @@ and c_func vd =
             sv_name ^ " is not a function"))
 
 and c_if te s1 s2 =
-  "if (" ^ c_texpr te ^ ") \n" ^ c_sstmt s1 ^ (match s2 with
+  "if (" ^ (
+    let cond = c_texpr te in
+    let cond_len = String.length cond in
+    if (String.get cond 0 = '(') && (String.get cond (cond_len - 1) = ')') then
+      String.sub cond 1 (cond_len - 2)
+    else
+      cond
+    ) ^ ") \n" ^ c_sstmt s1 ^ (match s2 with
       SExpr (SNoexpr, _)  -> "\n"
     | _  -> " else " ^ c_sstmt s2 ^ "\n")
 
@@ -142,7 +149,5 @@ and main_decl (se, _) =
 
 let c_program (smessages, sactors, sfuncs, main) =
   actor_include ^ immut_include ^
-    String.concat "\n" (List.map c_message smessages) ^ "\n\n" ^
-      String.concat "\n\n" (List.map c_actor sactors) ^ "\n\n" ^
-        String.concat "\n\n" (List.map c_func sfuncs) ^ "\n" ^
-          main_decl main ^ "\n"
+    String.concat "\n\n" (List.map c_func sfuncs) ^ "\n" ^
+      main_decl main ^ "\n"

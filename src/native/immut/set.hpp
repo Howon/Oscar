@@ -13,7 +13,7 @@ namespace immut {
         struct Node {
             Node(Color c, shared_ptr<const Node> const &lft, T val,
                 shared_ptr<const Node> const & rgt) :
-                _hash(rand()), _c(c), _lft(lft), _val(val), _rgt(rgt) {}
+                _hash(rand()), _c(c), _val(val), _lft(lft), _rgt(rgt) {}
 
             int _hash;
             Color _c;

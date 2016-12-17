@@ -27,7 +27,7 @@ let _ =
     (if (arg_len = 1 || arg_len > 3) then
       let _ = print_endline("Usage: ./oscar [-l|-c|-s] *.oscar") in
       exit 1;
-    else if arg_len > 1 then
+    else if arg_len > 2 then
       try
         (List.Assoc.find_exn [
                 ("-c", Compile);  (* Generate, check LLVM IR *)
@@ -70,5 +70,4 @@ let _ =
               let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
               let cxx_incls = "-I/usr/local/include/ -L/usr/local/lib/ " in
               let cxx = sprintf "clang++ %s %s " c_op cxx_incls in
-              let ch = Unix.open_process_out cxx in
-                Out_channel.output_string ch program;
+                print_endline program

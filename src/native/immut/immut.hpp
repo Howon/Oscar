@@ -5,6 +5,7 @@
 #include "map.hpp"
 #include "set.hpp"
 
+#include <iomanip>
 #include <string>
 
 template <typename T, typename F>
@@ -46,8 +47,13 @@ immut::list<T> Reverse(immut::list<T> const &lst)
     }, immut::list<T>(), lst);
 }
 
+int Size(string s)
+{
+    return s.size();
+}
+
 template <typename T>
-size_t Size(immut::list<T> l)
+int Size(immut::list<T> l)
 {
     return FoldLeft([](size_t acc, T t) -> size_t {
         return acc + 1;
@@ -55,7 +61,7 @@ size_t Size(immut::list<T> l)
 }
 
 template <typename T>
-size_t Size(immut::set<T> s)
+int Size(immut::set<T> s)
 {
     size_t size = 0;
 
@@ -67,7 +73,7 @@ size_t Size(immut::set<T> s)
 }
 
 template <typename K, typename V>
-size_t Size(immut::map<K, V> m)
+int Size(immut::map<K, V> m)
 {
     size_t size = 0;
 
@@ -248,13 +254,13 @@ immut::list<T> PopBack(immut::list<T> const l)
 }
 
 template <typename T>
-immut::list<T> PushFront(T t, immut::list<T> const l)
+immut::list<T> Prepend(T t, immut::list<T> const l)
 {
     return l.push_front(t);
 }
 
 template <typename T>
-immut::list<T> PushBack(T t, immut::list<T> const l)
+immut::list<T> Append(T t, immut::list<T> const l)
 {
     auto r1 = Reverse(l);
     auto r2 = r1.push_front(t);
@@ -280,16 +286,16 @@ immut::set<T> Diff(immut::set<T> const & a, immut::set<T> const & b)
 {
     immut::set<T> res;
 
-    ForEach([&res, &a](const T &v){
-        if (!a.contains(v))
+    ForEach([&res, &b](const T &v){
+        if (!b.contains(v))
             res = res.inserted(v);
-    }, b);
+    }, a);
 
     return res;
 }
 
 template<class T>
-immut::set<T> intersection(immut::set<T> const & a, immut::set<T> const & b)
+immut::set<T> Intersection(immut::set<T> const & a, immut::set<T> const & b)
 {
     immut::set<T> res;
 
@@ -314,7 +320,7 @@ bool SubSet(immut::set<T> const & a, immut::set<T> const & b)
     return is_subset;
 }
 
-int Asint(double d) { return int(d); }
+int AsInt(double d) { return int(d); }
 
 double AsDouble(int i) { return double(i); }
 
@@ -339,9 +345,14 @@ void Println(int i) { std::cout << i << std::endl; }
 
 void Println(char c) { std::cout << c << std::endl; }
 
-void Println(bool b) { std::cout << b << std::endl; }
+void Println(bool b) {
+    std::cout << (b == true ? "true" : "false") << std::endl;
+}
 
-void Println(double d) { std::cout << d << std::endl; }
+void Println(double d) {
+    std::cout << fixed << setprecision(10);
+    std::cout << d << std::endl;
+}
 
 void Println(string s) { std::cout << s << std::endl; }
 

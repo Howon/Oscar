@@ -213,7 +213,7 @@ let check_builtin (f : string) (tel : t_expr list) =
                       raise (Builtin_arg_type_err (f, tel))
                   | _ -> (SFuncCall(f, tel), String_t))
             | _ -> raise (Builtin_arg_num_err (f, 1, args_len)))
-      | "Reverse" ->
+      | "Reverse" | "PopFront" | "PopBack" ->
           (match tel with
               [(_, tail_t)] ->
                 (match tail_t with
@@ -224,7 +224,7 @@ let check_builtin (f : string) (tel : t_expr list) =
           (match tel with
               [(_, tail_t)] ->
                 (match tail_t with
-                    List_t _ | Set_t _ | Map_t (_, _) ->
+                    String_t _ | List_t _ | Set_t _ | Map_t (_, _) ->
                       (SFuncCall(f, tel), Int_t)
                   | _ -> raise (Builtin_arg_type_err (f, tel)))
             | _ -> raise (Builtin_arg_num_err (f, 1, args_len)))
@@ -236,7 +236,7 @@ let check_builtin (f : string) (tel : t_expr list) =
                       types_equal head_t ct -> (SFuncCall(f, tel), Bool_t)
                   | _ -> raise (Builtin_arg_type_err (f, tel)))
             | _ -> raise (Builtin_arg_num_err (f, 2, args_len)))
-      | "Prepend" | "Append" | " PopFront" | "PopBack"->
+      | "Prepend" | "Append" ->
           (match tel with
               (_, head_t) :: [(_, tail_t)] ->
                 (match tail_t with
@@ -487,7 +487,8 @@ let rec check_expr (e : expr) (env : scope) =
         let texp1 = check_expr e1 env and texp2 = check_expr e2 env in
         let (_, t1) = texp1 and (_, t2) = texp2 in
           (match t1, t2 with
-              List_t lt, Int_t -> (SAccess(texp1, texp2), lt)
+              String_t, Int_t -> (SAccess(texp1, texp2), Char_t)
+            | List_t lt, Int_t -> (SAccess(texp1, texp2), lt)
             | Set_t st, _ when types_equal st t2 -> (SAccess(texp1, texp2), st)
             | Map_t (kt, vt), _ when types_equal kt t2 ->
                                   (SAccess(texp1, texp2), vt)
