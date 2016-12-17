@@ -1,12 +1,13 @@
 (* Top-level of the Oscar compiler: scan & parse the input,
    check the resulting AST, generate LLVM IR, and dump the module *)
+open Core.Std
 
 open Sast
 open Lexing
 open Printf
 open Transpile
 
-type action = LLVM_IR | Compile | Ast | Sast | Transpile
+type action = Compile | Ast | Sast
 
 let make_lexbuf file =
   let lexbuf = Lexing.from_channel file in
@@ -27,13 +28,14 @@ let _ =
       let _ = print_endline("Usage: ./oscar [-l|-c|-s] *.oscar") in
       exit 1;
     else if arg_len > 1 then
-        (List.assoc Sys.argv.(1) [
-                ("-l", LLVM_IR);    (* Generate LLVM, don't check *)
-                ("-c", Compile);    (* Generate, check LLVM IR *)
-                ("-p", Ast);        (* Don't gen LLVM, just prettyprint ast *)
-                ("-s", Sast);        (* Don't generate LLVM, just prettyprint *)
-                ("-t", Transpile)   (* Don't generate LLVM, just prettyprint *)
-        ], open_in Sys.argv.(2))
+      try
+        (List.Assoc.find_exn [
+                ("-c", Compile);  (* Generate, check LLVM IR *)
+                ("-p", Ast);      (* Don't gen LLVM, just prettyprint ast *)
+                ("-s", Sast);     (* Don't generate LLVM, just prettyprint *)
+        ] Sys.argv.(1), open_in Sys.argv.(2))
+      with Not_found ->
+        raise (Failure ("Invalid flag " ^ Sys.argv.(1)))
     else
       (Compile, open_in Sys.argv.(1))
     ) in
@@ -47,25 +49,28 @@ let _ =
         let () = ignore(parse_error lexbuf) in exit(1)
   and stdlib = Parser.program Scanner.token stdlex in
   match action with
-    Ast       -> print_endline (Ast.str_program program)
-    | _       ->
-        let sprogram =
-          try
-            Analyzer.check_program program stdlib
-          with
-            Failure f ->
-              Printf.eprintf "%s" ("Error: " ^ f);
-              flush stderr;
-              exit 1;
-        in
-      (* let ast = Parser.program Scanner.token lexbuf in
-        Semant.check ast; *)
-        match action with
-          Ast       -> ()
-        | Sast      -> print_endline (Sast.str_sprogram sprogram)
-        | LLVM_IR   -> print_string
-            (Llvm.string_of_llmodule (Codegen.translate sprogram))
-        | Transpile -> print_endline (Transpile.c_program sprogram)
-        | Compile  -> let m = Codegen.translate sprogram in
-            Llvm_analysis.assert_valid_module m;
-              print_string (Llvm.string_of_llmodule m)
+      Ast  -> print_endline (Ast.str_program program)
+    | _    ->
+         let sprogram =
+           try
+             Analyzer.check_program program stdlib
+           with
+             Failure f ->
+               Printf.eprintf "%s" ("Error: " ^ f);
+               flush stderr;
+               exit 1;
+         in
+         (* let ast = Parser.program Scanner.token lexbuf in
+         Semant.check ast; *)
+         match action with
+            Ast   -> ()
+          | Sast  -> print_endline (Sast.str_sprogram sprogram)
+          | _ ->
+              let program = Transpile.c_program sprogram in
+              let c_op = "-Wall -pedantic -fsanitize=address -std=c++14 -O2" in
+              let cxx = sprintf "clang++ %s " c_op in
+              let ch = Unix.open_process_out cxx in
+                Out_channel.output_string ch program;
+                if Unix.close_process_out ch <> Result.Ok( ()  ) then
+                  failwith "Internal error: C++ compilation failed"
+                else ();

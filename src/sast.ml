@@ -69,7 +69,7 @@ and sactor = {
   sa_receive   : spattern list;
 }
 
-type sprogram = smessage list * sactor list * sval_decl list
+type sprogram = smessage list * sactor list * sval_decl list * sfunc
 
 (* ========== *)
 
@@ -84,7 +84,7 @@ let rec str_texpr texpr =
   | SString_Lit s              -> "\"" ^ s ^ "\""
   | SBool_Lit true             -> "true"
   | SBool_Lit false            -> "false"
-  | SUnit_Lit u                -> "unit"
+  | SUnit_Lit _                -> "unit"
   | SId se                     -> se
   | SAccess (scont, sit)       -> str_texpr scont ^ "[" ^ str_texpr sit ^ "]"
   | SFunc_Lit sfl              -> str_sfl sfl
@@ -183,7 +183,10 @@ let str_sactor sactor =
     str_sstmts sactor.sa_body ^ "\n\n\n\nreceive = {\n" ^ String.concat "\n"
       (List.map str_spattern sactor.sa_receive) ^ "\n}\n}"
 
-let str_sprogram (smessages, sactors, sfuncs) =
+let str_sprogram (smessages, sactors, sfuncs, main) =
   String.concat "\n" (List.map str_smessage smessages) ^ "\n\n" ^
-    String.concat "\n\n" (List.map str_sactor sactors) ^ "\n\n" ^
-      String.concat "\n\n" (List.map str_svdecl sfuncs)
+  String.concat "\n\n" (List.map str_sactor sactors) ^ "\n\n" ^
+  String.concat "\n\n" (List.map str_svdecl sfuncs) ^ "\n\n" ^
+  (match main with
+      (SFunc_Lit(sf), _) -> str_sfunc "main" sf
+    | _                  -> "")

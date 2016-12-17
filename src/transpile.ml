@@ -41,11 +41,11 @@ and init_tup_list (tel : (t_expr * t_expr) list) =
     ) tel)
 
 and c_texpr tex =
-  let (se, t) = tex in
+  let (se, _) = tex in
     (match se with
         SInt_Lit _ | SDouble_Lit _ | SChar_Lit _
       | SBool_Lit _ | SId _ | SNoexpr -> str_texpr tex
-      | SUnit_Lit u                -> "unit"
+      | SUnit_Lit _                -> "unit"
       | SString_Lit s              -> std ^ "string(\"" ^ s ^ "\")"
       | SAccess (scont, sit)       -> c_texpr scont ^ "[" ^ c_texpr sit ^ "]"
       | SFuncCall (se, sel)        -> se ^ "(" ^ init_list sel ^ ")"
@@ -70,7 +70,7 @@ and c_texpr tex =
 
 and c_sstmt sstmt =
   match sstmt with
-      SBlock sstmts        -> "{\n" ^ c_sstmts sstmt ^ "\n}"
+      SBlock _             -> "{\n" ^ c_sstmts sstmt ^ "\n}"
     | SExpr texp           -> c_texpr texp ^ ";"
     | SReturn se           -> "return " ^ c_texpr se ^ ";"
     | SMutdecl smv         -> c_type smv.smv_type ^ " " ^
@@ -98,7 +98,7 @@ and c_lambda sfl =
         | _ -> "->" ^ c_type srt) ^ c_sstmt sbody;
 
 and c_func vd =
-  let { sv_name; sv_type; sv_init } = vd in
+  let sv_name = vd.sv_name and sv_init = vd.sv_init in
     match fst sv_init with
         SFunc_Lit sfl ->
           let { sf_formals; sf_return_t; sf_body } = sfl in
@@ -128,8 +128,21 @@ let c_actor sactor =
     str_sstmts sactor.sa_body ^ "\n\n\n\nreceive = {\n" ^ String.concat "\n"
       (List.map c_pattern sactor.sa_receive) ^ "\n}\n}"
 
-let c_program (smessages, sactors, sfuncs) =
+and main_decl (se, _) =
+  match se with
+      SFunc_Lit sfl ->
+        let sf_formals = sfl.sf_formals and sf_body = sfl.sf_body in
+          "int main (" ^ c_formals sf_formals ^
+            ") \n" ^ (
+              let sfbody = c_sstmt sf_body in
+              let slen = String.length sfbody - 2 in
+                String.sub sfbody 0 slen ^ "\nreturn 0;\n}"
+            ) ^ "\n"
+    | _ -> raise (Failure "Main method not found")
+
+let c_program (smessages, sactors, sfuncs, main) =
   actor_include ^ immut_include ^
     String.concat "\n" (List.map c_message smessages) ^ "\n\n" ^
       String.concat "\n\n" (List.map c_actor sactors) ^ "\n\n" ^
-        String.concat "\n\n" (List.map c_func sfuncs) ^ "\n"
+        String.concat "\n\n" (List.map c_func sfuncs) ^ "\n" ^
+          main_decl main ^ "\n"

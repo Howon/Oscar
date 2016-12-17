@@ -1,3 +1,6 @@
+#ifndef __IMMUT_HPP__
+#define __IMMUT_HPP__
+
 #include "list.hpp"
 #include "map.hpp"
 #include "set.hpp"
@@ -350,3 +353,5 @@ void Println(immut::set<T> s) { std::cout << s << std::endl; }
 
 template <typename K, typename V>
 void Println(immut::map<K, V> m) { std::cout << m << std::endl; }
+
+#endif

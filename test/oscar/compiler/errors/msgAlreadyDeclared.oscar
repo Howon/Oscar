@@ -12,6 +12,6 @@ actor Tester() {
 }
 
 def main() => unit = {
-  actor<Tester> tester = spawn actor<Tester>());
+  actor<Tester> tester = spawn actor<Tester>();
   message<testLater>() |> tester;
 }

@@ -180,7 +180,7 @@ let check_actor_lit (sa : sactor) (args : t_expr list) =
       sa.sa_name ^ " requires (" ^ str_types_list req_params ^
         ") but constructed with " ^ str_types_list (get_list_snd args)))
 
-let check_builtin (f : string) (tel : t_expr list) (env : scope) =
+let check_builtin (f : string) (tel : t_expr list) =
   let args_len = List.length tel in
     match f with
         "Println" ->
@@ -282,7 +282,7 @@ let check_builtin (f : string) (tel : t_expr list) (env : scope) =
                     types_equal ft ct && types_equal rt Unit_t ->
                       (SFuncCall(f, tel), Unit_t)
                 | Func_t (fkt :: [fvt], rt), Map_t (kt, vt) when
-                    types_equal fkt kt && types_equal fvt kt &&
+                    types_equal fkt kt && types_equal fvt vt &&
                       types_equal rt Unit_t -> (SFuncCall (f, tel), Unit_t)
                 | _ -> raise (Builtin_arg_type_err (f, tel)))
             | _ -> raise (Builtin_arg_num_err (f, 2, args_len)))
@@ -295,7 +295,7 @@ let check_builtin (f : string) (tel : t_expr list) (env : scope) =
                   | Func_t ([ft], rt), Set_t st when types_equal ft st ->
                       (SFuncCall (f, tel), Set_t rt)
                   | Func_t (fkt :: [fvt], rt), Map_t (kt, vt) when
-                      types_equal fkt kt && types_equal fvt kt ->
+                      types_equal fkt kt && types_equal fvt vt ->
                         (SFuncCall (f, tel), Map_t (kt, rt))
                   | _ -> raise (Builtin_arg_type_err (f, tel)))
             | _ -> raise (Builtin_arg_num_err (f, 2, args_len)))
@@ -307,7 +307,7 @@ let check_builtin (f : string) (tel : t_expr list) (env : scope) =
                       types_equal ft ct && types_equal rt Bool_t ->
                         (SFuncCall (f, tel), tail_t)
                   | Func_t (fkt :: [fvt], rt), Map_t (kt, vt) when
-                      types_equal fkt kt && types_equal fvt kt &&
+                      types_equal fkt kt && types_equal fvt vt &&
                         types_equal rt Bool_t -> (SFuncCall (f, tel), tail_t)
                   | _ -> raise (Builtin_arg_type_err (f, tel)))
             | _ -> raise (Builtin_arg_num_err (f, 2, args_len)))
@@ -333,7 +333,7 @@ let check_builtin (f : string) (tel : t_expr list) (env : scope) =
 
 let check_binop (te1 : t_expr) (te2 : t_expr)
     (op : bin_op) (env : scope) =
-  let (e1, t1) = te1 and (e2, t2) = te2 in
+  let (e1, t1) = te1 and (_, t2) = te2 in
     match op with
         Add ->
           (match t1, t2 with
@@ -414,7 +414,7 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
                      str_types t2)))
 
 let check_uop (te : t_expr) (op : u_op) =
-  let (e, t) = te in match op with
+  let (_, t) = te in match op with
       Neg ->
         (match t with
             Int_t    -> (SUop (op, te), Int_t)
@@ -427,7 +427,7 @@ let check_uop (te : t_expr) (op : u_op) =
           | _ -> raise (Failure ("operand type mismatch: " ^ str_uop op ^
                    " on " ^ str_types t)))
 
-let spread_arg (args : formal list) (vals : sval_decl list) (env : scope) =
+let spread_arg (args : formal list) (vals : sval_decl list) =
   let rec gen_temp_name (len : int) =
     (match len with
         1               -> [ Char.escaped (Char.chr (96 + len)) ]
@@ -485,7 +485,7 @@ let rec check_expr (e : expr) (env : scope) =
               raise (Failure (id ^ " declared as both mutable and immutable")))
     | Access(e1, e2) ->
         let texp1 = check_expr e1 env and texp2 = check_expr e2 env in
-        let (se1, t1) = texp1 and (se2, t2) = texp2 in
+        let (_, t1) = texp1 and (_, t2) = texp2 in
           (match t1, t2 with
               List_t lt, Int_t -> (SAccess(texp1, texp2), lt)
             | Set_t st, _ when types_equal st t2 -> (SAccess(texp1, texp2), st)
@@ -503,7 +503,7 @@ let rec check_expr (e : expr) (env : scope) =
                 "arguments or return types"))
           else
             () ) in
-        let nvals = spread_arg f_formals [] env in
+        let nvals = spread_arg f_formals [] in
         let nv_table = { vparent = Some env.env_vtable; svals = nvals } in
         let nenv = { env with
           env_vtable = nv_table;
@@ -541,7 +541,7 @@ let rec check_expr (e : expr) (env : scope) =
                 let sactor = find_actor at env in
                 let te_list = check_expr_list ex env in
                   (match check_actor_lit sactor te_list with
-                      SActor_Lit (sa_id, sa_args), Actor_t a_t ->
+                      SActor_Lit (sa_id, _), Actor_t a_t ->
                         (SPool_Lit (sa_id, te_list, (sa_num, Int_t)),
                           Pool_t a_t)
                     | _ -> raise (Failure ("Cannot create a pool with " ^
@@ -566,7 +566,7 @@ let rec check_expr (e : expr) (env : scope) =
         let arg_types = get_list_snd checked_args in
         (if validate_arg_types arg_types then
           try
-            check_builtin f checked_args env
+            check_builtin f checked_args
           with
               Builtin_arg_num_err (b, e, num) ->
                 raise (Failure ("Builtin function " ^ b ^ " called with too " ^
@@ -646,9 +646,9 @@ and check_stmt (s : stmt) (env : scope) =
             | _ -> raise (Failure "Condition must be a boolean"))
     | Actor_send (e1, e2)->
         let texp1 = check_expr e1 env and texp2 = check_expr e2 env in
-        let (se1, st1) = texp1 and (se2, st2) = texp2 in
+        let (_, st1) = texp1 and (se2, st2) = texp2 in
           (match st1, st2 with
-              Message_t m_name, Unit_t when (
+              Message_t _, Unit_t when (
                 match se2 with
                     SId "sender" -> true
                   | _ -> false)  -> (SActor_send (texp1, texp2), env)
@@ -667,9 +667,9 @@ and check_stmt (s : stmt) (env : scope) =
                      str_types st1 ^ " to " ^ str_types st2)))
     | Pool_send (e1, e2) ->
         let texp1 = check_expr e1 env and texp2 = check_expr e2 env in
-        let (se1, st1) = texp1 and (se2, st2) = texp2 in
+        let (_, st1) = texp1 and (se2, st2) = texp2 in
           (match st1, st2 with
-              Message_t m_name, Unit_t when (
+              Message_t _, Unit_t when (
                 match se2 with
                     SId "sender" -> true
                   | _ -> false)  ->
@@ -759,42 +759,6 @@ and check_mvdecl (mvdecl : mvar_decl) (env : scope) =
   else
     raise (Failure ("Mutables types are only allowed in actors"))
 
-(* and check_func_decl (fdecl : func) (env : scope) =
-  let { f_name; f_formals; f_return_t; f_body } = fdecl in
-    try
-      try
-        let t = find_vtype f_name env in
-        raise (Failure ("Function name " ^ f_name ^ "taken already by " ^
-          "an identifier of type " ^ str_types t))
-      with Not_found ->
-        let param_types = get_list_snd f_formals in
-          if validate_arg_types param_types && not (is_type_apm f_return_t) then
-            let _ = List.find (fun sf ->
-              sf.sf_name = f_name &&
-                check_args_t (get_list_snd sf.sf_formals) param_types
-            ) env.funcs in
-            raise (Failure ("Function " ^ f_name ^ " with signature (" ^
-              str_types_list param_types ^ ") => " ^ str_types f_return_t ^
-                " declared already"))
-          else
-            raise (Failure ("Invalid function parameter/return type: " ^
-              "Actors, pools and messages cannot be used as function " ^
-                "arguments or return types"))
-    with Not_found ->
-      let forward_decl = build_func f_name f_formals f_return_t empty_fbody in
-      let (nvals, nfuncs) =
-        spread_arg f_formals [] (forward_decl :: env.funcs) env in
-      let nv_table = { vparent = Some env.env_vtable; svals = nvals } in
-      let fenv = { env with
-        funcs = nfuncs;
-        env_vtable = nv_table;
-        return_t = Some f_return_t
-      } in
-      let (cfbody, _) = check_stmt f_body fenv in
-      let sfdecl = build_func f_name f_formals f_return_t cfbody in
-      let nenv = upd_env_funcs sfdecl env in
-        (SFdecl sfdecl, nenv) *)
-
 and check_stmt_list (sl : stmt list) (ret : bool) (env : scope) =
   let rec check_f_return (sll : stmt list) =
     try
@@ -840,7 +804,7 @@ let check_actor_decl (adecl : actor) (env : scope) =
 
   let check_patterns (receive : pattern list) (senv : scope) =
     List.map (fun p ->
-      let pvals = spread_arg p.p_mformals [] env in
+      let pvals = spread_arg p.p_mformals [] in
       let pv_table = { vparent = Some senv.env_vtable; svals = pvals } in
       let penv = { senv with
         env_vtable = pv_table;
@@ -881,7 +845,7 @@ let check_actor_decl (adecl : actor) (env : scope) =
             "an undefined message"))
         else
           let nsvals =
-            spread_arg a_formals ([]) env in
+            spread_arg a_formals ([]) in
           let nv_table = { vparent = Some env.env_vtable; svals = nsvals } in
           let curr_scope = { env with
             env_vtable  = nv_table;
@@ -967,5 +931,11 @@ let check_program (p : program) (slib : program) =
                                   then acc + 1 else acc) 0 sfunctions in
   match main_cnt with
       0 -> raise (Failure "No main function found in this program")
-    | 1 -> (List.rev smessages, List.rev sactors, List.rev sfunctions)
+    | 1 -> (List.rev smessages,
+            List.rev sactors,
+            List.rev (List.filter (fun sf -> not (sf.sv_name = "main")) sfunctions),
+            try
+              (List.find (fun sf -> sf.sv_name = "main") sfunctions).sv_init
+            with Not_found ->
+              raise (Failure ("Main not found in this program")))
     | n -> raise (Failure (string_of_int n ^ " main functions found") )
