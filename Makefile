@@ -2,8 +2,8 @@ TARGET=oscar.native
 OSCAR=oscar
 STDLIB=stdlib.oscar
 NATIVE=native
-ACTOR=NATIVE/actor
-IMMUT=NATIVE/immut
+ACTOR=$(NATIVE)/actor
+IMMUT=$(NATIVE)/immut
 
 CXX= clang
 CXXFLAGS = -std=c++14 -Wall -g -c -O3
