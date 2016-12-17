@@ -37,17 +37,6 @@ actor Types() {
 
   intListList[0][0] = mI;
 
-  def apply(f: lambda (double) => double , a: double) => double = {
-    def t(x : int) => unit = {
-    }
-
-    t(4);
-    return f(a);
-  }
-
-  receive = {
-
-  }
 }
 
 def main() => unit = {
