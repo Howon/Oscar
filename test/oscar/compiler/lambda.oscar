@@ -4,4 +4,19 @@ def apply(f: [(int) => int], input: int) => int = {
 
 def main() => unit = {
   Println(apply((x:int) => int = x - 10, 11));
+
+  int t = 5;
+
+  def test() => unit = {
+    def testest() => unit = {
+      int b = 10;
+      Println(b);
+      Println(t);
+    }
+    testest();
+    int b = 12;
+    Println(b);
+  }
+
+  test();
 }
