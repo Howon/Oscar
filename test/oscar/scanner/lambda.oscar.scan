@@ -2,14 +2,18 @@
 
 
 
-def apply(f: lambda (int) => int), input: int) => int = {
-return f(input);
+def AsString(b : bool) => string = {
+if (b) {
+return "true";
+} else {
+return "false";
 }
+}
+
+func apply = (f : [(int) => int], input : int) => int = f(input);
 
 def main() => unit = {
 int a = 12;
-int b = apply((x: int) => int = {
-return (x - 10);
-}, a);
-println(b);
+int b = apply((x : int) => int = (x - 10), a);
+Println(b);
 }
