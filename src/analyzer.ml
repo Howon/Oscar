@@ -935,8 +935,5 @@ let check_program (p : program) (slib : program) =
     | 1 -> (List.rev smessages,
             List.rev sactors,
             List.rev (List.filter (fun sf -> not (sf.sv_name = "main")) sfunctions),
-            try
-              (List.find (fun sf -> sf.sv_name = "main") sfunctions).sv_init
-            with Not_found ->
-              raise (Failure ("Main not found in this program")))
+            (List.find (fun sf -> sf.sv_name = "main") sfunctions).sv_init)
     | n -> raise (Failure (string_of_int n ^ " main functions found") )

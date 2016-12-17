@@ -12,6 +12,7 @@ scanner.ml
 *.cmo
 *.cmx
 ./src/*.out
+./src/_build
 *.output
 *.o
 *.swp
