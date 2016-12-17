@@ -3,5 +3,5 @@ def add5(x: int) => int = {
 }
 
 def main() => unit = {
-	int y = add5(1));
+	int y = add5(1);
 }
