@@ -53,9 +53,8 @@ let _ =
     try
       Parser.program Scanner.token lexbuf
     with
-        Failure(f)          -> let () = ignore(scan_error lexbuf f) in exit(1)
-      | Parsing.Parse_error ->
-        let () = ignore(parse_error lexbuf) in exit(1)
+        Scanner.Scan_error(f) -> let () = ignore(scan_error lexbuf f) in exit(1)
+      | Parsing.Parse_error   -> let () = ignore(parse_error lexbuf) in exit(1)
   and stdlib = Parser.program Scanner.token stdlex in
   match action with
       Ast  -> print_endline (Ast.str_program program)
