@@ -6,6 +6,7 @@ open Sast
 open Lexing
 open Printf
 open Transpile
+open Sys
 
 type action = Compile | Ast | Sast
 
@@ -67,8 +68,26 @@ let _ =
           | Sast  -> print_endline (Sast.str_sprogram sprogram)
           | _ ->
               let program = Transpile.c_program sprogram in
+              let oscar_file = Sys.argv.(2) in
+              let exec_file = 
+                  let rdot = String.rindex oscar_file '.' in
+                  let rslash = String.rindex oscar_file '/' in
+                  let length = String.length oscar_file in
+                  String.sub oscar_file (match rslash with
+                                          Some(i) -> i+1
+                                        | None -> 0) 
+                                        ((match rdot with
+                          Some(i) -> i-1
+                        | None -> raise (Failure ("Filename should be .oscar")))
+                      - (match rslash with
+                                          Some(i) -> i
+                                        | None -> 0))
+              in
+              let cpp_file = exec_file ^ ".cpp" in
               let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
               let cxx_incls = "-I/usr/local/include/ -L/usr/local/lib/ " in
-              let cxx = sprintf "clang++ %s %s " c_op cxx_incls in
+              let cxx = sprintf "clang++ %s %s " c_op cxx_incls ^ cpp_file ^ " -o " ^ exec_file in
+              Out_channel.write_all cpp_file ~data:program;
               let ch = Unix.open_process_out cxx in
                 Out_channel.output_string ch program;
+
