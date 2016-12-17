@@ -93,7 +93,7 @@ and c_formals fs = String.concat "," (List.map c_formal fs)
 
 and c_lambda sfl =
   let { sf_formals = sformals; sf_return_t = srt; sf_body = sbody } = sfl in
-    "[]()" ^ (match srt with
+  "[&](" ^ c_formals sformals ^ ")" ^ (match srt with
           Unit_t -> ""
         | _ -> "->" ^ c_type srt) ^ c_sstmt sbody;
 
