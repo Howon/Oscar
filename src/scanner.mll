@@ -8,7 +8,7 @@
       | _ -> ec) in
     String.get s 0
 
-  let fail c = raise (Failure ("scanning failed on char " ^ (Char.escaped c)))
+  let fail c = raise (Failure (Char.escaped c))
 }
 
 let digit = ['0' - '9']

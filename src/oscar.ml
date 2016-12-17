@@ -8,17 +8,25 @@ open Printf
 open Transpile
 open Sys
 
-type action = Compile | Ast | Sast
+type action = Compile | Ast | Sast | Llvm_gen
 
 let make_lexbuf file =
   let lexbuf = Lexing.from_channel file in
   let curr_p = {lexbuf.lex_curr_p with pos_lnum=1} in
   {lexbuf with lex_curr_p = curr_p;}
 
+
+let scan_error lexbuf error = 
+  let s = lexeme_start_p lexbuf in
+  let f = lexeme_end_p lexbuf in
+    (fprintf stderr "Scanner: Unrecgonized char at line %d, char %d - %d: \"%s\" \n"
+    s.pos_lnum (s.pos_cnum - s.pos_bol)
+    (f.pos_cnum - f.pos_bol) error)
+
 let parse_error lexbuf =
   let s = lexeme_start_p lexbuf in
   let f = lexeme_end_p lexbuf in
-    (fprintf stderr "Syntax error at line %d, char %d - %d: \"%s\" \n"
+    (fprintf stderr "Parser: Syntax error at line %d, char %d - %d: \"%s\" \n"
     s.pos_lnum (s.pos_cnum - s.pos_bol)
     (f.pos_cnum - f.pos_bol) (Lexing.lexeme lexbuf))
 
@@ -26,27 +34,27 @@ let _ =
   let arg_len = Array.length Sys.argv in
   let (action, oscar) =
     (if (arg_len = 1 || arg_len > 3) then
-      let _ = print_endline("Usage: ./oscar [-l|-c|-s] *.oscar") in
+      let _ = print_endline("Usage: ./oscar [-p|-s|-c|-l|] *.oscar") in
       exit 1;
-    else if arg_len > 2 then
+    else
       try
         (List.Assoc.find_exn [
-                ("-c", Compile);  (* Generate, check LLVM IR *)
-                ("-p", Ast);      (* Don't gen LLVM, just prettyprint ast *)
-                ("-s", Sast);     (* Don't generate LLVM, just prettyprint *)
+                ("-p", Ast);          (* Prettyprint Ast *)
+                ("-s", Sast);         (* Prettyprint Sast *)
+                ("-c", Compile);      (* Generate cpp and executable *)
+                ("-l", Llvm_gen);     (* Generate cpp and llvm *)
         ] Sys.argv.(1), Sys.argv.(2))
       with Not_found ->
-        raise (Failure ("Invalid flag " ^ Sys.argv.(1)))
-    else
-      (Compile, Sys.argv.(1))
-    ) in
+        raise (Failure ("Invalid flag " ^ Sys.argv.(1)))) 
+  in
   let lexbuf = make_lexbuf (open_in oscar)
   and stdlex = make_lexbuf (open_in "include/stdlib.oscar") in
   let program =
     try
       Parser.program Scanner.token lexbuf
     with
-      Parsing.Parse_error ->
+        Failure(f)          -> let () = ignore(scan_error lexbuf f) in exit(1)
+      | Parsing.Parse_error ->
         let () = ignore(parse_error lexbuf) in exit(1)
   and stdlib = Parser.program Scanner.token stdlex in
   match action with
@@ -61,8 +69,6 @@ let _ =
                flush stderr;
                exit 1;
          in
-         (* let ast = Parser.program Scanner.token lexbuf in
-         Semant.check ast; *)
          match action with
             Ast   -> ()
           | Sast  -> print_endline (Sast.str_sprogram sprogram)
@@ -76,7 +82,7 @@ let _ =
                                           Some(i) -> i+1
                                         | None -> 0)
                                         ((match rdot with
-                          Some(i) -> i-1
+                          Some(i) -> i
                         | None -> raise (Failure ("Filename should be .oscar")))
                       - (match rslash with
                                           Some(i) -> i
