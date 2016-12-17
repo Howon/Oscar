@@ -6,6 +6,13 @@ module StringMap = Map.Make(String)
 open Hashtbl
 (* module Hashtbl = Hashtbl.Make(String) *)
 
+type scope = {
+  name : string;
+  block_cnt : int;
+  if_cnt : int;
+  func : L.llvalue;
+}
+
 let local_vars = Hashtbl.create 50
 
 let context = L.global_context ()
@@ -32,13 +39,12 @@ and ltype_of_func typs rt =
   and ret_typ = ltype_of_typ rt in
   L.function_type ret_typ formal_types
 
-
 (* Declare print(), which the print built-in function will call *)
 let print_func =
   let print_t = L.var_arg_function_type i32_t [| L.pointer_type i8_t |] in
   L.declare_function "printf" print_t the_module
 
-let main =
+let main_f =
   let main_typ = L.function_type void_t [| |] in
   L.define_function "main" main_typ the_module
 
@@ -120,8 +126,6 @@ let ll_binop op typ =
     | _                   -> raise (Failure ("bad binop" ) )
   )
 
-
-
 (* Invoke "f builder" if the current block doesn't already
 have a terminal (e.g., a branch). *)
 let add_terminal builder f =
@@ -129,7 +133,7 @@ let add_terminal builder f =
       Some _ -> false
     | None -> (let () = ignore (f builder) in true)
 
-let rec build_expr builder (te : S.t_expr) =
+let rec build_expr builder scope (te : S.t_expr) =
   match te with
     (S.SInt_Lit(i), typ)          -> L.const_int i32_t i
   | (S.SDouble_Lit(d), typ)       -> L.const_float f_t d
@@ -138,12 +142,17 @@ let rec build_expr builder (te : S.t_expr) =
   | (S.SBool_Lit(b), typ)         -> L.const_int i1_t (if b then 1 else 0)
   | (S.SUnit_Lit(u), typ)         -> raise (Failure ("no units") )
   | (S.SNoexpr, typ)              -> L.const_int i32_t 0
-  | (S.SId(s), typ)               -> L.build_load (lookup s) s builder
+  | (S.SId(s), typ)               ->
+      let new_name = scope.name ^ "_" ^ s in
+      L.build_load (lookup new_name) new_name builder
   | (S.SAccess(e1, e2), typ)      -> raise (Failure ("TODO: access") )
   | (S.SFunc_Lit(f), typ)      ->
-      let func = define_func "tmp" typ in
+      let new_name = scope.name ^ "_f" in
+      let func = define_func new_name typ in
+      let nscope = {  name = new_name ; block_cnt = 0;
+                      if_cnt = 0; func = func } in
       let tmp_builder = L.builder_at_end context (L.insertion_block builder) in
-      build_func tmp_builder func f
+      build_func tmp_builder nscope f
   | (S.SList_Lit(t, exprs), typ)  -> raise (Failure ("TODO: lists") )
   | (S.SSet_Lit(t, exprs), typ)  -> raise (Failure ("TODO: sets") )
   | (S.SMap_Lit(kt, vt, kvs), typ)-> raise (Failure ("TODO: maps") )
@@ -151,24 +160,28 @@ let rec build_expr builder (te : S.t_expr) =
   | (S.SPool_Lit(n, exprs, c), typ) -> raise (Failure ("TODO: pools") )
   | (S.SMessage_Lit(n, exprs), typ)-> raise (Failure ("TODO: messages") )
   | (S.SBinop(e1, op, e2), typ)   ->
-    let e1' = build_expr builder e1
-    and e2' = build_expr builder e2 in
-      (ll_binop op (snd e1)) e1' e2' "tmp" builder
+    let name = scope.name ^ "_tmp" in
+    let e1' = build_expr builder scope e1
+    and e2' = build_expr builder scope e2 in
+      (ll_binop op (snd e1)) e1' e2' name builder
 
   | (S.SUop(op, e), typ) ->
-    let e' = build_expr builder e in
+    let name = scope.name ^ "_tmp" in
+    let e' = build_expr builder scope e in
       (match op with
           A.Neg -> (match typ with
               A.Int_t -> L.build_neg
             | A.Double_t -> L.build_fneg
             | _ -> raise (Failure ("bad unop") ))
         | A.Not -> L.build_not
-      ) e' "tmp" builder
-  | (S.SFuncCall("Println", t_el), typ) -> build_print_call t_el builder
+      ) e' name builder
+  | (S.SFuncCall("Println", t_el), typ) -> build_print_call scope t_el builder
   | (S.SFuncCall(f, act), typ) ->
-      let fptr = lookup f in
-      let fdef = L.build_load fptr "tmpfunc" builder in
-      let actuals = List.rev (List.map (build_expr builder) (List.rev act)) in
+      let f_name = scope.name ^ "_" ^ f in
+      let fptr = lookup f_name in
+      let fdef = L.build_load fptr (scope.name ^ "_tmpfunc") builder in
+      let actuals =
+        List.rev (List.map (build_expr builder scope) (List.rev act)) in
       let result = (
         match typ with
             A.Unit_t -> ""
@@ -184,26 +197,27 @@ and define_func name typ =
   let ftype = ltype_of_func typs rt in
   L.define_function name ftype the_module
 
-and build_func builder func f =
-  let () = ignore(Hashtbl.clear local_vars) in
+and build_func builder scope f =
+  let () = L.position_at_end (L.entry_block scope.func) builder in
 
-  let () = L.position_at_end (L.entry_block func) builder in
+  let new_formals =
+    List.map (fun (s,t) -> (scope.name ^ "_" ^ s, t)) f.S.sf_formals in
 
   (* add formals to the stack *)
-  let () = ignore(List.map2 (add_local builder) f.S.sf_formals
-                    (Array.to_list (L.params func))) in
+  let () = ignore(List.map2 (add_local builder) new_formals
+                    (Array.to_list (L.params scope.func))) in
   (* build the body *)
-  let () = build_stmt builder func f.S.sf_body in
+  let () = ignore(build_stmt builder scope f.S.sf_body) in
 
   (* add return none if function ends without one *)
   let () = match f.S.sf_return_t with
       A.Unit_t -> ignore (add_terminal builder L.build_ret_void)
     | _ -> () in
-  func
+  scope.func
 
 (* Takes a list of expressions and builds the correct print call *)
 (* t_el is list of t_exprs *)
-and build_print_call t_el builder =
+and build_print_call scope t_el builder =
 
   (* make a function that handles anything with bool_t as an if *)
   let to_print_texpr texpr = match (snd texpr) with
@@ -225,7 +239,7 @@ and build_print_call t_el builder =
 
   (* get the things to print *)
   let pexprs_l = List.map to_print_texpr t_el in
-  let params = List.map (build_expr builder) pexprs_l in
+  let params = List.map (build_expr builder scope) pexprs_l in
   (* get their types *)
   let param_types = List.map snd pexprs_l in
 
@@ -238,22 +252,37 @@ and build_print_call t_el builder =
   L.build_call print_func
                     (Array.of_list (fmt_str :: params)) "printf" builder
 
-and build_if builder the_function predicate then_stmt else_stmt =
-  let bool_val = build_expr builder predicate in
+and build_if builder scope predicate then_stmt else_stmt =
+  let clean_scope scope name =
+    let new_name = (
+      if scope.if_cnt = 0 then
+        scope.name ^ "_" ^ name
+      else
+        scope.name ^ "_" ^ name ^ (string_of_int scope.if_cnt)
+    ) in
+    {scope with name = new_name; block_cnt = 0; if_cnt = 0 }
+  in
+
+  let nscope = clean_scope scope "if" in
+
+  let bool_val = build_expr builder scope predicate in
 
   let entry_bb = L.insertion_block builder in
-  let merge_bb = L.append_block context "finishif" the_function in
+  let merge_bb = L.append_block context "finishif" nscope.func in
 
   (* build then block *)
-  let then_bb = L.append_block context "then" the_function in
+  let then_bb = L.append_block context "then" nscope.func in
   let () = L.position_at_end then_bb builder in
-  let () =  build_stmt builder the_function then_stmt in
+
+  let () =  ignore(build_stmt builder nscope then_stmt) in
   let t_mrg = add_terminal builder (L.build_br merge_bb) in
 
+  let nscope = clean_scope scope "else" in
+
   (* build else block *)
-  let else_bb = L.append_block context "else" the_function in
+  let else_bb = L.append_block context "else" nscope.func in
   let () = L.position_at_end else_bb builder in
-  let () =  build_stmt builder the_function else_stmt in
+  let () =  ignore(build_stmt builder nscope else_stmt) in
   let e_mrg = add_terminal builder (L.build_br merge_bb) in
 
 
@@ -264,44 +293,75 @@ and build_if builder the_function predicate then_stmt else_stmt =
   (* if we need to resolve to a merge, keep it and move builder,
    * otherwise, delete the merge block and go back to caller *)
 
-  if (t_mrg || e_mrg) then
-    L.position_at_end merge_bb builder
-  else
-    let () = (L.delete_block merge_bb) in
-    L.position_at_end entry_bb builder
+  let () =
+    (if (t_mrg || e_mrg) then
+      L.position_at_end merge_bb builder
+    else
+      let () = (L.delete_block merge_bb) in
+      L.position_at_end entry_bb builder
+    ) in
+  {scope with if_cnt = scope.if_cnt + 1}
+
 
 (* variable declaration, handling functions *)
-and build_vdecl builder vd =
+and build_vdecl builder scope vd =
   let { S.sv_init = init; S.sv_name = name; S.sv_type = typ } = vd in
-  match name with
-      "main"  -> (match (fst init) with
-                    S.SFunc_Lit(f) -> ignore(build_func builder main f)
-                  | _           -> ())
-    | _       ->
-        let tmp_builder = L.builder_at_end context (L.insertion_block builder) in
-        let init_val = build_expr tmp_builder init in
-        add_local builder (name, typ) init_val
+  (*let tmp_builder = L.builder_at_end context (L.insertion_block builder) in
+  let init_val = build_expr tmp_builder scope init in*)
+  let init_val = build_expr builder scope init in
+  let new_name = scope.name ^ "_" ^ name in
+  add_local builder (new_name, typ) init_val
 
-  (* Build the code for the given statement; return the builder for
-     the statement's successor *)
-and build_stmt builder func stmt =
-  match stmt with
-      S.SExpr(se, typ) -> ignore (build_expr builder (se, typ))
-    | S.SBlock(sl) ->
-        ignore(List.map ( build_stmt builder func) sl)
-    | S.SReturn(se, typ) -> ignore(
-        match typ with
-            A.Unit_t -> L.build_ret_void builder
-          | _ -> L.build_ret (build_expr builder (se, typ)) builder
-        )
-    | S.SVdecl(sval_decl) -> build_vdecl builder sval_decl
+and build_block builder scope stmts =
+  let nscope =
+    let new_name = (
+      if scope.block_cnt = 0 then
+        scope.name
+      else
+        scope.name ^ "_b" ^ (string_of_int scope.block_cnt)
+    ) in
+  {scope with name = new_name; block_cnt = 0; if_cnt = 0 } in
+
+  (* TODO gotta fold left *)
+  let () = ignore ( List.map (build_stmt builder nscope) stmts) in
+  {scope with block_cnt = scope.block_cnt + 1}
+
+(* Build the code for the given statement; return the new scope *)
+and build_stmt builder scope stmt =
+  (match stmt with
+      S.SExpr(se, typ) ->
+        let () = ignore(build_expr builder scope (se, typ)) in
+        scope
+    | S.SBlock(sl) -> build_block builder scope sl
+    | S.SReturn(se, typ) -> (match typ with
+            A.Unit_t ->
+              let () = ignore(L.build_ret_void builder) in
+              scope
+          | _ ->
+              let expr = build_expr builder scope (se, typ) in
+              let () = ignore(L.build_ret expr builder) in
+              scope)
+    | S.SVdecl(sval_decl) ->
+        let () = build_vdecl builder scope sval_decl in
+        scope
     | S.SMutdecl(smvar_decl) -> raise ( Failure ("TODO: mutdecl") )
     | S.SIf (predicate, then_stmt, else_stmt) ->
-        build_if builder func predicate then_stmt else_stmt
+        build_if builder scope predicate then_stmt else_stmt
     | S.SActor_send(e1, e2) -> raise ( Failure ("TODO: act_send") )
-    | S.SPool_send(e1, e2) -> raise ( Failure ("TODO: pool_broadcast") )
+    | S.SPool_send(e1, e2) -> raise ( Failure ("TODO: pool_broadcast") ))
 
-let translate (messages, actors, functions) =
-  let builder = L.builder_at_end context (L.entry_block main) in
-  List.iter (build_vdecl builder) functions;
+let translate (messages, actors, functions, main) =
+  let scope = { name = "main"; block_cnt = 0; if_cnt = 0; func = main_f } in
+
+
+
+  (* build out all other functions *)
+  let builder = L.builder_at_end context (L.entry_block main_f) in
+  let () = ignore(List.iter (build_vdecl builder scope) functions) in
+
+  (* build out actual main function *)
+  let () = L.position_at_end (L.entry_block main_f) builder in
+  let () = (match (fst main) with
+      S.SFunc_Lit(f) -> ignore(build_func builder scope f)
+    | _              -> () ) in
   the_module
