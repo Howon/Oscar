@@ -27,7 +27,9 @@ let rec opt_expr (te : t_expr) =
     | SSet_Lit (typ, exprs) ->
         let nexprs = List.map opt_expr exprs in
         SSet_Lit(typ, nexprs)
-    | SMap_Lit (t1, t2, kvs) -> e
+    | SMap_Lit (t1, t2, kvs) ->
+        let nkvs = List.map (fun (k, v) -> (opt_expr k, opt_expr v)) kvs in
+        SMap_Lit(t1, t2, nkvs)
     | SMessage_Lit (id, exprs) ->
         let nexprs = List.map opt_expr exprs in
         SMessage_Lit (id, nexprs)
@@ -37,7 +39,7 @@ let rec opt_expr (te : t_expr) =
     | SPool_Lit (id, exprs, cnt) ->
         let nexprs = List.map opt_expr exprs in
         let ncnt = opt_expr cnt in
-        SPool_Lit (id, exprs, cnt)
+        SPool_Lit (id, nexprs, ncnt)
     | SBinop (e1, op, e2) -> opt_binop e1 op e2
     | SUop (uop, e1) -> opt_uop uop e1
     | SFuncCall (id, exprs) ->
