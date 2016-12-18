@@ -1,5 +1,3 @@
-(* Top-level of the Oscar compiler: scan & parse the input,
-   check the resulting AST, generate LLVM IR, and dump the module *)
 open Core.Std
 
 open Sast
