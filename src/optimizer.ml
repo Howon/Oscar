@@ -31,19 +31,28 @@ let option_get o =
     | None    -> raise (Failure "tried to get None value")
 
 (* helpers for variable tracking *)
+
+let rec find_val tbl loc s =
+  match List.length loc with
+      0 -> None
+    | _ -> let name = (String.concat "_" loc) ^ "__" ^ s in
+            try Some (Hashtbl.find tbl name) with
+            | Not_found -> find_val tbl (List.tl loc) s
+
 let build_name scope s =
   (String.concat "_" scope.loc) ^ "__" ^ s
 
 let is_replaceable scope id =
-  let name = build_name scope id in
-  let is_immut = Hashtbl.mem vals name in
-  if not is_immut then
-    false
-  else
-    let (init, typ, cnt) = Hashtbl.find vals name in
-    match typ with
-        Int_t | Bool_t | Double_t | Char_t | Unit_t -> true
-      | _ -> false
+  let (init, typ, cnt) =
+    let match_opt = find_val vals scope.loc id in
+    (match match_opt with
+        Some (i, t, c) -> (i, t, c)
+        (* we just make a dummy tuple for the following match *)
+      | None -> ((SNoexpr, Unit_t), Set_t(Unit_t), -1)
+    ) in
+  match typ with
+      Int_t | Bool_t | Double_t | Char_t | Unit_t -> true
+    | _ -> false
 
 let add_mvar scope decl =
   let name = build_name scope decl.smv_name in
@@ -60,27 +69,33 @@ let add_val scope decl =
 
 let incr_cnt scope id =
   let name = build_name scope id in
-  if Hashtbl.mem mvars name then
-    let (init, typ, cnt) = Hashtbl.find mvars name in
-    Hashtbl.replace mvars name (init, typ, cnt + 1)
-  else
-    let (init, typ, cnt) = Hashtbl.find vals name in
-    Hashtbl.replace vals name (init, typ, cnt + 1)
+  let val_tup = find_val vals scope.loc id in
+  match val_tup with
+      Some (i, t, c) -> Hashtbl.replace vals name (i, t, c + 1)
+    | None ->
+        let mvar_tup = find_val mvars scope.loc id in
+        let (init, typ, cnt) =
+          (match mvar_tup with
+              Some (i, t, c) -> (i, t, c)
+            | None -> ((SNoexpr, Unit_t), Unit_t, 0)
+          ) in
+        Hashtbl.replace mvars name (init, typ, cnt + 1)
 
 let get_init scope id =
-  let name = build_name scope id in
-  let (init, typ, cnt) = Hashtbl.find vals name in
-  init
+  match (find_val vals scope.loc id) with
+      Some (i, _, _) -> i
+    | None -> raise (Failure ("no init for name " ^ (build_name scope id)))
 
 let get_cnt scope id =
-  let name = build_name scope id in
-  let (_, _, cnt) =
-    (if Hashtbl.mem mvars name then
-      Hashtbl.find mvars name
-    else
-      Hashtbl.find vals name
-    ) in
-  cnt
+  let val_tup = find_val vals scope.loc id in
+  match val_tup with
+      Some (_, _, c) -> c
+    | None ->
+        let mvar_tup = find_val mvars scope.loc id in
+        match mvar_tup with
+            Some (_, _, c) -> c
+          | None ->
+              raise (Failure ("no count for name " ^ (build_name scope id)))
 
 let rec opt_expr scope (te : t_expr) =
   let (e, t) = te in
@@ -255,6 +270,7 @@ and opt_binop scope (e1 : t_expr) (op : bin_op) (e2 : t_expr) =
 
 (* optimize a statement, returning Some sstmt if useful else None *)
 and opt_stmt scope (s : sstmt) =
+  (* let () = print_endline (str_sstmt s) in *)
   match s with
       SBlock stmts -> opt_block scope stmts
     | SExpr (e, t) ->
@@ -289,14 +305,14 @@ and opt_block scope stmts =
       { loc = new_name :: scope.loc; block_cnt = 0;
           if_cnt = 0; func_cnt = 0 }
     in
-  let acc_fun (nscope, slist) stmt =
+  let acc_fun (scope, slist) stmt =
     let (nstmt, nscope) = opt_stmt scope stmt in
     if option_is_some nstmt then
       (nscope, (option_get nstmt) :: slist)
     else
       (nscope, slist)
   in
-  let (nscope, nstmts) = List.fold_left acc_fun (scope, []) stmts in
+  let (_, nstmts) = List.fold_left acc_fun (nscope, []) stmts in
 
   let ret_scope = { scope with block_cnt = scope.block_cnt + 1 } in
 
@@ -320,12 +336,12 @@ and opt_block_always scope block =
     SBlock([])
 
 and opt_valdecl scope vd =
-  let () = add_val scope vd in
+  let opt_vd = { vd with sv_init = opt_expr scope vd.sv_init } in
+  let () = add_val scope opt_vd in
   let nstmt =
     (if (is_replaceable scope vd.sv_name) then
       None
     else
-      let opt_vd = { vd with sv_init = opt_expr scope vd.sv_init } in
       Some (SVdecl (opt_vd) )
     ) in
   (nstmt, scope)
@@ -347,7 +363,6 @@ and opt_if scope pred ifb elseb =
   in
 
   let (ne, nt) = opt_expr scope pred in
-  let nscope = clean_scope scope "if" in
 
   let nstmt = (match ne with
       SBool_Lit b ->
@@ -379,9 +394,9 @@ and opt_if scope pred ifb elseb =
   (nstmt, { scope with if_cnt = scope.if_cnt + 1 })
 
 let opt_funcdecl scope f =
+  let () = add_val scope f in
   let nscope = { loc = f.sv_name :: scope.loc; block_cnt = 0;
                   if_cnt = 0; func_cnt = 0 } in
-  let () = add_val nscope f in
   { f with sv_init = opt_expr nscope f.sv_init }
 
 let opt_pattern scope spat =
