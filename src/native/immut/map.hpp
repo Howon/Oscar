@@ -252,6 +252,11 @@ namespace immut {
                 return rootValue();
         }
 
+        const V operator[](K key) const
+        {
+            return find(key);
+        }
+
         bool operator==(const map &rhs)
         {
             bool ret = true;

@@ -2,4 +2,7 @@ def main() => unit = {
   string s2 = "string2";
   Println("string1");
   Println(s2);
+
+  string escp = "\"\'\\\\n\ttest";
+  Println(escp);
 }

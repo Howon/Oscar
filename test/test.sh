@@ -111,7 +111,7 @@ test_compiler() {
       show_result $1 $filename $compiler_extension $test_extension
 
     else
-
+      
       # run clang on the file and save the output and errors
       echo -e "Clang Messages:" >> session_file
       $CXXCOMPILE $test_path$filename$cpp_extension 2>> session_file
