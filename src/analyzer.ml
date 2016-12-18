@@ -319,7 +319,7 @@ let check_builtin (f : string) (tel : t_expr list) =
                       types_equal ft ct && types_equal acc acct &&
                         types_equal acc rt -> (SFuncCall(f, tel), rt)
                   | _ -> raise (Builtin_arg_type_err (f, tel)))
-            | _ -> raise (Builtin_arg_num_err (f, 2, args_len)))
+            | _ -> raise (Builtin_arg_num_err (f, 3, args_len)))
       | "Reduce" ->
           (match tel with
               (_, head_t) :: [(_, tail_t)] ->
