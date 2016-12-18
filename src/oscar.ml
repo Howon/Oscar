@@ -6,7 +6,6 @@ open Sast
 open Lexing
 open Printf
 open Transpile
-open Sys
 
 type action = Compile | Ast | Sast | Llvm_gen
 
