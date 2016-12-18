@@ -11,7 +11,7 @@ NC='\033[0m' # No Color
 
 
 # Globals
-oscar_compile="./oscar -c"
+oscar_compile="./oscar -c -O"
 TEST_DIR=$(pwd)
 
 case_passed=0
