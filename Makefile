@@ -8,15 +8,7 @@ IMMUT=$(NATIVE)/immut
 CXX= clang
 CXXFLAGS = -std=c++14 -Wall -g -c -O3
 
-LIBS=-I,/usr/lib/ocaml/
-OCAMLLIBS=-I/usr/lib/ocaml
-OCAMLFLAGS= ocamlopt -linkpkg -package llvm -package llvm.analysis
-
-OCAMLC=ocamlfind
-
 BUILDDIR=include
-
-OBJS = ast.cmx codegen.cmx parser.cmx scanner.cmx semant.cmx oscar.cmx
 
 oscar : library
 	@echo 'Buiding Oscar Compiler'
