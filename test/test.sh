@@ -12,6 +12,9 @@ NC='\033[0m' # No Color
 
 # Globals
 oscar_compile="./oscar -c"
+out_file="temp_exec"
+out_file_flags=" -o $out_file"
+out_file_exec="./$out_file"
 TEST_DIR=$(pwd)
 
 case_passed=0
@@ -92,10 +95,8 @@ test_compiler() {
     echo "Testing Compiler: $filename" >> session_file
 
 
-    # compile program to test.ll, put any errors in the session
     echo -e "Oscar Compiler Messages:" >> session_file
-    $oscar_compile $oscar_test_file 1> temp.cpp 2> oscar_error_output
-    $CXXCOMPILE temp.cpp
+    $oscar_compile $oscar_test_file 2> oscar_error_output
 
     echo "" > oscar_test_output
 
@@ -111,9 +112,14 @@ test_compiler() {
 
     else
 
-      # run lli on the file and save the output and errors
-      echo -e "LLVM Messages:" >> session_file
+      # run clang on the file and save the output and errors
+      echo -e "Clang Messages:" >> session_file
+      $CXXCOMPILE $test_path$filename$cpp_extension 2>> session_file
       ./a.out 1> oscar_test_output 2>> session_file
+      rm $test_path$filename$cpp_extension
+      if [ -f $test_path$filename ]; then
+        rm $test_path$filename
+      fi
       echo "" >> session_file
 
       # diff outputs
@@ -147,8 +153,9 @@ echo "" > $logFile
 echo -e "\n\n${CYAN}----------Testing Valid----------${NC}\n"
 test_path=./test/oscar/compiler/
 test_extension=.oscar
+cpp_extension=.cpp
 compiler_extension=$test_extension.out
-test_compiler $test_path $compiler_extension $test_extension
+test_compiler $test_path $compiler_extension $test_extension $cpp_extension
 
 echo -e "\n\n${CYAN}----------Testing Errors----------${NC}\n"
 # testing errors
@@ -165,9 +172,10 @@ echo -e "Tests Failed: $case_failed $"
 
 #Clean up temp files
 rm -f oscar_test_output;
-rm -f oscar_error_output
+rm -f oscar_error_output;
 rm -f session_file;
 rm -f temp.ll;
+rm a.out;
 
 make clean
 cd test
