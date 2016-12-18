@@ -33,7 +33,7 @@ let parse_error lexbuf =
 let _ =
   let arg_len = Array.length Sys.argv in
   let (action, oscar) =
-    (if (arg_len = 1 || arg_len = 4 || arg_len > 5) then
+    (if (arg_len < 3 || arg_len = 4 || arg_len > 5) then
       let _ = print_endline("Usage: ./oscar [-p|-s|-c|-l|] *.oscar [-o outfile]") in
       print_endline (string_of_int arg_len);
       exit 1;
