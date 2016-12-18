@@ -192,25 +192,29 @@ and opt_binop scope (e1 : t_expr) (op : bin_op) (e2 : t_expr) =
     | Less  ->
         (match e1', e2' with
             SInt_Lit i1, SInt_Lit i2      -> SBool_Lit (i1 < i2)
-          | SDouble_Lit d1, SDouble_Lit d2  -> SBool_Lit(d1 < d2)
+          | SDouble_Lit d1, SDouble_Lit d2  ->
+              SBool_Lit ((compare d1 d2) < 0)
           | _ -> SBinop((e1', t1), op, (e2', t2))
         )
     | Leq ->
         (match e1', e2' with
             SInt_Lit i1, SInt_Lit i2      -> SBool_Lit (i1 <= i2)
-          | SDouble_Lit d1, SDouble_Lit d2  -> SBool_Lit(d1 <= d2)
+          | SDouble_Lit d1, SDouble_Lit d2  ->
+              SBool_Lit ((compare d1 d2) <= 0)
           | _ -> SBinop((e1', t1), op, (e2', t2))
         )
     | Greater ->
         (match e1', e2' with
             SInt_Lit i1, SInt_Lit i2      -> SBool_Lit (i1 > i2)
-          | SDouble_Lit d1, SDouble_Lit d2  -> SBool_Lit(d1 > d2)
+          | SDouble_Lit d1, SDouble_Lit d2  ->
+              SBool_Lit ((compare d1 d2) > 0)
           | _ -> SBinop((e1', t1), op, (e2', t2))
         )
     | Geq ->
         (match e1', e2' with
             SInt_Lit i1, SInt_Lit i2      -> SBool_Lit (i1 >= i2)
-          | SDouble_Lit d1, SDouble_Lit d2  -> SBool_Lit(d1 >= d2)
+          | SDouble_Lit d1, SDouble_Lit d2  ->
+              SBool_Lit ((compare d1 d2) >= 0)
           | _ -> SBinop((e1', t1), op, (e2', t2))
         )
     | Mod ->
@@ -246,7 +250,8 @@ and opt_binop scope (e1 : t_expr) (op : bin_op) (e2 : t_expr) =
     | Equal ->
         (match e1', e2' with
             SInt_Lit v1, SInt_Lit v2            -> SBool_Lit (v1 = v2)
-          | SDouble_Lit v1, SDouble_Lit v2      -> SBool_Lit (v1 = v2)
+          | SDouble_Lit v1, SDouble_Lit v2      ->
+              SBool_Lit ((compare v1 v2) = 0)
           | SChar_Lit v1, SChar_Lit v2          -> SBool_Lit (v1 = v2)
           | SString_Lit v1, SString_Lit v2      -> SBool_Lit (v1 = v2)
           | SBool_Lit v1, SBool_Lit v2          -> SBool_Lit (v1 = v2)
@@ -255,7 +260,8 @@ and opt_binop scope (e1 : t_expr) (op : bin_op) (e2 : t_expr) =
     | Neq ->
         (match e1', e2' with
             SInt_Lit v1, SInt_Lit v2            -> SBool_Lit (v1 != v2)
-          | SDouble_Lit v1, SDouble_Lit v2      -> SBool_Lit (v1 != v2)
+          | SDouble_Lit v1, SDouble_Lit v2      ->
+              SBool_Lit ((compare v1 v2) != 0)
           | SChar_Lit v1, SChar_Lit v2          -> SBool_Lit (v1 != v2)
           | SString_Lit v1, SString_Lit v2      -> SBool_Lit (v1 != v2)
           | SBool_Lit v1, SBool_Lit v2          -> SBool_Lit (v1 != v2)
