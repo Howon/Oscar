@@ -33,8 +33,9 @@ let parse_error lexbuf =
 let _ =
   let arg_len = Array.length Sys.argv in
   let (action, oscar) =
-    (if (arg_len = 1 || arg_len > 3) then
-      let _ = print_endline("Usage: ./oscar [-p|-s|-c|-l|] *.oscar") in
+    (if (arg_len = 1 || arg_len = 4 || arg_len > 5) then
+      let _ = print_endline("Usage: ./oscar [-p|-s|-c|-l|] *.oscar [-o outfile]") in
+      print_endline (string_of_int arg_len);
       exit 1;
     else
       try
@@ -73,24 +74,30 @@ let _ =
           | Sast  -> print_endline (Sast.str_sprogram sprogram)
           | _ ->
               let program = Transpile.c_program sprogram in
-              let exec_file =
+              let file_stub =
                   let rdot = String.rindex oscar '.' in
-                  let rslash = String.rindex oscar '/' in
-                  let length = String.length oscar in
-                  String.sub oscar (match rslash with
-                                          Some(i) -> i+1
-                                        | None -> 0)
-                                        ((match rdot with
-                          Some(i) -> i
-                        | None -> raise (Failure ("Filename should be .oscar")))
-                      - (match rslash with
-                                          Some(i) -> i
-                                        | None -> 0))
+                  let rdot = (match rdot with
+                        Some(i) -> i
+                      | None -> raise (Failure ("Filename should be .oscar")))
+                  in
+                  String.sub oscar 0 rdot
               in
-              let cpp_file = exec_file ^ ".cpp" in
-              let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
-              let cxx_incls = "-I/usr/local/include/ -L/usr/local/lib/ " in
-              let cxx = sprintf "clang++ %s %s " c_op cxx_incls ^ cpp_file ^ " -o " ^ exec_file in
-              Out_channel.write_all cpp_file ~data:program;
-              let ch = Unix.open_process_out cxx in
-                Out_channel.output_string ch program;
+              let cpp_file = file_stub ^ ".cpp" in
+              match action with
+                  Ast      -> ()
+                | Sast     -> ()
+                | Llvm_gen -> 
+                    let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2 -S -emit-llvm" in
+                    let cxx_incls = "-I/usr/local/include/ " in
+                    let cxx = sprintf "clang++ %s %s " c_op cxx_incls ^ cpp_file ^ " -o " ^ file_stub ^ ".ll" in
+                    Out_channel.write_all cpp_file ~data:program;
+                    let ch = Unix.open_process_out cxx in
+                      Out_channel.output_string ch program;
+                | Compile ->
+                    let exec_file = (if arg_len = 5 then Sys.argv.(4) else file_stub) in
+                    let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
+                    let cxx_incls = "-I/usr/local/include/ -L/usr/local/lib/ " in
+                    let cxx = sprintf "clang++ %s %s " c_op cxx_incls ^ cpp_file ^ " -o " ^ exec_file in
+                    Out_channel.write_all cpp_file ~data:program;
+                    let ch = Unix.open_process_out cxx in
+                      Out_channel.output_string ch program;
