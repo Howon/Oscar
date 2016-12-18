@@ -1,1 +1,1 @@
-Error: Function add5 with signature (int, int) => int not found
+Error: Function add5 has signature (int) => unit but was called with args (int, int)

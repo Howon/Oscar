@@ -2,6 +2,7 @@
 *.ll
 *.out
 include/*
+src/_build/*
 ./oscar
 src/oscar
 prettyprint

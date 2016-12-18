@@ -10,7 +10,7 @@ NC='\033[0m' # No Color
 
 
 # Globals
-oscar_compile="./oscar -c"
+oscar_compile="./oscar -c -O"
 out_file="temp_exec"
 out_file_flags=" -o $out_file"
 out_file_exec="./$out_file"

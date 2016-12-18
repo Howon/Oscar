@@ -1,1 +1,1 @@
-Error: No matching pattern to receive message testLater in actor Tester
+Error: No matching pattern to receive message testLater in pool of actor type Tester
