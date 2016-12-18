@@ -55,7 +55,7 @@ let _ =
         ] Sys.argv.(1), false, Sys.argv.(2))
       with Not_found ->
         raise (Failure ("Invalid flag " ^ Sys.argv.(1)))
-    else if Sys.argv.(2) = "-O" && (arg_len = 4 or (arg_len = 6 && Sys.argv.(4) = "-o")) then
+    else if Sys.argv.(2) = "-O" && (arg_len = 4 || (arg_len = 6 && Sys.argv.(4) = "-o")) then
       try
         (List.Assoc.find_exn [
                 ("-p", Ast);      (* Prettyprint ast *)
