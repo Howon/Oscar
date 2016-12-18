@@ -43,43 +43,41 @@ let build_name scope s =
   (String.concat "_" scope.loc) ^ "__" ^ s
 
 let is_replaceable scope id =
-  let (init, typ, cnt) =
-    let match_opt = find_val vals scope.loc id in
-    (match match_opt with
-        Some (i, t, c) -> (i, t, c)
-        (* we just make a dummy tuple for the following match *)
-      | None -> ((SNoexpr, Unit_t), Set_t(Unit_t), -1)
-    ) in
-  match typ with
-      Int_t | Bool_t | Double_t | Char_t | Unit_t -> true
-    | _ -> false
+  let match_opt = find_val vals scope.loc id in
+  (match match_opt with
+      Some (_, rep, _) -> rep
+    | None -> false
+  )
 
 let add_mvar scope decl =
   let name = build_name scope decl.smv_name in
-  Hashtbl.add mvars name ((SNoexpr, Unit_t), decl.smv_type, 0)
+  Hashtbl.add mvars name ((SNoexpr, Unit_t), false, 0)
 
 let add_val scope decl =
-  let name = build_name scope decl.sv_name in
-  (* there is no reason to waste space on stuff we won't fill in *)
-  let init = (match decl.sv_type with
-        Int_t | Bool_t | Double_t | Char_t | Unit_t -> decl.sv_init
-      | _ -> (SNoexpr, Unit_t)
-  ) in
-  Hashtbl.add vals name (init, decl.sv_type, 0)
+  let {sv_name = id ; sv_type = _ ; sv_init = init} = decl in
+  let name = build_name scope id in
+  let (sinit, rep) =
+    (match (fst init) with
+        SInt_Lit _  | SDouble_Lit _ | SChar_Lit _
+      | SBool_Lit _ |  SUnit_Lit _  | SId _       -> (init, true)
+      (* save space on things we won't fill in later *)
+      | _ -> ((SNoexpr, Unit_t), false)
+    ) in
+  Hashtbl.add vals name (sinit, rep, 0)
 
 let incr_cnt scope id =
   let name = build_name scope id in
   let val_tup = find_val vals scope.loc id in
   match val_tup with
-      Some (i, t, c) -> Hashtbl.replace vals name (i, t, c + 1)
+      Some (i, r, c) -> Hashtbl.replace vals name (i, r, c + 1)
     | None ->
         let mvar_tup = find_val mvars scope.loc id in
-        let (init, typ, cnt) =
+        let (init, rep, cnt) =
           (match mvar_tup with
-              Some (i, t, c) -> (i, t, c)
-            | None -> ((SNoexpr, Unit_t), Unit_t, 0)
+              Some (i, r, c) -> (i, r, c)
+            | None -> ((SNoexpr, Unit_t), false, 0)
           ) in
-        Hashtbl.replace mvars name (init, typ, cnt + 1)
+        Hashtbl.replace mvars name (init, rep, cnt + 1)
 
 let get_init scope id =
   match (find_val vals scope.loc id) with
@@ -97,6 +95,11 @@ let get_cnt scope id =
           | None ->
               raise (Failure ("no count for name " ^ (build_name scope id)))
 
+(* optimize a single expression
+ * IDs get replaced if they are just a simple value
+ * funcs get optimized
+ * all actuals used to call anything are optimized
+ * uops / binops get reduced if possible *)
 let rec opt_expr scope (te : t_expr) =
   let (e, t) = te in
   let ne = (match e with
@@ -136,9 +139,11 @@ let rec opt_expr scope (te : t_expr) =
   ) in
   (ne, t)
 
+(* optimize the body of the function *)
 and opt_func_lit scope (f : sfunc) =
   SFunc_Lit({ f with sf_body = (opt_block_always scope f.sf_body) })
 
+(* reduce uops of expressions that can be reduced to literals *)
 and opt_uop scope (uop: u_op) (e : t_expr) =
   let (e', t) = opt_expr scope e in
   match uop with
@@ -154,6 +159,7 @@ and opt_uop scope (uop: u_op) (e : t_expr) =
           | _ -> SUop(uop, (e',t))
         )
 
+(* reduce binops of expressions that can be reduced to literals *)
 and opt_binop scope (e1 : t_expr) (op : bin_op) (e2 : t_expr) =
   let (e1', t1) = opt_expr scope e1 in
   let (e2', t2) = opt_expr scope e2 in
@@ -268,9 +274,11 @@ and opt_binop scope (e1 : t_expr) (op : bin_op) (e2 : t_expr) =
     | Assign ->
         SBinop((e1', t1), op, (e2', t2))
 
-(* optimize a statement, returning Some sstmt if useful else None *)
+(* optimize a statement, returning Some sstmt if useful else None
+ * cleans up all statements and expressions
+ * ignores variable declaration if the variable init value can be
+ * reduced to a literal or an id of another variable *)
 and opt_stmt scope (s : sstmt) =
-  (* let () = print_endline (str_sstmt s) in *)
   match s with
       SBlock stmts -> opt_block scope stmts
     | SExpr (e, t) ->
@@ -335,6 +343,9 @@ and opt_block_always scope block =
   else
     SBlock([])
 
+(* optimize immutable variable declaration
+ * if we save the value of the variable, don't actually put the
+ * declaration in code *)
 and opt_valdecl scope vd =
   let opt_vd = { vd with sv_init = opt_expr scope vd.sv_init } in
   let () = add_val scope opt_vd in
@@ -346,11 +357,17 @@ and opt_valdecl scope vd =
     ) in
   (nstmt, scope)
 
+(* optimize mutable varialbe declaration
+ * always ends up in code, but init value is optimize *)
 and opt_mutdecl scope md =
   let () = add_mvar scope md in
   let opt_md = { md with smv_init = opt_expr scope md.smv_init } in
   (Some ( SMutdecl (opt_md) ), scope)
 
+
+(* optimize if/else block
+ * if we can reduce the predicate to a boolean literal
+ * then replace the if with a block of the used part *)
 and opt_if scope pred ifb elseb =
   let clean_scope scope name =
     let new_name =
@@ -393,17 +410,20 @@ and opt_if scope pred ifb elseb =
   in
   (nstmt, { scope with if_cnt = scope.if_cnt + 1 })
 
+(* optimize a function declaration at the top level *)
 let opt_funcdecl scope f =
   let () = add_val scope f in
   let nscope = { loc = f.sv_name :: scope.loc; block_cnt = 0;
                   if_cnt = 0; func_cnt = 0 } in
   { f with sv_init = opt_expr nscope f.sv_init }
 
+(* optimize a pattern: reduce the body *)
 let opt_pattern scope spat =
   let nscope = { scope with loc = spat.sp_smid :: scope.loc } in
   let nbody = opt_block_always nscope spat.sp_body in
   { spat with sp_body = nbody }
 
+(* optimize an actor: reduce the body and optimize all patterns *)
 let opt_actor scope sact =
   let nscope = { loc = sact.sa_name :: scope.loc;
                   block_cnt = 0; if_cnt = 0; func_cnt = 0 } in
