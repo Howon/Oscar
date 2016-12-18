@@ -8,7 +8,7 @@ using namespace std;
 // todo: keep a global map of <address, Actor> for communication
 
 void add(int a, int b) {
-    cout <<  a+b << endl;
+    cout << a+b << endl;
 }
 
 // this main is more of a prototype at this point

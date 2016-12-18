@@ -18,8 +18,6 @@ typedef void (*fxnPtr)(int, int);
 typedef unordered_map<string, fxnPtr> patFxnPtr;
 
 class Actor {
-// todo: make private
-public:
     patFxnPtr patterns;
     queue<Message> q;
 
