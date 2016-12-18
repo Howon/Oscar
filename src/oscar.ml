@@ -82,14 +82,12 @@ let _ =
           else
             sprogram
         in
-        (* let ast = Parser.program Scanner.token lexbuf in
-        Semant.check ast; *)
         match action with
           Ast   -> ()
         | Sast  -> print_endline (Sast.str_sprogram soprogram)
         | _ ->
             let program = Transpile.c_program soprogram in
-            let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
+            (* let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
             let cxx_incls = "-I/usr/local/include/ -L/usr/local/lib/ " in
-            let cxx = sprintf "clang++ %s %s " c_op cxx_incls in
+            let cxx = sprintf "clang++ %s %s " c_op cxx_incls in *)
               print_endline program

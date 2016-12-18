@@ -50,7 +50,7 @@ show_result() {
 
     echo "" >> session_file
     echo "Generated Output:" >> session_file
-    cat oscar_test_output  >> session_file
+    cat ${2}_test_output  >> session_file
     echo "" >> session_file
 
     ((case_failed++))
@@ -88,39 +88,51 @@ test_compiler() {
     filename=$(basename "$oscar_test_file")
     filename="${filename%.*}"
 
-    echo "==================================" >> session_file
-    echo "Testing Compiler: $filename" >> session_file
-
+    cppfile=${filename}.cpp
+    outfile=${filename}.out
+    errorout=${filename}_error_output
+    testout=${filename}_test_output
 
     # compile program to test.ll, put any errors in the session
-    echo -e "Oscar Compiler Messages:" >> session_file
-    $oscar_compile $oscar_test_file 1> temp.cpp 2> oscar_error_output
-    $CXXCOMPILE temp.cpp
+    $oscar_compile $oscar_test_file 1> $cppfile 2> $errorout
+    $CXXCOMPILE -o $outfile $cppfile
 
-    echo "" > oscar_test_output
+    echo "" > $testout
 
     # if we had a error, then diff errors. Otherwise, run LLVM and diff outputs
-    if [ -s oscar_error_output ]; then
-      echo "" >> oscar_error_output
-      cat oscar_error_output >> session_file
+    if [ -s $errorout ]; then
+      echo "==================================" >> session_file
+      echo "Testing Compiler: $filename" >> session_file
+      echo -e "Oscar Compiler Messages:" >> session_file
+
+      echo "" >> $errorout
+      cat $errorout >> session_file
       echo "" >> session_file
 
        # diff errors
-      diff oscar_error_output "$test_path"$filename$compiler_extension >> /dev/null
+      diff $errorout "$test_path"$filename$compiler_extension >> /dev/null
       show_result $1 $filename $compiler_extension $test_extension
 
     else
 
-      # run lli on the file and save the output and errors
+      echo "==================================" >> session_file
+      echo "Testing Compiler: $filename" >> session_file
+      echo -e "Oscar Compiler Messages:" >> session_file
+
+      # run the executable and save the output and errors
       echo -e "LLVM Messages:" >> session_file
-      ./a.out 1> oscar_test_output 2>> session_file
+      ./$outfile 1> $testout 2>> session_file
       echo "" >> session_file
 
       # diff outputs
-      diff oscar_test_output "$test_path"$filename$compiler_extension >> /dev/null
+      diff $testout "$test_path"$filename$compiler_extension >> /dev/null
       show_result $1 $filename $compiler_extension $test_extension
 
+      rm $outfile
+
     fi
+
+    rm $cppfile $testout $errorout
 
     done
 
