@@ -168,7 +168,6 @@ rm -f oscar_test_output;
 rm -f oscar_error_output
 rm -f session_file;
 rm -f temp.ll;
-rm -f *.cpp
 
 make clean
 cd test
