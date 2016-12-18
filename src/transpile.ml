@@ -7,7 +7,7 @@ let mes = "m_"
 let act = "a_"
 
 let actor_include = ""
-let immut_include = "#include <include/immut.hpp>\n"
+let immut_include = "#include <oscar/immut.hpp>\n"
 
 let rec c_type (t : types) =
   match t with

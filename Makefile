@@ -5,9 +5,6 @@ NATIVE=native
 ACTOR=$(NATIVE)/actor
 IMMUT=$(NATIVE)/immut
 
-CXX= clang
-CXXFLAGS = -std=c++14 -Wall -g -c -O3
-
 BUILDDIR=include
 
 oscar : library

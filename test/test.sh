@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Path to the LLVM interpreter
-LLI="lli"
 CXXCOMPILE="clang++ -Wall -pedantic -fsanitize=address -std=c++1y -O2 -I/usr/local/include/ -L/usr/local/lib/"
 # Colors
 RED='\033[0;31m'
