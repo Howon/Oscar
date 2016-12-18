@@ -224,7 +224,7 @@ let check_builtin (f : string) (tel : t_expr list) =
           (match tel with
               [(_, tail_t)] ->
                 (match tail_t with
-                    String_t _ | List_t _ | Set_t _ | Map_t (_, _) ->
+                    String_t | List_t _ | Set_t _ | Map_t (_, _) ->
                       (SFuncCall(f, tel), Int_t)
                   | _ -> raise (Builtin_arg_type_err (f, tel)))
             | _ -> raise (Builtin_arg_num_err (f, 1, args_len)))
@@ -405,8 +405,8 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
                           (SBinop(te1, op, te2), t1)
                         else
                           raise (Failure ("Assignment to incompatible " ^
-                                 "types " ^ str_types t1 ^ " cannot be " ^
-                                   "asigned to " ^ str_types t2))
+                                 "types: " ^ str_types t2 ^ " cannot be " ^
+                                   "assigned to " ^ str_types t1))
                   else
                     raise (Failure ("Identifier not found: " ^ s))))
             | SAccess _ -> (SBinop (te1, op, te2), t2)
@@ -693,6 +693,10 @@ and check_stmt (s : stmt) (env : scope) =
 
 and check_vdecl (vdecl : val_decl) (env : scope) =
   let {v_name; v_type; v_init} = vdecl in
+  let () = (match v_type with
+      Unit_t ->
+        raise (Failure ("Cannot declare value of type unit to " ^ v_name))
+    | _ -> () ) in
   let () = (if (name_taken v_name env) then
       raise (Failure ("Value " ^ v_name ^ " declared already"))
     else
@@ -731,8 +735,12 @@ and check_mvdecl (mvdecl : mvar_decl) (env : scope) =
   if env.in_actor then
     let {mv_name; mv_type; mv_init} = mvdecl in
       (match mv_type with
-          Func_t (_, _) ->
+          Unit_t ->
+            raise (Failure ("Cannot declare value of type unit to " ^ mv_name))
+        | Func_t (_, _) ->
             raise (Failure ("Cannot declare mutable funcs types " ^ mv_name))
+        | Message_t _ ->
+            raise (Failure ("Cannot declare mutable message " ^ mv_name))
         | Actor_t _ | Pool_t _ ->
             raise (Failure ("Cannot spawn mutable actor/pool " ^ mv_name))
         | _ ->
