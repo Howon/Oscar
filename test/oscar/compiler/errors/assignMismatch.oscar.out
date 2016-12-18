@@ -1,1 +1,1 @@
-Error: Cannot assign int as string
+Error: Value initialization type mismatch: x is int but initialized as string

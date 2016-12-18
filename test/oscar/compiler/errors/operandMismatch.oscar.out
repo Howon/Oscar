@@ -1,1 +1,1 @@
-Error: operand type mismatch: int double
+Error: operand type mismatch: int + double

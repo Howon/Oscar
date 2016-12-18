@@ -405,8 +405,8 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
                           (SBinop(te1, op, te2), t1)
                         else
                           raise (Failure ("Assignment to incompatible " ^
-                                 "types " ^ str_types t1 ^ " cannot be " ^
-                                   "asigned to " ^ str_types t2))
+                                 "types: " ^ str_types t2 ^ " cannot be " ^
+                                   "asigned to " ^ str_types t1))
                   else
                     raise (Failure ("Identifier not found: " ^ s))))
             | SAccess _ -> (SBinop (te1, op, te2), t2)
