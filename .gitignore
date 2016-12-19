@@ -19,3 +19,5 @@ scanner.ml
 *.swp
 *.log
 *.DS_Store
+*.bc
+*.gch
