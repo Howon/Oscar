@@ -109,7 +109,7 @@ let rec opt_expr scope (te : t_expr) =
           fst (get_init scope id)
         else
           e
-    | SAccess (e1, e2) -> SAccess(e1, (opt_expr scope e2))
+    | SAccess (e1, e2) -> SAccess((opt_expr scope e1), (opt_expr scope e2))
     | SFunc_Lit sf -> opt_func_lit scope sf
     | SList_Lit (typ, exprs) ->
         let nexprs = List.map (opt_expr scope) exprs in
