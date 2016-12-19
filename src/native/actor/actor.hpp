@@ -17,8 +17,6 @@ using namespace std;
 
 class Actor {
 public:
-//    queue<string> messageQueue;
-
     std::thread t;
     condition_variable cv;
     mutex mx;
@@ -55,7 +53,6 @@ public:
         t.join();
     }
 
-    queue<string> messageQueue;
     queue<StartMessage> startQueue;
     queue<PongMessage> pongQueue;
 
@@ -63,59 +60,22 @@ public:
         unique_lock<mutex> lck(mx);
 
         while (true) {
-//            while (messageQueue.empty()) {
-//                cout << "Ping: waiting on empty; p: " << t.get_id() << " q: " << &messageQueue << endl;
-//                cv.wait(lck);
-//            }
-//
-//            // process current message
-//            const string &msgName = messageQueue.front();
-////            messageQueue.pop();
-//
-//            if (msgName == "start") {
-//                auto msg = startQueue.front();
-//                startQueue.pop();
-//
-//                // send a response to sender
-//                auto response = respond(msg);
-//                if (response != NULL)
-//                    pong->receive(response);
-//            } else if (msgName == "pong") {
-//                auto msg = pongQueue.front();
-//                pongQueue.pop();
-//
-//                // send a response to sender
-//                auto response = respond(msg);
-//                if (response != NULL)
-//                    pong->receive(response);
-//            }
-//
-//            messageQueue.pop();
-
-            while (startQueue.empty() && pongQueue.empty()) {
-//                cout << "Ping: waiting on empty; p: " << t.get_id() << " q: " << &messageQueue << endl;
+            while (startQueue.empty() && pongQueue.empty())
                 cv.wait(lck);
-            }
 
             // process current message
-            const string &msgName = messageQueue.front();
-//            messageQueue.pop();
-
             if (!startQueue.empty()) {
-                auto msg = startQueue.front();
-                startQueue.pop();
+                auto msg = startQueue.front();  startQueue.pop();
 
                 // send a response to sender
-                auto response = respond(msg);
-                if (response != NULL)
+                if (auto response = respond(msg))
                     pong->receive(response);
             } else if (!pongQueue.empty()) {
                 auto msg = pongQueue.front();
                 pongQueue.pop();
 
                 // send a response to sender
-                auto response = respond(msg);
-                if (response != NULL)
+                if (auto response = respond(msg))
                     pong->receive(response);
             }
         }
@@ -149,24 +109,14 @@ public:
 
     void receive(Message* msg) {
         if (StartMessage *pm = dynamic_cast<StartMessage*>(msg)) {
-            {
-                unique_lock<mutex> lck(mx);
-                messageQueue.push(pm->name);
-                startQueue.push(*pm);
-                cv.notify_all();
-            }
+            unique_lock<mutex> lck(mx);
+            startQueue.push(*pm);
         } else if (PongMessage* pm = dynamic_cast<PongMessage *>(msg)) {
-            {
-                unique_lock<mutex> lck(mx);
-                messageQueue.push(msg->name);
-                pongQueue.push(*pm);
-                cv.notify_all();
-            }
+            unique_lock<mutex> lck(mx);
+            pongQueue.push(*pm);
         }
 
-        //if (q.size() == 1)
-        //        cv.notify_one();
-//        cv.notify_all();
+        cv.notify_one();
     }
 };
 
@@ -188,7 +138,6 @@ public:
         t.join();
     }
 
-    queue<string> messageQueue;
     queue<StopMessage> stopQueue;
     queue<PingMessage> pingQueue;
 
@@ -196,30 +145,23 @@ public:
         unique_lock<mutex> lck(mx);
 
         while (true) {
-            while (stopQueue.empty() && pingQueue.empty()) {
-//                cout << "Ping: waiting on empty; p: " << t.get_id() << " q: " << &messageQueue << endl;
+            while (stopQueue.empty() && pingQueue.empty())
                 cv.wait(lck);
-            }
 
             // process current message
-            const string &msgName = messageQueue.front();
-//            messageQueue.pop();
-
             if (!stopQueue.empty()) {
                 auto msg = stopQueue.front();
                 stopQueue.pop();
 
                 // send a response to sender
-                auto response = respond(msg);
-                if (response != NULL)
+                if (auto response = respond(msg))
                     ping->receive(response);
             } else if (!pingQueue.empty()) {
                 auto msg = pingQueue.front();
                 pingQueue.pop();
 
                 // send a response to sender
-                auto response = respond(msg);
-                if (response != NULL)
+                if (auto response = respond(msg))
                     ping->receive(response);
             }
         }
@@ -228,7 +170,6 @@ public:
     Message* respond(StopMessage msg) {
         printf("pong stopped\n\n");
         // todo: stop itself
-//        return EMPTY_MESSAGE;
         return NULL;
     }
 
@@ -239,25 +180,15 @@ public:
 
     void receive(Message* msg) {
         if (PingMessage* pm = dynamic_cast<PingMessage *>(msg)) {
-            {
-                unique_lock<mutex> lck(mx);
-                messageQueue.push(msg->name);
-                pingQueue.push(*pm);
-                cv.notify_all();
-            }
+            unique_lock<mutex> lck(mx);
+            pingQueue.push(*pm);
         }
         else if (StopMessage *pm = dynamic_cast<StopMessage*>(msg)) {
-            {
-                unique_lock<mutex> lck(mx);
-                messageQueue.push(pm->name);
-                stopQueue.push(*pm);
-                cv.notify_all();
-            }
+            unique_lock<mutex> lck(mx);
+            stopQueue.push(*pm);
         }
 
-        //if (q.size() == 1)
-//        cv.notify_one();
-//        cv.notify_all();
+        cv.notify_one();
     }
 };
 
