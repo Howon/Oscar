@@ -125,7 +125,7 @@ and check_args_t (params : types list) (args : types list) =
   if not (List.length params = List.length args) then
     false
   else
-    List.fold_left2 (fun acc p1 p2 -> acc && types_equal p1 p2) true params args
+    List.fold_left2 (fun acc p1 p2 -> acc && types_equal' p1 p2) true params args
 
 and types_equal' (t1 : types) (t2 : types) =
   types_equal t1 t2 || (
@@ -862,7 +862,7 @@ let check_actor_decl (adecl : actor) (env : scope) =
               Some m  -> m::acc
             | None    ->
                 raise (Failure ("Actor " ^ adecl.a_name ^
-                  "attempts to receive an undefined message " ^ p.p_mid))
+                  " attempts to receive an undefined message " ^ p.p_mid))
           ) [] a_receive
         ) in
 
