@@ -9,15 +9,23 @@ open Sys
 
 type action = Compile | Ast | Sast | Llvm_gen
 
-let make_lexbuf file =
-  let lexbuf = Lexing.from_channel file in
+let make_lexbuf filename =
+  let file =
+    try
+      open_in filename
+    with Sys_error s ->
+      let () = print_endline s in
+      exit 3;
+  in
+
+  let lexbuf = (Lexing.from_channel file) in
   let curr_p = {lexbuf.lex_curr_p with pos_lnum=1} in
   {lexbuf with lex_curr_p = curr_p;}
 
-let scan_error lexbuf error = 
+let scan_error lexbuf error =
   let s = lexeme_start_p lexbuf in
   let f = lexeme_end_p lexbuf in
-    (fprintf stderr 
+    (fprintf stderr
             "Scanner: Unrecgonized char at line %d, char %d - %d: \"%s\" \n"
     s.pos_lnum (s.pos_cnum - s.pos_bol)
     (f.pos_cnum - f.pos_bol) error)
@@ -29,13 +37,13 @@ let parse_error lexbuf =
     s.pos_lnum (s.pos_cnum - s.pos_bol)
     (f.pos_cnum - f.pos_bol) (Lexing.lexeme lexbuf))
 
-let get_file_stub filename = 
+let get_file_stub filename =
   let rdot = String.rindex filename '.' in
   let rdot = (match rdot with
         Some(i) -> i
       | None -> raise (Failure ("Filename should be .oscar")))
   in
-  String.sub filename 0 rdot
+  String.sub filename ~pos:0 ~len:rdot
 
 let _ =
   let arg_len = Array.length Sys.argv in
@@ -49,19 +57,19 @@ let _ =
                 ("-s", Sast);     (* Prettyprint sast *)
                 ("-l", Llvm_gen); (* Generate cpp and llvm *)
                 ("-c", Compile);  (* Generate cpp and executable *)
-        ] Sys.argv.(1), 
+        ] Sys.argv.(1),
         (if arg_len = 4 then
-            (if Sys.argv.(2) = "-O" then true 
+            (if Sys.argv.(2) = "-O" then true
              else raise (Failure ("Invalid flag " ^ Sys.argv.(2))))
-          else false), 
+          else false),
         (if arg_len = 3 then Sys.argv.(2) else Sys.argv.(3)))
       with Not_found ->
-        let _ = 
+        let _ =
           print_endline("Usage: ./oscar [-p|-s|-l|-c] [?-O] *.oscar") in
       exit 1;
     else raise (Failure ("Invalid flag " ^ Sys.argv.(2)))) in
-  let lexbuf = make_lexbuf (open_in oscar)
-  and stdlex = make_lexbuf (open_in "include/stdlib.oscar") in
+  let lexbuf = make_lexbuf oscar
+  and stdlex = make_lexbuf "include/stdlib.oscar" in
   let program =
     try
       Parser.program Scanner.token lexbuf
@@ -102,14 +110,14 @@ let _ =
               let cpp_file = file_stub ^ ".cpp" in
               let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
               let cxx_incls = "-I/usr/local/include/ " in
-              let cxx = 
-                (if action = Llvm_gen then 
+              let cxx =
+                (if action = Llvm_gen then
                   let c_op = c_op ^ " -S -emit-llvm" in
-                  sprintf "clang++ %s %s " c_op cxx_incls ^ cpp_file ^ 
+                  sprintf "clang++ %s %s " c_op cxx_incls ^ cpp_file ^
                                                    " -o " ^ file_stub ^ ".ll"
                 else if action = Compile then
                   let cxx_incls = cxx_incls ^ "-L/usr/local/lib/ " in
-                  sprintf "clang++ %s %s " c_op cxx_incls ^ cpp_file ^ 
+                  sprintf "clang++ %s %s " c_op cxx_incls ^ cpp_file ^
                                                    " -o " ^ file_stub
                 else "")
               in

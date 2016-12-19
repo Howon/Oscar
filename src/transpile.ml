@@ -72,7 +72,9 @@ and c_sstmt sstmt =
   match sstmt with
       SBlock _             -> "{\n" ^ c_sstmts sstmt ^ "\n}"
     | SExpr texp           -> c_texpr texp ^ ";"
-    | SReturn se           -> "return " ^ c_texpr se ^ ";"
+    | SReturn se           -> "return " ^ (match (snd se) with
+                                  Unit_t -> ""
+                                | _      -> c_texpr se) ^ ";"
     | SMutdecl smv         -> c_type smv.smv_type ^ " " ^
                                 smv.smv_name ^ (match smv.smv_init with
                                     SNoexpr, _ -> ""
