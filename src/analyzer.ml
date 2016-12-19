@@ -385,33 +385,34 @@ let check_binop (te1 : t_expr) (te2 : t_expr)
             | _ -> raise (Failure ("Only boolean expressions are allowed for " ^
                      str_binop op)))
       | Assign ->
-          (match e1 with
-              SId s | SAccess ((SId s, _), _) ->
-                (if is_immu s env.env_vtable then
-                  raise (Failure ("Reassignment to a value " ^ s))
-                else
-                  (if (is_mut s env.env_mvtable) then
-                    match t1 with
-                        Actor_t _ ->
-                          raise (Failure "Actors cannot be reassigned")
-                      | Pool_t _  ->
-                          raise (Failure "Pools cannot be reassigned")
-                      | Message_t _->
-                          raise (Failure "Messages cannot be reassigned")
-                      | Func_t (_, _) ->
-                          raise (Failure "Functions cannot be reassigned")
-                      | _ ->
-                        if types_equal t1 t2 then
-                          (SBinop(te1, op, te2), t1)
-                        else
-                          raise (Failure ("Assignment to incompatible " ^
-                                 "types: " ^ str_types t2 ^ " cannot be " ^
-                                   "assigned to " ^ str_types t1))
-                  else
-                    raise (Failure ("Identifier not found: " ^ s))))
-            | SAccess _ -> (SBinop (te1, op, te2), t2)
+          let (s, lhst) = (match e1 with
+              SId s -> (s, t1)
+            | SAccess ((SId s, at), _) -> (s, at)
             | _ -> raise (Failure ("Cannot assign " ^ str_types t1 ^  " as " ^
-                     str_types t2)))
+                     str_types t2))
+            ) in
+          if (is_mut s env.env_mvtable) then
+            (match t1 with
+                Actor_t _ ->
+                  raise (Failure "Actors cannot be reassigned")
+              | Pool_t _  ->
+                  raise (Failure "Pools cannot be reassigned")
+              | Message_t _->
+                  raise (Failure "Messages cannot be reassigned")
+              | Func_t (_, _) ->
+                  raise (Failure "Functions cannot be reassigned")
+              | _ ->
+                if types_equal t1 t2 then
+                  (SBinop(te1, op, te2), lhst)
+                else
+                  raise (Failure ("Assignment to incompatible " ^
+                         "types: " ^ str_types t2 ^ " cannot be " ^
+                           "assigned to " ^ str_types t1))
+            )
+          else if is_immu s env.env_vtable then
+            raise (Failure ("Reassignment to a value " ^ s))
+          else
+            raise (Failure ("Identifier not found: " ^ s))
 
 let check_uop (te : t_expr) (op : u_op) =
   let (_, t) = te in match op with
