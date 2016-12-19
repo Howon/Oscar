@@ -7,16 +7,18 @@ class Pong;
 
 class Ping : public Actor {
     Actor* pong;
-    queue<StartMessage> startQueue;
-    queue<PongMessage> pongQueue;
+    queue<StartMessage *> startQueue;
+    queue<PongMessage *> pongQueue;
 
     int currCount;
     int maxTurns;
 
+    void die() { this->tFinished = true; }
+
     void consume() {
         unique_lock<mutex> lck(mx);
 
-        while (true) {
+        while (!this->tFinished) {
             while (startQueue.empty() && pongQueue.empty()) {
                 // finished running, terminate thread
                 if (tFinished)
@@ -30,21 +32,11 @@ class Ping : public Actor {
             if (!startQueue.empty()) {
                 auto msg = startQueue.front();
                 startQueue.pop();
-
-                // send a response to sender
-                if (auto response = respond(msg)) {
-                    pong->receive(response);
-                    delete response;
-                }
+                respond(msg);
             } else if (!pongQueue.empty()) {
                 auto msg = pongQueue.front();
                 pongQueue.pop();
-
-                // send a response to sender
-                if (auto response = respond(msg)) {
-                    pong->receive(response);
-                    delete response;
-                }
+                respond(msg);
             }
         }
     }
@@ -54,21 +46,21 @@ class Ping : public Actor {
         printf("ping\n");
     }
 
-    Message* respond(StartMessage msg) {
+    void respond(StartMessage *msg) {
         incrementAndPrint();
-        return new PingMessage();
+        pong->receive(new PingMessage(this));
     }
 
-    Message* respond(PongMessage msg) {
+    void respond(PongMessage *msg) {
         incrementAndPrint();
 
         if (currCount > maxTurns) {
             printf("ping stopped\n");
-            tFinished = true;
-            return new StopMessage();
+            msg->sender->receive(new StopMessage(this));
+            die();
         }
 
-        return new PingMessage();
+        msg->sender->receive(new PingMessage(this));
     }
 
 public:
@@ -87,10 +79,10 @@ public:
     void receive(Message* const msg) {
         if (StartMessage *pm = dynamic_cast<StartMessage*>(msg)) {
             unique_lock<mutex> lck(mx);
-            startQueue.push(*pm);
+            startQueue.push(pm);
         } else if (PongMessage* pm = dynamic_cast<PongMessage *>(msg)) {
             unique_lock<mutex> lck(mx);
-            pongQueue.push(*pm);
+            pongQueue.push(pm);
         }
 
         cv.notify_one();
@@ -99,14 +91,15 @@ public:
 
 
 class Pong : public Actor {
-    Actor* ping;
-    queue<StopMessage> stopQueue;
-    queue<PingMessage> pingQueue;
+    queue<StopMessage *> stopQueue;
+    queue<PingMessage *> pingQueue;
+
+    void die() { this->tFinished = true; }
 
     void consume() {
         unique_lock<mutex> lck(mx);
 
-        while (true) {
+        while (!this->tFinished) {
             while (stopQueue.empty() && pingQueue.empty()) {
                 // finished running, terminate thread
                 if (tFinished)
@@ -120,41 +113,26 @@ class Pong : public Actor {
             if (!stopQueue.empty()) {
                 auto msg = stopQueue.front();
                 stopQueue.pop();
-
-                // send a response to sender
-                if (auto response = respond(msg)) {
-                    ping->receive(response);
-                    delete response;
-                }
+                respond(msg);
             } else if (!pingQueue.empty()) {
                 auto msg = pingQueue.front();
                 pingQueue.pop();
-
-                // send a response to sender
-                if (auto response = respond(msg)) {
-                    ping->receive(response);
-                    delete response;
-                }
+                respond(msg);
             }
         }
     }
 
-    Message* respond(StopMessage msg) {
+    void respond(StopMessage *msg) {
         printf("pong stopped\n\n");
-        tFinished = true;
-        return NULL;
+        die();
     }
 
-    Message* respond(PingMessage msg) {
+    void respond(PingMessage *msg) {
         printf("  pong\n");
-        return new PongMessage();
+        msg->sender->receive(new PongMessage(this));
     }
 
 public:
-    void setPing(Actor* ping) {
-        this->ping = ping;
-    }
-
     Pong() {
         t = thread([=] { consume(); });
     }
@@ -166,11 +144,11 @@ public:
     void receive(Message* const msg) {
         if (PingMessage* pm = dynamic_cast<PingMessage *>(msg)) {
             unique_lock<mutex> lck(mx);
-            pingQueue.push(*pm);
+            pingQueue.push(pm);
         }
         else if (StopMessage *pm = dynamic_cast<StopMessage*>(msg)) {
             unique_lock<mutex> lck(mx);
-            stopQueue.push(*pm);
+            stopQueue.push(pm);
         }
 
         cv.notify_one();

@@ -3,7 +3,7 @@ open Core.Std
 open Sast
 open Lexing
 open Printf
-open Transpile
+open Codegen
 open Optimizer
 open Sys
 
@@ -86,7 +86,7 @@ let _ =
               Analyzer.check_program program stdlib
             with
               Failure f ->
-                Printf.eprintf "%s" ("Error: " ^ f);
+                Printf.eprintf "%s\n" ("Error: " ^ f);
                 flush stderr;
                 exit 1;
           in
@@ -95,7 +95,7 @@ let _ =
               Optimizer.optimize_program sprogram
             with
               Failure f ->
-                Printf.eprintf "%s" ("Error: " ^ f);
+                Printf.eprintf "%s\n" ("Error: " ^ f);
                 flush stderr;
                 exit 2;
           else
@@ -105,7 +105,7 @@ let _ =
             Ast   -> ()
           | Sast  -> print_endline (Sast.str_sprogram soprogram)
           | _ ->
-              let program = Transpile.c_program soprogram in
+              let program = Codegen.c_program soprogram in
               let file_stub = get_file_stub oscar in
               let cpp_file = file_stub ^ ".cpp" in
               let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
