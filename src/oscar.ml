@@ -3,7 +3,7 @@ open Core.Std
 open Sast
 open Lexing
 open Printf
-open Transpile
+open Codegen
 open Optimizer
 open Sys
 
@@ -105,7 +105,7 @@ let _ =
             Ast   -> ()
           | Sast  -> print_endline (Sast.str_sprogram soprogram)
           | _ ->
-              let program = Transpile.c_program soprogram in
+              let program = Codegen.c_program soprogram in
               let file_stub = get_file_stub oscar in
               let cpp_file = file_stub ^ ".cpp" in
               let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
