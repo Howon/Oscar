@@ -1,0 +1,4 @@
+def main() => unit = {
+	mut int x = 17;
+	Println(x);
+}

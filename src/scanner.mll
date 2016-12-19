@@ -1,5 +1,6 @@
 {
   open Parser
+  exception Scan_error of string
 
   let make_char c =
     let ec = Char.escaped c in
@@ -8,7 +9,7 @@
       | _ -> ec) in
     String.get s 0
 
-  let fail c = raise (Failure ("scanning failed on char " ^ (Char.escaped c)))
+  let fail c = raise (Scan_error (Char.escaped c))
 }
 
 let digit = ['0' - '9']

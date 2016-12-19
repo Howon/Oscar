@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Path to the LLVM interpreter
-LLI="lli"
 CXXCOMPILE="clang++ -Wall -pedantic -fsanitize=address -std=c++1y -O2 -I/usr/local/include/ -L/usr/local/lib/"
 # Colors
 RED='\033[0;31m'
@@ -88,51 +87,42 @@ test_compiler() {
     filename=$(basename "$oscar_test_file")
     filename="${filename%.*}"
 
-    cppfile=${filename}.cpp
-    outfile=${filename}.out
-    errorout=${filename}_error_output
-    testout=${filename}_test_output
+    echo "==================================" >> session_file
+    echo "Testing Compiler: $filename" >> session_file
 
-    # compile program to test.ll, put any errors in the session
-    $oscar_compile $oscar_test_file 1> $cppfile 2> $errorout
-    $CXXCOMPILE -o $outfile $cppfile
 
-    echo "" > $testout
+    echo -e "Oscar Compiler Messages:" >> session_file
+    $oscar_compile $oscar_test_file 2> oscar_error_output
+
+    echo "" > oscar_test_output
 
     # if we had a error, then diff errors. Otherwise, run LLVM and diff outputs
-    if [ -s $errorout ]; then
-      echo "==================================" >> session_file
-      echo "Testing Compiler: $filename" >> session_file
-      echo -e "Oscar Compiler Messages:" >> session_file
-
-      echo "" >> $errorout
-      cat $errorout >> session_file
+    if [ -s oscar_error_output ]; then
+      echo "" >> oscar_error_output
+      cat oscar_error_output >> session_file
       echo "" >> session_file
 
        # diff errors
-      diff $errorout "$test_path"$filename$compiler_extension >> /dev/null
+      diff oscar_error_output "$test_path"$filename$compiler_extension >> /dev/null
       show_result $1 $filename $compiler_extension $test_extension
 
     else
-
-      echo "==================================" >> session_file
-      echo "Testing Compiler: $filename" >> session_file
-      echo -e "Oscar Compiler Messages:" >> session_file
-
-      # run the executable and save the output and errors
-      echo -e "LLVM Messages:" >> session_file
-      ./$outfile 1> $testout 2>> session_file
+      
+      # run clang on the file and save the output and errors
+      echo -e "Clang Messages:" >> session_file
+      $CXXCOMPILE $test_path$filename$cpp_extension 2>> session_file
+      ./a.out 1> oscar_test_output 2>> session_file
+      rm $test_path$filename$cpp_extension
+      if [ -f $test_path$filename ]; then
+        rm $test_path$filename
+      fi
       echo "" >> session_file
 
       # diff outputs
-      diff $testout "$test_path"$filename$compiler_extension >> /dev/null
+      diff oscar_test_output "$test_path"$filename$compiler_extension >> /dev/null
       show_result $1 $filename $compiler_extension $test_extension
 
-      rm $outfile
-
     fi
-
-    rm $cppfile $testout $errorout
 
     done
 
@@ -159,8 +149,9 @@ echo "" > $logFile
 echo -e "\n\n${CYAN}----------Testing Valid----------${NC}\n"
 test_path=./test/oscar/compiler/
 test_extension=.oscar
+cpp_extension=.cpp
 compiler_extension=$test_extension.out
-test_compiler $test_path $compiler_extension $test_extension
+test_compiler $test_path $compiler_extension $test_extension $cpp_extension
 
 echo -e "\n\n${CYAN}----------Testing Errors----------${NC}\n"
 # testing errors
@@ -177,9 +168,10 @@ echo -e "Tests Failed: $case_failed $"
 
 #Clean up temp files
 rm -f oscar_test_output;
-rm -f oscar_error_output
+rm -f oscar_error_output;
 rm -f session_file;
 rm -f temp.ll;
+rm a.out;
 
 make clean
 cd test
