@@ -20,9 +20,10 @@ public:
     std::thread t;
     condition_variable cv;
     mutex mx;
+    bool tFinished;
 
 public:
-    Actor() { }
+    Actor() : tFinished(false) { }
 
     ~Actor() { }
 
@@ -39,6 +40,7 @@ class Ping : public Actor {
 public:
     // Pong ref
     Actor* pong;
+
     void setPong(Actor* pong) {
         this->pong = pong;
     }
@@ -60,8 +62,14 @@ public:
         unique_lock<mutex> lck(mx);
 
         while (true) {
-            while (startQueue.empty() && pongQueue.empty())
+            while (startQueue.empty() && pongQueue.empty()) {
+                // finished running, terminate thread
+                if (tFinished)
+                    return;
+
+                // else, wait for messages to arrive
                 cv.wait(lck);
+            }
 
             // process current message
             if (!startQueue.empty()) {
@@ -96,9 +104,7 @@ public:
 
         if (count > 99) {
             printf("ping stopped\n");
-            // todo: stop itself
-//            context.stop(self)
-
+            tFinished = true;
             return new StopMessage();
         }
 
@@ -125,6 +131,7 @@ class Pong : public Actor {
 public:
     // Pong ref
     Actor* ping;
+
     void setPing(Actor* ping) {
         this->ping = ping;
     }
@@ -145,8 +152,14 @@ public:
         unique_lock<mutex> lck(mx);
 
         while (true) {
-            while (stopQueue.empty() && pingQueue.empty())
+            while (stopQueue.empty() && pingQueue.empty()) {
+                // finished running, terminate thread
+                if (tFinished)
+                    return;
+
+                // else, wait for messages to arrive
                 cv.wait(lck);
+            }
 
             // process current message
             if (!stopQueue.empty()) {
@@ -169,7 +182,7 @@ public:
 
     Message* respond(StopMessage msg) {
         printf("pong stopped\n\n");
-        // todo: stop itself
+        tFinished = true;
         return NULL;
     }
 
