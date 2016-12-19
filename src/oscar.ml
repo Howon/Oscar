@@ -86,7 +86,7 @@ let _ =
               Analyzer.check_program program stdlib
             with
               Failure f ->
-                Printf.eprintf "%s" ("Error: " ^ f);
+                Printf.eprintf "%s\n" ("Error: " ^ f);
                 flush stderr;
                 exit 1;
           in
@@ -95,7 +95,7 @@ let _ =
               Optimizer.optimize_program sprogram
             with
               Failure f ->
-                Printf.eprintf "%s" ("Error: " ^ f);
+                Printf.eprintf "%s\n" ("Error: " ^ f);
                 flush stderr;
                 exit 2;
           else
