@@ -26,19 +26,21 @@ int main() {
     Ping ping;
     Pong pong;
 
+    ping.setPong(&pong);
+    pong.setPing(&ping);
+
     StartMessage startMessage;
-    startMessage.setSender(&pong);
-
-    PongMessage pongMessage;
-    pongMessage.setSender(&pong);
-
-    PingMessage pingMessage;
-    pingMessage.setSender(&ping);
-
-    StopMessage stopMessage;
-    stopMessage.setSender(&ping);
-
     ping.receive(&startMessage);
+
+
+//    PongMessage pongMessage;
+//    pongMessage.setSender(&pong);
+
+//    PingMessage pingMessage;
+//    pingMessage.setSender(&ping);
+
+//    StopMessage stopMessage;
+//    stopMessage.setSender(&ping);
 
     return 0;
 }

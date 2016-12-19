@@ -17,97 +17,18 @@ using namespace std;
 
 class Actor {
 public:
-    // todo: hacky shit
-    queue<string> messageQueue;
-//    queue<HelloMessage> helloQueue;
-//    queue<ByeMessage> byeQueue;
+//    queue<string> messageQueue;
 
     std::thread t;
     condition_variable cv;
     mutex mx;
 
-//    void consume() {
-//        unique_lock<mutex> lck(mx);
-//
-//        while (true) {
-//            while (messageQueue.empty())
-//                cv.wait(lck);
-//
-//            // process current message
-//            const string &msgName = messageQueue.front();
-//            messageQueue.pop();
-//
-//            if (msgName == "hello") {
-//                HelloMessage msg = helloQueue.front();
-//                helloQueue.pop();
-//
-//                // send a response to sender
-//                HelloMessage response = respond(msg);
-//                if (msg.sender && Message(response) != EMPTY_MESSAGE)
-//                    msg.sender->receive(response);
-//            } else if (msgName == "bye") {
-//                auto msg = byeQueue.front();
-//                byeQueue.pop();
-//
-//                // send a response to sender
-//                auto response = respond(msg);
-//                if (msg.sender && Message(response) != EMPTY_MESSAGE)
-//                    msg.sender->receive(response);
-//            }
-//        }
-//    }
-//
-//
-//    HelloMessage respond(HelloMessage msg) {
-//        cout << msg.name << endl;
-//        return msg;
-//    }
-//
-//    ByeMessage respond(ByeMessage msg) {
-//        cout << msg.name << endl;
-//        return msg;
-////        return ByeMessage(EMPTY_MESSAGE);
-//    }
-
 public:
-    Actor() {
-//        t = thread([=] { consume(); });
-    }
+    Actor() { }
 
-    ~Actor() {
-//        t.join();
-    }
-
+    ~Actor() { }
 
     virtual void receive(Message* msg) = 0;
-//    virtual void receive(StartMessage msg) = 0;
-//    virtual void receive(StartMessage msg) = 0;
-//    virtual void receive(PongMessage msg) = 0;
-//    virtual void receive(StopMessage msg) = 0;
-//    virtual void receive(PingMessage msg) = 0;
-
-//    void receive(const HelloMessage &msg) {
-//        {
-//            unique_lock<mutex> lck(mx);
-//            messageQueue.push(msg.name);
-//            helloQueue.push(msg);
-//        }
-//
-//        //if (q.size() == 1)
-//        cv.notify_one();
-//    }
-//
-//    void receive(const ByeMessage &msg) {
-//        {
-//            unique_lock<mutex> lck(mx);
-//            messageQueue.push(msg.name);
-//            byeQueue.push(msg);
-//        }
-//
-//        //if (q.size() == 1)
-//        cv.notify_one();
-//    }
-
 
     // todo: implement
 //    void send(int actorAddr, const Message& msg) { }
@@ -118,6 +39,11 @@ class Pong;
 
 class Ping : public Actor {
 public:
+    // Pong ref
+    Actor* pong;
+    void setPong(Actor* pong) {
+        this->pong = pong;
+    }
 
     int count;
     Ping() : count(0)
@@ -129,6 +55,7 @@ public:
         t.join();
     }
 
+    queue<string> messageQueue;
     queue<StartMessage> startQueue;
     queue<PongMessage> pongQueue;
 
@@ -136,30 +63,60 @@ public:
         unique_lock<mutex> lck(mx);
 
         while (true) {
-            while (messageQueue.empty())
+//            while (messageQueue.empty()) {
+//                cout << "Ping: waiting on empty; p: " << t.get_id() << " q: " << &messageQueue << endl;
+//                cv.wait(lck);
+//            }
+//
+//            // process current message
+//            const string &msgName = messageQueue.front();
+////            messageQueue.pop();
+//
+//            if (msgName == "start") {
+//                auto msg = startQueue.front();
+//                startQueue.pop();
+//
+//                // send a response to sender
+//                auto response = respond(msg);
+//                if (response != NULL)
+//                    pong->receive(response);
+//            } else if (msgName == "pong") {
+//                auto msg = pongQueue.front();
+//                pongQueue.pop();
+//
+//                // send a response to sender
+//                auto response = respond(msg);
+//                if (response != NULL)
+//                    pong->receive(response);
+//            }
+//
+//            messageQueue.pop();
+
+            while (startQueue.empty() && pongQueue.empty()) {
+//                cout << "Ping: waiting on empty; p: " << t.get_id() << " q: " << &messageQueue << endl;
                 cv.wait(lck);
+            }
 
             // process current message
             const string &msgName = messageQueue.front();
-            messageQueue.pop();
+//            messageQueue.pop();
 
-            if (msgName == "start") {
+            if (!startQueue.empty()) {
                 auto msg = startQueue.front();
                 startQueue.pop();
 
                 // send a response to sender
-//                auto response = respond(msg);
-                Message response = respond(msg);
-                if (response != EMPTY_MESSAGE)
-                    msg.sender->receive(&response);
-            } else if (msgName == "pong") {
+                auto response = respond(msg);
+                if (response != NULL)
+                    pong->receive(response);
+            } else if (!pongQueue.empty()) {
                 auto msg = pongQueue.front();
                 pongQueue.pop();
 
                 // send a response to sender
                 auto response = respond(msg);
-                if (response != EMPTY_MESSAGE)
-                    msg.sender->receive(&response);
+                if (response != NULL)
+                    pong->receive(response);
             }
         }
     }
@@ -169,32 +126,24 @@ public:
         printf("ping\n");
     }
 
-    Message respond(StartMessage msg) {
+    Message* respond(StartMessage msg) {
         incrementAndPrint();
-
-        PingMessage pingMessage;
-        pingMessage.setSender(this);
-        return pingMessage;
-//        return PingMessage();
+        return new PingMessage();
     }
 
-    Message respond(PongMessage msg) {
+    Message* respond(PongMessage msg) {
         incrementAndPrint();
 
         if (count > 99) {
             printf("ping stopped\n");
+            // todo: stop itself
 //            context.stop(self)
 
-            StopMessage stopMessage;
-            stopMessage.setSender(this);
-            return stopMessage;
-//            return StopMessage();
+            return new StopMessage();
         }
 
-        PingMessage pingMessage;
-        pingMessage.setSender(this);
-        return pingMessage;
-//        return PingMessage();
+        // todo: don't leak
+        return new PingMessage();
     }
 
 
@@ -204,23 +153,32 @@ public:
                 unique_lock<mutex> lck(mx);
                 messageQueue.push(pm->name);
                 startQueue.push(*pm);
+                cv.notify_all();
             }
         } else if (PongMessage* pm = dynamic_cast<PongMessage *>(msg)) {
             {
                 unique_lock<mutex> lck(mx);
                 messageQueue.push(msg->name);
                 pongQueue.push(*pm);
+                cv.notify_all();
             }
         }
 
         //if (q.size() == 1)
-        cv.notify_one();
+        //        cv.notify_one();
+//        cv.notify_all();
     }
 };
 
 
 class Pong : public Actor {
 public:
+    // Pong ref
+    Actor* ping;
+    void setPing(Actor* ping) {
+        this->ping = ping;
+    }
+
     Pong()
     {
         t = thread([=] { consume(); });
@@ -230,6 +188,7 @@ public:
         t.join();
     }
 
+    queue<string> messageQueue;
     queue<StopMessage> stopQueue;
     queue<PingMessage> pingQueue;
 
@@ -237,64 +196,68 @@ public:
         unique_lock<mutex> lck(mx);
 
         while (true) {
-            while (messageQueue.empty())
+            while (stopQueue.empty() && pingQueue.empty()) {
+//                cout << "Ping: waiting on empty; p: " << t.get_id() << " q: " << &messageQueue << endl;
                 cv.wait(lck);
+            }
 
             // process current message
             const string &msgName = messageQueue.front();
-            messageQueue.pop();
+//            messageQueue.pop();
 
-            if (msgName == "stop") {
+            if (!stopQueue.empty()) {
                 auto msg = stopQueue.front();
                 stopQueue.pop();
 
                 // send a response to sender
                 auto response = respond(msg);
-                if (response != EMPTY_MESSAGE)
-                    msg.sender->receive(&response);
-            } else if (msgName == "pong") {
+                if (response != NULL)
+                    ping->receive(response);
+            } else if (!pingQueue.empty()) {
                 auto msg = pingQueue.front();
                 pingQueue.pop();
 
                 // send a response to sender
                 auto response = respond(msg);
-                if (response != EMPTY_MESSAGE)
-                    msg.sender->receive(&response);
+                if (response != NULL)
+                    ping->receive(response);
             }
         }
     }
 
-    Message respond(StopMessage msg) {
+    Message* respond(StopMessage msg) {
         printf("pong stopped\n\n");
-        return EMPTY_MESSAGE;
+        // todo: stop itself
+//        return EMPTY_MESSAGE;
+        return NULL;
     }
 
-    Message respond(PingMessage msg) {
+    Message* respond(PingMessage msg) {
         printf("  pong\n");
-
-        PongMessage pongMessage;
-        pongMessage.setSender(this);
-        return pongMessage;
-//        return PongMessage();
+        return new PongMessage();
     }
 
     void receive(Message* msg) {
-        if (StopMessage *pm = dynamic_cast<StopMessage*>(msg)) {
-            {
-                unique_lock<mutex> lck(mx);
-                messageQueue.push(pm->name);
-                stopQueue.push(*pm);
-            }
-        } else if (PingMessage* pm = dynamic_cast<PingMessage *>(msg)) {
+        if (PingMessage* pm = dynamic_cast<PingMessage *>(msg)) {
             {
                 unique_lock<mutex> lck(mx);
                 messageQueue.push(msg->name);
                 pingQueue.push(*pm);
+                cv.notify_all();
+            }
+        }
+        else if (StopMessage *pm = dynamic_cast<StopMessage*>(msg)) {
+            {
+                unique_lock<mutex> lck(mx);
+                messageQueue.push(pm->name);
+                stopQueue.push(*pm);
+                cv.notify_all();
             }
         }
 
         //if (q.size() == 1)
-        cv.notify_one();
+//        cv.notify_one();
+//        cv.notify_all();
     }
 };
 
