@@ -1,8 +1,10 @@
 #ifndef __ACTOR__
 #define __ACTOR__
 
+#include "iostream"
 #include <cstdio>
 #include <queue>
+#include <string>
 #include <unordered_map>
 
 #include <condition_variable>
@@ -10,18 +12,17 @@
 #include <thread>
 
 #include "message.hpp"
+
 using namespace std;
 
-// todo: need to have variable arg list
-typedef void (*fxnPtr)(int, int);
-
-typedef unordered_map<string, fxnPtr> patFxnPtr;
-
 class Actor {
-    patFxnPtr patterns;
-    queue<Message> q;
+public:
+    // todo: hacky shit
+    queue<string> messageQueue;
+    queue<HelloMessage> helloQueue;
+    queue<ByeMessage> byeQueue;
 
-    // synchronization stuff
+    // synchro shit
     std::thread t;
     condition_variable cv;
     mutex mx;
@@ -29,42 +30,86 @@ class Actor {
     void consume() {
         unique_lock<mutex> lck(mx);
 
-        while (true) {
-            while (q.empty())
-                cv.wait(lck);
+        while (messageQueue.empty())
+            cv.wait(lck);
 
-            while (!q.empty()) {
-                // process current message
-                const Message &msg = q.front();
-                auto itr = patterns.find(msg.name);
-                // matched pattern
-                if (itr != patterns.end())
-                    (*itr->second)(msg.formals[0].first, msg.formals[0].second);
+        while (!messageQueue.empty()) {
+            // process current message
+            const string& msgName = messageQueue.front();
+            messageQueue.pop();
 
-                // remove message from queue
-                q.pop();
+            if (msgName == "hello") {
+                if (helloQueue.empty())
+                    continue;
+
+                HelloMessage msg = helloQueue.front();
+                helloQueue.pop();
+
+                // send a response to sender
+                HelloMessage response = respond(msg);
+//                if (msg.sender && response != EMPTY_MESSAGE)
+                if (msg.sender)
+                    msg.sender->receive(response);
+            } else if (msgName == "bye") {
+                if (byeQueue.empty())
+                    continue;
+
+                auto msg = byeQueue.front();
+                byeQueue.pop();
+
+                // send a response to sender
+                auto response = respond(msg);
+//                if (msg.sender && response != EMPTY_MESSAGE)
+                if (msg.sender)
+                    msg.sender->receive(response);
             }
         }
     }
 
+    HelloMessage respond(HelloMessage msg) {
+        cout << msg.name << endl;
+        return msg;
+    }
+
+    ByeMessage respond(ByeMessage msg) {
+        cout << msg.name << endl;
+//        return EMPTY_MESSAGE;
+        return msg;
+    }
+
 public:
-    Actor(const unordered_map<string, fxnPtr>& p) : patterns(p) {
-        t = std::thread([=] { consume(); });
+    Actor() {
+        t = thread([=] { consume(); });
     }
 
     ~Actor() {
         t.join();
     }
 
-    void receive(const Message& msg) {
+    void receive(const HelloMessage& msg) {
         unique_lock<mutex> lck(mx);
-        q.push(msg);
+
+        messageQueue.push(msg.name);
+        helloQueue.push(msg);
+        //if (q.size() == 1)
         cv.notify_one();
     }
+
+    void receive(const ByeMessage& msg) {
+        unique_lock<mutex> lck(mx);
+
+        messageQueue.push(msg.name);
+        byeQueue.push(msg);
+        //if (q.size() == 1)
+        cv.notify_one();
+    }
+
 
     // todo: implement
 //    void send(int actorAddr, const Message& msg) { }
 //    void broadcast(int poolAddr, const Message& msg) { }
 };
+
+//using umST = unordered_map<string, fxnPtr<T>>;
 
 #endif  // __ACTOR__
