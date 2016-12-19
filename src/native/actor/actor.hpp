@@ -76,15 +76,19 @@ public:
                 auto msg = startQueue.front();  startQueue.pop();
 
                 // send a response to sender
-                if (auto response = respond(msg))
+                if (auto response = respond(msg)) {
                     pong->receive(response);
+                    delete response;
+                }
             } else if (!pongQueue.empty()) {
                 auto msg = pongQueue.front();
                 pongQueue.pop();
 
                 // send a response to sender
-                if (auto response = respond(msg))
+                if (auto response = respond(msg)) {
                     pong->receive(response);
+                    delete response;
+                }
             }
         }
     }
@@ -167,15 +171,19 @@ public:
                 stopQueue.pop();
 
                 // send a response to sender
-                if (auto response = respond(msg))
+                if (auto response = respond(msg)) {
                     ping->receive(response);
+                    delete response;
+                }
             } else if (!pingQueue.empty()) {
                 auto msg = pingQueue.front();
                 pingQueue.pop();
 
                 // send a response to sender
-                if (auto response = respond(msg))
+                if (auto response = respond(msg)) {
                     ping->receive(response);
+                    delete response;
+                }
             }
         }
     }
