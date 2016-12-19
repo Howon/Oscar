@@ -25,6 +25,12 @@ public:
             : name(name), type(type), sender(sender)
     { }
 
+    virtual ~Message() {}
+
+    void setSender(Actor* sender) {
+        this->sender = sender;
+    }
+
     bool operator==(const Message& rhs) const {
         if (this == &rhs)
             return true;
@@ -49,7 +55,7 @@ public:
 //    tuple<string> get() { return make_tuple(s); }
 //};
 
-static Message EMPTY_MESSAGE;
+static Message EMPTY_MESSAGE = Message();
 
 
 class HelloMessage : public Message {
@@ -75,6 +81,34 @@ public:
     }
 
     tuple<string> get() { return make_tuple(s); }
+};
+
+
+// Ping messages
+class StartMessage : public Message {
+public:
+    StartMessage() : Message("start", Some) { }
+    tuple<int> get() { return make_tuple(0); }
+};
+
+class PongMessage : public Message {
+public:
+    PongMessage() : Message("pong", Some) { }
+    tuple<int> get() { return make_tuple(NULL); }
+};
+
+
+// Pong messages
+class PingMessage : public Message {
+public:
+    PingMessage() : Message("ping", Some) { }
+    tuple<int> get() { return make_tuple(NULL); }
+};
+
+class StopMessage : public Message {
+public:
+    StopMessage() : Message("stop", Some) { }
+    tuple<int> get() { return make_tuple(NULL); }
 };
 
 

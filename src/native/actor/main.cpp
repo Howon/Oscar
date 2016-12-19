@@ -1,28 +1,44 @@
 #include "actor.hpp"
 using namespace std;
 
-#include <unistd.h>
-
 // todo: keep a global map of <address, Actor> for communication
 
 
 int main() {
-    Actor a;
+//    Actor a;
+//
+//    Actor b;
+//
+//    HelloMessage hm(1, "hello");
+//    ByeMessage bm("bye");
+//
+//    a.receive(hm);
+//    sleep(2);
+//    a.receive(bm);
+//
+//    sleep(2);
+//
+//    a.receive(hm);
+//    sleep(2);
+//    a.receive(bm);
 
-    Actor b;
 
-    HelloMessage hm(1, "hello");
-    ByeMessage bm("bye");
+    Ping ping;
+    Pong pong;
 
-    a.receive(hm);
-    sleep(2);
-    a.receive(bm);
+    StartMessage startMessage;
+    startMessage.setSender(&pong);
 
-    sleep(2);
+    PongMessage pongMessage;
+    pongMessage.setSender(&pong);
 
-    a.receive(hm);
-    sleep(2);
-    a.receive(bm);
+    PingMessage pingMessage;
+    pingMessage.setSender(&ping);
+
+    StopMessage stopMessage;
+    stopMessage.setSender(&ping);
+
+    ping.receive(&startMessage);
 
     return 0;
 }
