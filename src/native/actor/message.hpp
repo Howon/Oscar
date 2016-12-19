@@ -26,26 +26,33 @@ public:
     { }
 
     bool operator==(const Message& rhs) const {
+        if (this == &rhs)
+            return true;
+
         return (this->type == rhs.type &&
                 this->name == rhs.name);
+    }
+
+    bool operator!=(const Message& rhs) const {
+        return !(*this == rhs);
     }
 };
 
 
-class EmptyMessage : public Message<string> {
-    string s;
+//class EmptyMessage : public Message {
+//    string s;
+//
+//public:
+//    EmptyMessage() : s("")
+//    { }
+//
+//    tuple<string> get() { return make_tuple(s); }
+//};
 
-public:
-    EmptyMessage() : s("")
-    { }
-
-    tuple<string> get() { return make_tuple(s); }
-};
-
-static EmptyMessage EMPTY_MESSAGE = EmptyMessage();
+static Message EMPTY_MESSAGE;
 
 
-class HelloMessage : public Message<int, string> {
+class HelloMessage : public Message {
     int i;
     string s;
 
@@ -59,7 +66,7 @@ public:
 };
 
 
-class ByeMessage : public Message<string> {
+class ByeMessage : public Message {
     string s;
 
 public:

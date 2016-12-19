@@ -22,7 +22,6 @@ public:
     queue<HelloMessage> helloQueue;
     queue<ByeMessage> byeQueue;
 
-    // synchro shit
     std::thread t;
     condition_variable cv;
     mutex mx;
@@ -30,37 +29,29 @@ public:
     void consume() {
         unique_lock<mutex> lck(mx);
 
-        while (messageQueue.empty())
-            cv.wait(lck);
+        while (true) {
+            while (messageQueue.empty())
+                cv.wait(lck);
 
-        while (!messageQueue.empty()) {
             // process current message
-            const string& msgName = messageQueue.front();
+            const string &msgName = messageQueue.front();
             messageQueue.pop();
 
             if (msgName == "hello") {
-                if (helloQueue.empty())
-                    continue;
-
                 HelloMessage msg = helloQueue.front();
                 helloQueue.pop();
 
                 // send a response to sender
                 HelloMessage response = respond(msg);
-//                if (msg.sender && response != EMPTY_MESSAGE)
-                if (msg.sender)
+                if (msg.sender && Message(response) != EMPTY_MESSAGE)
                     msg.sender->receive(response);
             } else if (msgName == "bye") {
-                if (byeQueue.empty())
-                    continue;
-
                 auto msg = byeQueue.front();
                 byeQueue.pop();
 
                 // send a response to sender
                 auto response = respond(msg);
-//                if (msg.sender && response != EMPTY_MESSAGE)
-                if (msg.sender)
+                if (msg.sender && Message(response) != EMPTY_MESSAGE)
                     msg.sender->receive(response);
             }
         }
@@ -73,8 +64,8 @@ public:
 
     ByeMessage respond(ByeMessage msg) {
         cout << msg.name << endl;
-//        return EMPTY_MESSAGE;
         return msg;
+//        return ByeMessage(EMPTY_MESSAGE);
     }
 
 public:
@@ -86,20 +77,24 @@ public:
         t.join();
     }
 
-    void receive(const HelloMessage& msg) {
-        unique_lock<mutex> lck(mx);
+    void receive(const HelloMessage &msg) {
+        {
+            unique_lock<mutex> lck(mx);
+            messageQueue.push(msg.name);
+            helloQueue.push(msg);
+        }
 
-        messageQueue.push(msg.name);
-        helloQueue.push(msg);
         //if (q.size() == 1)
         cv.notify_one();
     }
 
-    void receive(const ByeMessage& msg) {
-        unique_lock<mutex> lck(mx);
+    void receive(const ByeMessage &msg) {
+        {
+            unique_lock<mutex> lck(mx);
+            messageQueue.push(msg.name);
+            byeQueue.push(msg);
+        }
 
-        messageQueue.push(msg.name);
-        byeQueue.push(msg);
         //if (q.size() == 1)
         cv.notify_one();
     }
@@ -110,6 +105,5 @@ public:
 //    void broadcast(int poolAddr, const Message& msg) { }
 };
 
-//using umST = unordered_map<string, fxnPtr<T>>;
 
 #endif  // __ACTOR__
