@@ -73,7 +73,8 @@ public:
 
             // process current message
             if (!startQueue.empty()) {
-                auto msg = startQueue.front();  startQueue.pop();
+                auto msg = startQueue.front();
+                startQueue.pop();
 
                 // send a response to sender
                 if (auto response = respond(msg)) {
@@ -112,7 +113,6 @@ public:
             return new StopMessage();
         }
 
-        // todo: don't leak
         return new PingMessage();
     }
 
