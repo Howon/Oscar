@@ -802,6 +802,15 @@ let check_message_decl (mdecl : message) (env : scope) =
     } in (smdecl, upd_env_messages smdecl env))
 
 let check_actor_decl (adecl : actor) (env : scope) =
+  let check_receive (pat : pattern) (smsgs : smessage list) =
+    (try
+      let sm = List.find (fun m ->
+        let p_formal_ts = get_list_snd (pat.p_mformals) in
+        let m_formal_ts = get_list_snd m.sm_formals in
+        (pat.p_mid = m.sm_name) && check_args_t m_formal_ts p_formal_ts
+      ) smsgs in (Some sm)
+    with Not_found -> None) in
+(*
   let check_receive (sm : smessage) (patterns : pattern list) =
     let p_formals = List.map (fun p -> (p.p_mid, p.p_mformals)) patterns in
     (try
@@ -811,6 +820,7 @@ let check_actor_decl (adecl : actor) (env : scope) =
         (fst p = sm.sm_name) && check_args_t m_formal_ts p_formal_ts
       ) p_formals in true
     with Not_found -> false) in
+*)
 
   let check_patterns (receive : pattern list) (senv : scope) =
     List.map (fun p ->
@@ -847,36 +857,38 @@ let check_actor_decl (adecl : actor) (env : scope) =
         raise (Failure ("Duplicate pattern matching in receive in actor " ^
           a_name))
       else
-        let m_allowed = List.filter (fun sm ->
-          check_receive sm a_receive
-        ) env.messages in
-        if (List.length m_allowed) <> (List.length adecl.a_receive) then
-          raise (Failure ("Actor " ^ adecl.a_name ^ " attempts to receive " ^
-            "an undefined message"))
-        else
-          let nsvals =
-            spread_arg a_formals ([]) in
-          let nv_table = { vparent = Some env.env_vtable; svals = nsvals } in
-          let curr_scope = { env with
-            env_vtable  = nv_table;
-            in_actor    = true;
-            actor_init  = true
-          } in
-          let (checked_body, sa_env) = check_stmt a_body curr_scope in
-          let sareceive = check_patterns a_receive sa_env in
-          let new_sactor = {
-            sa_name    = a_name;
-            sa_formals = a_formals;
-            sa_body    = checked_body;
-            sa_receive = sareceive
-          } in
-          let new_actor_scope = {
-            a_actor = new_sactor;
-            a_scope = sa_env;
-            a_messages = m_allowed
-          } in
-          let nenv = { env with actors = new_actor_scope :: env.actors } in
-            (new_actor_scope, nenv))
+        let m_allowed = (List.fold_left
+          (fun acc p -> match (check_receive p env.messages) with
+              Some m  -> m::acc
+            | None    ->
+                raise (Failure ("Actor " ^ adecl.a_name ^
+                  "attempts to receive an undefined message " ^ p.p_mid))
+          ) [] a_receive
+        ) in
+
+        let nsvals =
+          spread_arg a_formals ([]) in
+        let nv_table = { vparent = Some env.env_vtable; svals = nsvals } in
+        let curr_scope = { env with
+          env_vtable  = nv_table;
+          in_actor    = true;
+          actor_init  = true
+        } in
+        let (checked_body, sa_env) = check_stmt a_body curr_scope in
+        let sareceive = check_patterns a_receive sa_env in
+        let new_sactor = {
+          sa_name    = a_name;
+          sa_formals = a_formals;
+          sa_body    = checked_body;
+          sa_receive = sareceive
+        } in
+        let new_actor_scope = {
+          a_actor = new_sactor;
+          a_scope = sa_env;
+          a_messages = m_allowed
+        } in
+        let nenv = { env with actors = new_actor_scope :: env.actors } in
+          (new_actor_scope, nenv))
 
 let check_program (p : program) (slib : program) =
   let (messages, actors, functions) = p
