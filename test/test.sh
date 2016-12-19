@@ -49,7 +49,7 @@ show_result() {
 
     echo "" >> session_file
     echo "Generated Output:" >> session_file
-    cat oscar_test_output  >> session_file
+    cat ${2}_test_output  >> session_file
     echo "" >> session_file
 
     ((case_failed++))
