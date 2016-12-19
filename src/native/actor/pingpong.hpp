@@ -13,10 +13,12 @@ class Ping : public Actor {
     int currCount;
     int maxTurns;
 
+    void die() { this->tFinished = true; }
+
     void consume() {
         unique_lock<mutex> lck(mx);
 
-        while (true) {
+        while (!this->tFinished) {
             while (startQueue.empty() && pongQueue.empty()) {
                 // finished running, terminate thread
                 if (tFinished)
@@ -54,9 +56,8 @@ class Ping : public Actor {
 
         if (currCount > maxTurns) {
             printf("ping stopped\n");
-            tFinished = true;
             msg->sender->receive(new StopMessage(this));
-            return;
+            die();
         }
 
         msg->sender->receive(new PingMessage(this));
@@ -93,10 +94,12 @@ class Pong : public Actor {
     queue<StopMessage *> stopQueue;
     queue<PingMessage *> pingQueue;
 
+    void die() { this->tFinished = true; }
+
     void consume() {
         unique_lock<mutex> lck(mx);
 
-        while (true) {
+        while (!this->tFinished) {
             while (stopQueue.empty() && pingQueue.empty()) {
                 // finished running, terminate thread
                 if (tFinished)
@@ -121,7 +124,7 @@ class Pong : public Actor {
 
     void respond(StopMessage *msg) {
         printf("pong stopped\n\n");
-        tFinished = true;
+        die();
     }
 
     void respond(PingMessage *msg) {
