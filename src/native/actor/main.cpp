@@ -1,4 +1,4 @@
-#include "actor.hpp"
+#include "pingpong.hpp"
 using namespace std;
 
 // todo: keep a global map of <address, Actor> for communication
