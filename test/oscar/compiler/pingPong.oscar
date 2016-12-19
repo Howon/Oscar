@@ -1,0 +1,57 @@
+message setMaxTurns(max: int)
+message startMsg()
+message stopMsg()
+message pingMsg()
+message pongMsg()
+
+actor Pong() {
+
+  receive = {
+    | pingMsg() => {
+        Println("  pong");
+        message<pongMsg>() |> sender;
+      }
+    | stopMsg() => {
+        Println("pong stopped");
+      }
+  }
+}
+
+actor Ping(pong: actor<Pong>) {
+  mut int count = 0;
+  mut int maxTurns = 5;
+
+  def incrementAndPrint() => unit = {
+    count = count + 1;
+    Println("ping");
+  }
+
+  receive = {
+    | setMaxTurns(max: int) => {
+        maxTurns = max;
+      }
+    | startMsg() => {
+        incrementAndPrint();
+        message<pingMsg>() |> pong;
+      }
+    | pongMsg() => {
+        incrementAndPrint();
+
+        if (count > maxTurns) {
+            Println("ping stopped");
+            message<stopMsg>() |> pong;
+        } else {
+            message<pingMsg>() |> pong;
+        }
+      }
+  }
+}
+
+def main() => unit = {
+  actor<Pong> pong = spawn actor<Pong>();
+  actor<Ping> ping = spawn actor<Ping>(pong);
+
+  message<setMaxTurns>(3) |> ping;
+
+  message<startMsg>() |> ping;
+}
