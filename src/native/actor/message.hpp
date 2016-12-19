@@ -13,24 +13,17 @@ enum MessageType { None, Some };
 
 class Actor;
 
-template <typename ...T>
 class Message {
 // todo: make private
 public:
-    MessageType type;
-
     string name;
-    // todo: need to be able to pass various types in one list
-//    tuple<T> formals;
+    MessageType type;
     Actor* sender;
 
 public:
     Message(const string& name="", MessageType type=None, Actor* const sender=NULL)
             : name(name), type(type), sender(sender)
     { }
-
-//    virtual tuple<T...> get() = 0;
-//    virtual tuple<T...> get();
 
     bool operator==(const Message& rhs) const {
         return (this->type == rhs.type &&
@@ -46,9 +39,7 @@ public:
     EmptyMessage() : s("")
     { }
 
-//    tuple<string> get() {
-//        return make_tuple(s);
-//    }
+    tuple<string> get() { return make_tuple(s); }
 };
 
 static EmptyMessage EMPTY_MESSAGE = EmptyMessage();
@@ -64,7 +55,7 @@ public:
         s = y;
     }
 
-//    tuple<int, string> get() { return make_tuple(i, s); }
+    tuple<int, string> get() { return make_tuple(i, s); }
 };
 
 
@@ -76,7 +67,7 @@ public:
         s = y;
     }
 
-//    tuple<string> get() { return make_tuple(s); }
+    tuple<string> get() { return make_tuple(s); }
 };
 
 
