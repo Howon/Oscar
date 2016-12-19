@@ -58,7 +58,7 @@ let add_val scope decl =
   let name = build_name scope id in
   let (sinit, rep) =
     (match (fst init) with
-        SInt_Lit _  | SDouble_Lit _ | SChar_Lit _
+        SInt_Lit _  | SDouble_Lit _ | SChar_Lit _ | SString_Lit _
       | SBool_Lit _ |  SUnit_Lit _  | SId _       -> (init, true)
       (* save space on things we won't fill in later *)
       | _ -> ((SNoexpr, Unit_t), false)
