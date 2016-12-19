@@ -25,7 +25,7 @@ public:
 public:
     Actor() : tFinished(false) { }
 
-    ~Actor() { }
+    ~Actor() { t.join(); }
 
     virtual void receive(Message* const msg) = 0;
 

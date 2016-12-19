@@ -9,9 +9,8 @@ int main() {
     Pong pong;
 
     ping.setPong(&pong);
-    pong.setPing(&ping);
 
-    StartMessage startMessage;
+    StartMessage startMessage(&ping);
     ping.receive(&startMessage);
 
     return 0;
