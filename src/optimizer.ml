@@ -143,7 +143,9 @@ let rec opt_expr scope (te : t_expr) =
 
 (* optimize the body of the function *)
 and opt_func_lit scope (f : sfunc) =
-  SFunc_Lit({ f with sf_body = (opt_block_always scope f.sf_body) })
+  let fst_body = (opt_outer_block opt_stmt) scope f.sf_body in
+  let snd_body = (opt_outer_block snd_stmt) scope fst_body in
+  SFunc_Lit({ f with sf_body = snd_body })
 
 (* reduce uops of expressions that can be reduced to literals *)
 and opt_uop scope (uop: u_op) (e : t_expr) =
@@ -288,10 +290,13 @@ and opt_binop scope (e1 : t_expr) (op : bin_op) (e2 : t_expr) =
  * reduced to a literal or an id of another variable *)
 and opt_stmt scope (s : sstmt) =
   match s with
-      SBlock stmts -> opt_block scope stmts
+      SBlock stmts -> opt_block opt_stmt scope stmts
     | SExpr (e, t) ->
         (match e with
             SFuncCall _ ->
+              let nexpr = opt_expr scope (e, t) in
+              (Some (SExpr(nexpr)), scope)
+          | SBinop (_, Assign, _) ->
               let nexpr = opt_expr scope (e, t) in
               (Some (SExpr(nexpr)), scope)
           | _ -> (None, scope)
@@ -309,10 +314,10 @@ and opt_stmt scope (s : sstmt) =
     | SPool_send (e1, e2) ->
         let nmess = opt_expr scope e1 in
         let npool = opt_expr scope e2 in
-        (Some (SActor_send(nmess, npool)), scope)
+        (Some (SPool_send(nmess, npool)), scope)
 
-(* handling the "lower-level" blocks that can be nested *)
-and opt_block scope stmts =
+(* handling the "inner" blocks that can be nested *)
+and opt_block stmt_func scope stmts =
   let nscope =
     if scope.block_cnt = 0 then
       { scope with block_cnt = 1 }
@@ -322,7 +327,7 @@ and opt_block scope stmts =
           if_cnt = 0; func_cnt = 0 }
     in
   let acc_fun (scope, slist) stmt =
-    let (nstmt, nscope) = opt_stmt scope stmt in
+    let (nstmt, nscope) = stmt_func scope stmt in
     if option_is_some nstmt then
       (nscope, (option_get nstmt) :: slist)
     else
@@ -337,15 +342,14 @@ and opt_block scope stmts =
     | _   -> ((Some (SBlock (List.rev nstmts))), ret_scope)
   )
 
-
 (* this is to handle "higher-level" blocks that always must exist *)
-and opt_block_always scope block =
+and opt_outer_block stmt_func scope block =
   let stmts =
     (match block with
       SBlock s -> s
-    | _ -> raise (Failure "opt_block called without block")
+    | _ -> raise (Failure "opt_inner_block called without block")
     ) in
-  let o_block = fst (opt_block scope stmts) in
+  let o_block = fst (opt_block stmt_func scope stmts) in
   if option_is_some o_block then
     option_get o_block
   else
@@ -406,29 +410,68 @@ and opt_if scope pred ifb elseb =
             (if option_is_some nifb_o then
               option_get nifb_o
             else
-              SBlock([])
+              SExpr((SNoexpr, Unit_t))
             ) in
           let nelseb =
             (if option_is_some nelseb_o then
               option_get nelseb_o
             else
-              SBlock([])
+              SExpr((SNoexpr, Unit_t))
             ) in
           Some (SIf((ne, nt), nifb, nelseb)))
   in
   (nstmt, { scope with if_cnt = scope.if_cnt + 1 })
 
-(* optimize a function declaration at the top level *)
+and snd_stmt scope s =
+  match s with
+      SBlock stmts -> opt_block snd_stmt scope stmts
+    | SVdecl vd -> snd_vdecl scope vd
+    | SMutdecl md -> snd_mdecl scope md
+    | SIf (spred, sif, selse) -> snd_if scope spred sif selse
+    | _ -> (Some s, scope)
+
+and snd_vdecl scope vd =
+  if (get_cnt scope vd.sv_name) = 0 then
+    (None, scope)
+  else
+    (Some (SVdecl vd), scope)
+
+and snd_mdecl scope md =
+  if (get_cnt scope md.smv_name) = 0 then
+    (None, scope)
+  else
+    (Some (SMutdecl md), scope)
+
+and snd_if scope spred ifb elseb =
+  let clean_scope scope name =
+    let new_name =
+      (if scope.if_cnt = 0 then
+        name
+      else
+        (name ^ (string_of_int scope.if_cnt))
+      ) in
+    { loc = new_name :: scope.loc; block_cnt = 0; if_cnt = 0; func_cnt = 0 }
+  in
+  let nifb = opt_outer_block snd_stmt (clean_scope scope "if") ifb in
+  let nelseb = opt_outer_block snd_stmt (clean_scope scope "else") elseb in
+  (Some (SIf(spred, nifb, nelseb)), { scope with if_cnt = scope.if_cnt + 1 })
+
 let opt_funcdecl scope f =
   let () = add_val scope f in
   let nscope = { loc = f.sv_name :: scope.loc; block_cnt = 0;
                   if_cnt = 0; func_cnt = 0 } in
   { f with sv_init = opt_expr nscope f.sv_init }
 
+let snd_funcdecl scope f =
+  if (get_cnt scope f.sv_name) = 0 then
+    None
+  else
+    Some f
+
 (* optimize a pattern: reduce the body *)
 let opt_pattern scope spat =
   let nscope = { scope with loc = spat.sp_smid :: scope.loc } in
-  let nbody = opt_block_always nscope spat.sp_body in
+  let nbody = (opt_outer_block opt_stmt) nscope spat.sp_body in
   { spat with sp_body = nbody }
 
 (* optimize an actor: reduce the body and optimize all patterns *)
@@ -436,19 +479,21 @@ let opt_actor scope sact =
   let nscope = { loc = sact.sa_name :: scope.loc;
                   block_cnt = 0; if_cnt = 0; func_cnt = 0 } in
 
-  let nbody = opt_block_always nscope sact.sa_body in
+  let nbody = (opt_outer_block opt_stmt) nscope sact.sa_body in
   let nreceive = List.map (opt_pattern nscope) sact.sa_receive in
   { sact with sa_body = nbody; sa_receive = nreceive }
+
 
 let optimize_program (messages, actors, functions, main) =
   let main_scope =
     { loc = ["main"]; block_cnt = 0; if_cnt = 0; func_cnt = 0 } in
-  let faster_actors = List.map (opt_actor main_scope) actors in
-  let faster_functions = List.map (opt_funcdecl main_scope) functions in
+  let fp_actors = List.map (opt_actor main_scope) actors in
+  let fp_functions = List.map (opt_funcdecl main_scope) functions in
   let (main_lit, main_typ) = main in
-  let main_scope =
-    { loc = ["main"]; block_cnt = 0; if_cnt = 0; func_cnt = 0 } in
-  let faster_main = match (main_lit) with
+  let fp_main = match (main_lit) with
         SFunc_Lit(f) -> opt_func_lit main_scope f
       | _ -> raise (Failure "bad main") in
-  (messages, faster_actors, faster_functions, (faster_main, main_typ))
+
+  let sp_functions = List.map option_get (List.filter option_is_some
+      (List.map (snd_funcdecl main_scope) fp_functions)) in
+  (messages, fp_actors, sp_functions, (fp_main, main_typ))
