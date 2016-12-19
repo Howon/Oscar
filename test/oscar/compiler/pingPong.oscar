@@ -1,23 +1,23 @@
-message setPing(ping: actor);
-message setPong(pong: actor);
-message setMaxTurns(max: int);
-message startMsg();
-message stopMsg();
-message pingMsg();
-message pongMsg();
+message setPing(ping: actor<Ping>)
+message setPong(pong: actor<Pong>)
+message setMaxTurns(max: int)
+message startMsg()
+message stopMsg()
+message pingMsg()
+message pongMsg()
 
-actor Ping {
+actor Ping() {
   mut int count = 0;
   mut int maxTurns = 5;
-  mut actor pong;
+  mut actor<Pong> pong;
 
   def incrementAndPrint() => unit = {
     count = count + 1;
     println("ping");
   }
 
-  receive {
-    | setPong(myPong: actor) => {
+  receive = {
+    | setPong(myPong: actor<Pong>) => {
         pong = myPong;
       }
     | setMaxTurns(max: int) => {
@@ -25,31 +25,31 @@ actor Ping {
       }
     | startMsg() => {
         incrementAndPrint();
-        pingMsg |> pong;
+        message<pingMsg>() |> pong;
       }
     | pongMsg() => {
         incrementAndPrint();
 
         if (count > maxTurns) {
             println("ping stopped");
-            stopMsg |> pong;
+            message<stopMsg>() |> pong;
         } else {
-            pingMsg |> pong;
+            message<pingMsg>() |> pong;
         }
       }
   }
 }
 
-actor Pong {
-  mut actor ping;
+actor Pong() {
+  mut actor<Ping> ping;
 
-  receive {
-    | setPing(myPing: actor) => {
+  receive = {
+    | setPing(myPing: actor<Ping>) => {
           ping = myPing;
       }
     | pingMsg() => {
         println("  pong");
-        pongMsg |> ping
+        message<pongMsg>() |> ping;
       }
     | stopMsg() => {
         println("pong stopped");
@@ -59,13 +59,13 @@ actor Pong {
 
 
 def main() => unit = {
-  Ping ping = spawn Ping();
-  Pong pong = spawn Pong();
+  actor<Ping> ping = spawn actor<Ping>();
+  actor<Pong> pong = spawn actor<Pong>();
 
-  setPong(pong) |> ping;
-  setMaxTurns(3) |> ping;
+  message<setPong>(pong) |> ping;
+  message<setMaxTurns>(3) |> ping;
 
-  setPing(ping) |> pong;
+  message<setPing>(ping) |> pong;
 
-  startMsg() |> ping;
+  message<startMsg>() |> ping;
 }
