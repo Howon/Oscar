@@ -10,6 +10,7 @@
 #include <condition_variable>
 #include <mutex>
 #include <thread>
+#include <atomic>
 
 #include "message.hpp"
 
@@ -81,6 +82,7 @@ class Monitor : public Actor {
 public:
     Monitor() {
         this->end = true;
+
         actor_counter = 0;
         t = thread([=] { consume(); });
     }

@@ -242,7 +242,7 @@ cv.notify_one();
 void respond(m_payload *theMsgThatWasReceived) {
 auto msg = get<0>(theMsgThatWasReceived->get());
 
-theMsgThatWasReceived->sender->receive(new m_payload(msg, this));
+theMsgThatWasReceived->sender->receive(new m_payload((std::string("Hello ") + msg), this));
 
 delete theMsgThatWasReceived;
 }
@@ -324,13 +324,14 @@ cv.notify_one();
 void respond(m_payload *theMsgThatWasReceived) {
 auto msg = get<0>(theMsgThatWasReceived->get());
 
+Println(msg);
 Append(msg, log);
+Println(Append(msg, log));
 delete theMsgThatWasReceived;
 }
 
 void respond(m_getLog *theMsgThatWasReceived) {
 
-theMsgThatWasReceived->sender->receive(new m_logPayLoad(log, this));
 
 delete theMsgThatWasReceived;
 }

@@ -111,7 +111,7 @@ let _ =
               let program = Codegen.c_program soprogram in
               let file_stub = get_file_stub oscar in
               let cpp_file = file_stub ^ ".cpp" in
-              let c_op = "-Wall -pthread -pedantic -fsanitize=address " ^
+              let c_op = "-Wall -pthread -pedantic " ^
                 "-std=c++1y -O2" in
               let cxx_incls = "-I/usr/local/include/ " in
               let cxx =
