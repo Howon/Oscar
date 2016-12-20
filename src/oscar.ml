@@ -111,7 +111,8 @@ let _ =
               let program = Codegen.c_program soprogram in
               let file_stub = get_file_stub oscar in
               let cpp_file = file_stub ^ ".cpp" in
-              let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
+              let c_op = "-Wall -pthread -pedantic -fsanitize=address " ^
+                "-std=c++1y -O2" in
               let cxx_incls = "-I/usr/local/include/ " in
               let cxx =
                 (if action = Llvm_gen then
