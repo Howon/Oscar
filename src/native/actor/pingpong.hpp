@@ -135,9 +135,10 @@ class Pong : public Actor {
     }
 
     void respond(PingMessage *msg) {
-        delete msg;
         printf("  pong\n");
         msg->sender->receive(new PongMessage(this));
+
+        delete msg;
     }
 
 public:
