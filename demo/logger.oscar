@@ -1,0 +1,32 @@
+message startMsg()
+message stopMsg()
+
+actor LogFetcher(log: actor<Logger>) {
+  receive = {
+    | startMsg() => {
+      Println("here");
+        message<payload>("Log 1") |> log;
+        message<payload>("Log 2") |> log;
+        message<payload>("Log 3") |> log;
+        message<payload>("Log 1") |> log;
+        message<payload>("Log 2") |> log;
+        message<payload>("Log 3") |> log;
+        message<payload>("Log 1") |> log;
+        message<payload>("Log 2") |> log;
+        message<payload>("Log 3") |> log;
+
+      }
+    | logPayLoad(msg: list<string>) => {
+        ForEach((s: string) => unit = Println(s), msg);
+      }
+    | die() => {
+      }
+  }
+}
+
+def main() => unit = {
+  actor<Logger> logger = spawn actor<Logger>();
+  actor<LogFetcher> fetcher = spawn actor<LogFetcher>(logger);
+
+  message<startMsg>() |> fetcher;
+}

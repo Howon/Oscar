@@ -1,11 +1,39 @@
 message die()
 message print(msg: string)
+message payload(msg: string)
+message getLog()
+message logPayLoad(mlog: list<string>)
 
 actor Printer() {
-
   receive = {
     | print(msg: string) => {
         Println(msg);
+      }
+    | die() => {
+      }
+  }
+}
+
+actor Echo() {
+  receive = {
+    | payload(msg: string) => {
+        message<payload>("Hello " + msg) |> sender;
+      }
+    | die() => {
+      }
+  }
+}
+
+actor Logger() {
+  mut list<string> log = list<string>[];
+
+  receive = {
+    | payload(msg: string) => {
+      Println(msg);
+        Append(msg, log);
+        Println(Append(msg, log));
+      }
+    | getLog() => {
       }
     | die() => {
       }

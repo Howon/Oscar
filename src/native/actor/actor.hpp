@@ -34,7 +34,7 @@ public:
 };
 
 class Monitor : public Actor {
-    bool *end;
+    bool end;
     atomic<int> actor_counter;
 
     queue<SpawnMessage *> spawnQueue;
@@ -64,7 +64,7 @@ class Monitor : public Actor {
 
     void respond(SpawnMessage *msg) {
         actor_counter++;
-        *end = false;
+        end = false;
 
         delete msg;
     }
@@ -76,23 +76,24 @@ class Monitor : public Actor {
 
         if (actor_counter.load() == 0 && spawnQueue.empty() &&
             deleteQueue.empty())
-            *this->end = true;
+            this->end = true;
     }
 
 public:
-    Monitor(bool *end) {
-        this->end = end;
+    Monitor() {
+        this->end = true;
+
         actor_counter = 0;
         t = thread([=] { consume(); });
     }
 
     virtual ~Monitor() {
-        *this->end = true;
+        this->end = true;
 
         t.join();
     }
 
-    bool is_exitable() { return *this->end; }
+    bool is_exitable() { return this->end; }
 
     void receive(Message* const msg) {
         if (SpawnMessage* pm = dynamic_cast<SpawnMessage *>(msg)) {

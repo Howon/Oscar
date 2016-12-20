@@ -1,0 +1,24 @@
+message startMsg()
+message stopMsg()
+
+actor Ethan(echo: actor<Echo>, numTimes: int) {
+  receive = {
+    | startMsg() => {
+        message<payload>("Ethan") |> echo;
+        message<payload>("Ethan") |> echo;
+        message<payload>("Ethan") |> echo;
+      }
+    | payload(msg: string) => {
+        Println(msg);
+      }
+    | die() => {
+      }
+  }
+}
+
+def main() => unit = {
+  actor<Echo> echo = spawn actor<Echo>();
+  actor<Ethan> ethan = spawn actor<Ethan>(echo, 5);
+
+  message<startMsg>() |> ethan;
+}
