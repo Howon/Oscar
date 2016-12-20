@@ -845,10 +845,17 @@ let check_actor_decl (adecl : actor) (env : scope) =
           (fun acc p -> match (check_receive p env.messages) with
               Some m  -> m::acc
             | None    ->
-                raise (Failure ("Actor " ^ adecl.a_name ^
+                raise (Failure ("Actor " ^ a_name ^
                   " attempts to receive an undefined message " ^ p.p_mid))
           ) [] a_receive
         ) in
+
+        let _ =
+          try List.find (fun p -> p.p_mid = "die"
+            && List.length p.p_mformals = 0) a_receive
+          with Not_found ->
+            raise (Failure ("No pattern match for die in actor " ^ a_name))
+          in
 
         let nsvals =
           spread_arg a_formals ([]) in
@@ -875,8 +882,12 @@ let check_actor_decl (adecl : actor) (env : scope) =
           (new_actor_scope, nenv))
 
 let check_program (p : program) (slib : program) =
-  let (messages, actors, functions) = p
+  let (p_messages, p_actors, p_functions) = p
   and (sl_messages, sl_actors, sl_functions) = slib in
+
+  let messages = sl_messages @ p_messages
+  and actors = sl_actors @ p_actors
+  and functions = sl_functions @ p_functions in
 
   let sender_ref =  {
     sv_name = "sender";
@@ -898,7 +909,7 @@ let check_program (p : program) (slib : program) =
     in_actor = false;
     actor_init = false;
   } in
-
+(*
   let (sl_smessages, sl_m_env) = List.fold_left (fun acc m ->
     let (sl_smessage, sl_nenv) = check_message_decl m (snd acc) in
     (sl_smessage :: fst acc, sl_nenv)
@@ -913,7 +924,7 @@ let check_program (p : program) (slib : program) =
           SVdecl sf -> (sf :: fst acc, sl_nenv)
         | _ -> raise (Failure ("Not a valid function: " ^ f.v_name))
   ) ([], sl_a_env) sl_functions in
-
+*)
   let (smessages, m_env) = List.fold_left (fun acc m ->
     let (smessage, nenv) = check_message_decl m (snd acc) in
     (smessage :: fst acc, nenv)
@@ -928,10 +939,6 @@ let check_program (p : program) (slib : program) =
           SVdecl sf -> (sf :: fst acc, nenv)
         | _ -> raise (Failure ("Not a valid function: " ^ f.v_name))
   ) ([], a_env) functions in
-
-  let smessages = smessages @ sl_smessages in
-  let sactors = sactors @ sl_sactors in
-  let sfunctions = sfunctions @ sl_sfunctions in
 
   let main_cnt = List.fold_left (fun acc sf -> if sf.sv_name = "main"
                                   then acc + 1 else acc) 0 sfunctions in
