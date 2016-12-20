@@ -4,17 +4,20 @@ message testNow()
 actor Tester() {
   mut map<int, double> m1 = map<int, double>[0 -> 1.1, 4 -> 5.3, -3 -> 5.3];
   map<int, double> m2 = m1;
-  
+
   receive = {
-    | testNow() => { 
-		Println(m1 == m2);
-		m1[0] = 2.7; 
-		Println(m1 == m2); 
-    }
+    | testNow() => {
+        Println(m1 == m2);
+        m1[0] = 2.7;
+        Println(m1 == m2);
+      }
+    | die() => {
+      }
   }
 }
 
 def main() => unit = {
   actor<Tester> mapTester = spawn actor<Tester>();
   message<testNow>() |> mapTester;
+  message<die>() |> mapTester;
 }

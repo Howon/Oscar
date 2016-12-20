@@ -3,17 +3,20 @@ message testNow()
 
 actor Tester() {
   mut string s = "unchanged";
-  
+
   receive = {
     | testNow() => {
         Println(s == "changed");
-		s = "changed";
-		Println(s == "changed");
-    }
+        s = "changed";
+        Println(s == "changed");
+      }
+    | die() => {
+      }
   }
 }
 
 def main() => unit = {
   actor<Tester> stringTester = spawn actor<Tester>();
   message<testNow>() |> stringTester;
+  message<die>() |> stringTester;
 }

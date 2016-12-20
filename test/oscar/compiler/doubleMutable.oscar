@@ -3,17 +3,20 @@ message testNow()
 
 actor Tester() {
   mut double x = 0.0;
-  
+
   receive = {
     | testNow() => {
-	    Println(x > -0.000001);
-		x = x - 0.000001;
-		Println(x > -0.000001);
-    }
+        Println(x > -0.000001);
+        x = x - 0.00001;
+        Println(x > -0.000001);
+      }
+    | die() => {
+      }
   }
 }
 
 def main() => unit = {
   actor<Tester> doubleTester = spawn actor<Tester>();
   message<testNow>() |> doubleTester;
+  message<die>() |> doubleTester;
 }

@@ -3,16 +3,19 @@ message testNow()
 
 actor Tester() {
   mut set<int> s1 = set<int>[1, 2, 3, 4, 5];
-  
+
   receive = {
     | testNow() => {
-		set<int> s2 = setAdd(s1, 6);
-		Println(s1 == s2);
-    }
+		    set<int> s2 = setAdd(s1, 6);
+		    Println(s1 == s2);
+      }
+    | die() => {
+      }
   }
 }
 
 def main() => unit = {
   actor<Tester> setTester = spawn actor<Tester>();
   message<testNow>() |> setTester;
+  message<die>() |> setTester;
 }

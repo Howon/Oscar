@@ -262,7 +262,7 @@ let main_decl (se, _) =
             ") " ^ (
               let sfbody = c_sstmt sf_body false in
               let slen = String.length sfbody - 2 in
-              String.sub sfbody 0 slen ^ (die_pools_actors "\nreturn 0;\n}")
+              String.sub sfbody 0 slen ^ "\nreturn 0;\n}"
             ) ^ "\n"
     | _ -> raise (Failure "Main method not found")
 

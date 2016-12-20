@@ -3,17 +3,25 @@ message testNow()
 
 actor Tester() {
   mut bool b = false;
-  
+
   receive = {
     | testNow() => {
         Println(b);
-	    b = true;
-	    Println(b);
-    }
+        b = true;
+        Println(b);
+      }
+    | die() => {
+      Println("dying");
+      }
   }
 }
 
 def main() => unit = {
   actor<Tester> boolTester = spawn actor<Tester>();
   message<testNow>() |> boolTester;
+  Println(1);
+  Println(2);
+  Println(3);
+  Println(4);
+  message<die>() |> boolTester;
 }

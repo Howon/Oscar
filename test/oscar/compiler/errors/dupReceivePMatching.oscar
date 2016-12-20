@@ -2,18 +2,21 @@ message testNow()
 
 
 actor Tester() {
-  
+
   receive = {
     | testNow() => {
         Println("Error1");
-	}
-	| testNow() => {
-	    Println("Error2");
-    }
+	  }
+    | testNow() => {
+        Println("Error2");
+      }
+    | die() => {
+      }
   }
 }
 
 def main() => unit = {
   actor<Tester> tester1 = spawn actor<Tester>();
   message<testNow>() |> tester1;
+  message<die>() |> tester1;
 }
