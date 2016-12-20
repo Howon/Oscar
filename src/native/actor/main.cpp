@@ -9,7 +9,8 @@ using namespace std;
 
 
 int main() {
-    Pool<Ping> pool(1);
+//    Pool<Ping, int, string> pool(1);
+    Pool pool(new Ping(), 1);
     pool.receive(new StartMessage());
 
     return 0;
