@@ -102,12 +102,28 @@ and c_sstmt sstmt (a : bool) =
                                   c_texpr sv.sv_init a ^ ";"
     | SIf (se, s1, s2)     -> c_if se s1 s2 a
     | SActor_send (se, act)  ->
-        (match fst act with
-            SId "sender"  ->
+        let a_name = (match fst act with
+            SId s -> s
+          | _ -> raise (Failure ("sent to not ID (should not happen)"))
+        ) in
+        let () = (match snd se with
+            Message_t "die" -> Hashtbl.remove a_decls a_name
+          | _ -> ()
+        ) in
+        (match a_name with
+            "sender"  ->
               "theMsgThatWasReceived->sender->receive(" ^ c_texpr se a ^ ");\n"
           | _             ->
               c_texpr act a ^ "->receive(" ^ c_texpr se a ^ ");\n")
     | SPool_send (se, p)  ->
+        let p_name = (match fst p with
+            SId s -> s
+          | _ -> raise (Failure ("sent to not ID (should not happen)"))
+        ) in
+        let () = (match snd se with
+            Message_t "die" -> Hashtbl.remove p_decls p_name
+          | _ -> ()
+        ) in
         c_texpr p a ^ "->broadcast(" ^ c_texpr se a ^ ");\n"
 
 and c_sstmts sstmts a =
@@ -214,6 +230,9 @@ let consume messages =
               m.sm_name ^ "Queue.pop();\nrespond(msg);\ngoto loop;\n}"
         ) messages)) ^ "\nloop: ;\n}\n}"
 
+let make_die _ =
+  "\nvoid Die() {\nthis->tFinished = true;\nt.join();\n}\n"
+
 let c_actor sactor_scope =
   let sactor = sactor_scope.a_actor in
   let smessages = sactor_scope.a_messages in
@@ -224,14 +243,14 @@ let c_actor sactor_scope =
           " (" ^ (c_formals sa_formals) ^ ") : Actor()\n{\n" ^
             constructor_assignment sa_formals ^ "\n" ^
               "t = thread([=] { consume(); });\n}\nvirtual ~a_" ^ sa_name ^
-              "() {\nt.join();\nDie();\n}\nvirtual void receive(Message *msg) {\n" ^
+              "() {\nDie();\n}\n" ^ (make_die ()) ^
+              "virtual void receive(Message *msg) {\n" ^
               String.concat "" (List.map cast_message smessages) ^
               "notify:\ncv.notify_one();\n}\n" ^ String.concat "\n"
               (List.map c_pattern sa_receive) ^ consume smessages ^ "};\n"
 
 let die_pools_actors s=
-  let f_kill k _ acc = k ^ "->receive(new m_die(NULL));\n" ^
-    "delete " ^ k ^";\n" ^ acc in
+  let f_kill k _ acc = "delete " ^ k ^";\n" ^ acc in
   let die_pools = Hashtbl.fold f_kill p_decls s in
   Hashtbl.fold f_kill a_decls die_pools
 
