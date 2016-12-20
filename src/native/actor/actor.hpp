@@ -71,9 +71,6 @@ class Monitor : public Actor {
     void respond(DeleteMessage *msg) {
         actor_counter--;
 
-        if (!actor_counter)
-            *end = true;
-
         delete msg;
     }
 
@@ -85,6 +82,7 @@ public:
     }
 
     virtual ~Monitor() {
+        cout <<"done" << endl;
         *this->end = true;
 
         t.join();

@@ -180,8 +180,9 @@ Die();
 
 void Die() {
 this->tFinished = true;
-monitor->receive(new DeleteMessage());
 t.join();
+
+monitor->receive(new DeleteMessage());
 }
 virtual void receive(Message *msg) {
 if (m_die *pm = dynamic_cast<m_die *>(msg)) {
@@ -373,16 +374,18 @@ loop: ;
 int main () {
 bool end_program = false;
 monitor = new Monitor(&end_program);
+cout << end_program << endl;
 
 auto pong=new a_Pong();
 
-auto ping=new a_Ping(pong, 99);
+auto ping=new a_Ping(pong, 3);
 
 ping->receive(new m_startMsg(NULL));
-cout << end_program << endl;
 
 while (!end_program) { }
+
 cout << end_program << endl;
+
 return 0;
 }
 
