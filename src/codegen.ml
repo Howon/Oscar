@@ -184,7 +184,7 @@ let c_pattern sp =
         "auto " ^ fst f ^ " = get<" ^ string_of_int i ^ ">(msg->get())"
       ) sp_smformals) ^ (if List.length sp_smformals > 0 then ";\n" else "") ^ (
         let actor_body = c_sstmt sp.sp_body true in
-          unpack_body actor_body) ^ "\n}\n"
+          unpack_body actor_body) ^ "delete msg;\n}\n"
 
 let consume messages =
     "void consume() {\nunique_lock<mutex> lck(mx);\nwhile (!this->tFinished)" ^
