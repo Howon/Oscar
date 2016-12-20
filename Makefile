@@ -8,7 +8,7 @@ IMMUT=$(NATIVE)/immut
 BUILDDIR=include
 
 oscar : library
-	@echo 'Buiding Oscar Compiler'
+	@echo 'Buliding Oscar Compiler'
 	@cd ./src && \
 	eval `opam config env` && \
 	make && \
@@ -17,15 +17,13 @@ oscar : library
 	mv ./src/$(TARGET) ./$(OSCAR) && \
 	cp ./src/$(STDLIB) ./$(BUILDDIR) && \
 	cp ./src/$(IMMUT)/* ./$(BUILDDIR) && \
-	cp ./src/$(ACTOR)/* ./$(BUILDDIR) && \
-	echo 'Oscar Compiler Succesfully Built'
+	cp ./src/$(ACTOR)/* ./$(BUILDDIR)
 
 library : clean_library
 	@echo 'Building Oscar Library'
-	@mkdir /usr/local/include/oscar && \
-	cp src/native/immut/*.hpp  /usr/local/include/oscar/ && \
-	cp src/native/actor/*.hpp  /usr/local/include/oscar/ && \
-	echo 'Oscar Library Succesfully Built'
+	@sudo mkdir /usr/local/include/oscar && \
+	sudo cp src/native/immut/*.hpp  /usr/local/include/oscar/ && \
+	sudo cp src/native/actor/*.hpp  /usr/local/include/oscar/
 
 scanner.ml : scanner.mll
 	ocamllex scanner.mll
@@ -49,13 +47,11 @@ all: clean oscar
 clean : clean_library
 	@echo 'Cleaning Oscar Build'
 	@cd ./src/ && \
-	rm -f oscar parser.ml parser.mli scanner.ml *.cmo *.cmi *.cmx *.o && \
-	rm -rf _build && \
+	sudo rm -f oscar parser.ml parser.mli scanner.ml *.cmo *.cmi *.cmx *.o && \
+	sudo rm -rf _build && \
 	cd ../ && \
-	rm -rf $(BUILDDIR) ./oscar && \
-	echo 'Oscar Build Cleaned'
+	sudo rm -rf $(BUILDDIR) ./oscar
 
 clean_library :
 	@echo 'Cleaning Oscar Library'
-	@rm -rf /usr/local/include/oscar && \
-	echo 'Oscar Library Cleaned'
+	@sudo rm -rf /usr/local/include/oscar

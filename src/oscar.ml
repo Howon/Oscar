@@ -7,7 +7,7 @@ open Codegen
 open Optimizer
 open Sys
 
-type action = Compile | Ast | Sast | Llvm_gen
+type action = Compile | CPP | Ast | Sast | Llvm_gen
 
 let make_lexbuf filename =
   let file =
@@ -57,6 +57,7 @@ let _ =
                 ("-s", Sast);     (* Prettyprint sast *)
                 ("-l", Llvm_gen); (* Generate cpp and llvm *)
                 ("-c", Compile);  (* Generate cpp and executable *)
+                ("-cpp", CPP);    (* Generate cpp and print *)
         ] Sys.argv.(1),
         (if arg_len = 4 then
             (if Sys.argv.(2) = "-O" then true
@@ -65,7 +66,7 @@ let _ =
         (if arg_len = 3 then Sys.argv.(2) else Sys.argv.(3)))
       with Not_found ->
         let _ =
-          print_endline("Usage: ./oscar [-p|-s|-l|-c] [?-O] *.oscar") in
+          print_endline("Usage: ./oscar [-p|-s|-l|-c|-cpp] [?-O] *.oscar") in
       exit 1;
     else raise (Failure ("Invalid flag " ^ Sys.argv.(2)))) in
   let lexbuf = make_lexbuf oscar
@@ -90,7 +91,7 @@ let _ =
                 flush stderr;
                 exit 1;
           in
-          (*if optimize then
+          if optimize then
             try
               Optimizer.optimize_program sprogram
             with
@@ -98,16 +99,16 @@ let _ =
                 Printf.eprintf "%s\n" ("Error: " ^ f);
                 flush stderr;
                 exit 2;
-          else*)
+          else
             sprogram
         in
         match action with
             Ast   -> ()
           | Sast  -> print_endline (Sast.str_sprogram soprogram)
+          | CPP ->
+              print_endline (Codegen.c_program soprogram)
           | _ ->
               let program = Codegen.c_program soprogram in
-                print_endline program;
-(*
               let file_stub = get_file_stub oscar in
               let cpp_file = file_stub ^ ".cpp" in
               let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
@@ -125,4 +126,4 @@ let _ =
               in
               let ch = Unix.open_process_out cxx in
               Out_channel.write_all cpp_file ~data:program;
-              Out_channel.output_string ch program; *)
+              Out_channel.output_string ch program;

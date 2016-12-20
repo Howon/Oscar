@@ -179,7 +179,7 @@ let declare_queues formals =
   ) formals) ^ if List.length formals > 0 then ";\n" else ""
 
 let cast_message message =
-  let { sm_name; sm_formals} = message in
+  let { sm_name = sm_name ; sm_formals = _} = message in
     "if (m_" ^ sm_name ^ " *pm = dynamic_cast<m_" ^ sm_name ^ " *>(msg)) {\n" ^
       "unique_lock<mutex> lck(mx);\n" ^ sm_name ^ "Queue.push(pm);\n" ^
         "goto notify;\n}\n"
@@ -187,7 +187,7 @@ let cast_message message =
 let unpack_body body = String.sub body 1 (String.length body - 2)
 
 let c_pattern sp =
-  let { sp_smid; sp_smformals; sp_body } = sp in
+  let { sp_smid = sp_smid; sp_smformals = sp_smformals; sp_body = _ } = sp in
     "void respond(m_" ^ sp_smid ^ " *msg)\n{\n" ^ String.concat ";\n"
       (List.mapi (fun i f ->
         "auto " ^ fst f ^ " = get<" ^ string_of_int i ^ ">(msg->get())"
