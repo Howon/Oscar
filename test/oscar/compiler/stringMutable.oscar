@@ -3,13 +3,16 @@ message testNow()
 
 actor Tester() {
   mut string s = "unchanged";
-  
+
   receive = {
     | testNow() => {
         Println(s == "changed");
-		s = "changed";
-		Println(s == "changed");
-    }
+        s = "changed";
+        Println(s == "changed");
+        Die();
+      }
+    | die() => {
+      }
   }
 }
 

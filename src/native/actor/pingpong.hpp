@@ -2,99 +2,39 @@
 #define __PINGPONG__
 
 #include "actor.hpp"
+#include "../immut/immut.hpp"
 
-class Pong;
-
-class Ping : public Actor {
-    Actor* pong;
-    queue<StartMessage *> startQueue;
-    queue<PongMessage *> pongQueue;
-
-    int currCount;
-    int maxTurns;
-
-    void die() { this->tFinished = true; }
-
-    void consume() {
-        unique_lock<mutex> lck(mx);
-
-        while (!this->tFinished) {
-            while (startQueue.empty() && pongQueue.empty()) {
-                // finished running, terminate thread
-                if (tFinished)
-                    return;
-
-                // else, wait for messages to arrive
-                cv.wait(lck);
-            }
-
-            // process current message
-            if (!startQueue.empty()) {
-                auto msg = startQueue.front();
-                startQueue.pop();
-                respond(msg);
-            } else if (!pongQueue.empty()) {
-                auto msg = pongQueue.front();
-                pongQueue.pop();
-                respond(msg);
-            }
-        }
-    }
-
-    void incrementAndPrint() {
-        ++currCount;
-        printf("ping\n");
-    }
-
-    void respond(StartMessage *msg) {
-        incrementAndPrint();
-        pong->receive(new PingMessage(this));
-    }
-
-    void respond(PongMessage *msg) {
-        incrementAndPrint();
-
-        if (currCount > maxTurns) {
-            printf("ping stopped\n");
-            msg->sender->receive(new StopMessage(this));
-            die();
-        }
-
-        msg->sender->receive(new PingMessage(this));
-    }
-
+// Ping messages
+class StartMessage : public Message {
 public:
-    void setPong(Actor* pong) {
-        this->pong = pong;
-    }
+    StartMessage(Actor *sender) : Message("start", sender) { }
+    tuple<> get() { return make_tuple(); }
+};
 
-    Ping(int maxTurns=99) : currCount(0), maxTurns(maxTurns) {
-        t = thread([=] { consume(); });
-    }
+class PongMessage : public Message {
+public:
+    PongMessage(Actor *sender) : Message("pong", sender) { }
+    tuple<> get() { return make_tuple(); }
+};
 
-    ~Ping() {
-        t.join();
-    }
 
-    void receive(Message* const msg) {
-        if (StartMessage *pm = dynamic_cast<StartMessage*>(msg)) {
-            unique_lock<mutex> lck(mx);
-            startQueue.push(pm);
-        } else if (PongMessage* pm = dynamic_cast<PongMessage *>(msg)) {
-            unique_lock<mutex> lck(mx);
-            pongQueue.push(pm);
-        }
+// Pong messages
+class PingMessage : public Message {
+public:
+    PingMessage(Actor *sender) : Message("ping", sender) { }
+    tuple<> get() { return make_tuple(); }
+};
 
-        cv.notify_one();
-    }
+class StopMessage : public Message {
+public:
+    StopMessage(Actor *sender) : Message("stop", sender) { }
+    tuple<> get() { return make_tuple(); }
 };
 
 
 class Pong : public Actor {
     queue<StopMessage *> stopQueue;
     queue<PingMessage *> pingQueue;
-
-    void die() { this->tFinished = true; }
 
     void consume() {
         unique_lock<mutex> lck(mx);
@@ -107,6 +47,7 @@ class Pong : public Actor {
 
                 // else, wait for messages to arrive
                 cv.wait(lck);
+                goto loop;
             }
 
             // process current message
@@ -118,18 +59,23 @@ class Pong : public Actor {
                 auto msg = pingQueue.front();
                 pingQueue.pop();
                 respond(msg);
+                goto loop;
             }
+            loop: ;
         }
     }
 
     void respond(StopMessage *msg) {
+        delete msg;
         printf("pong stopped\n\n");
-        die();
+        Die();
     }
 
     void respond(PingMessage *msg) {
         printf("  pong\n");
         msg->sender->receive(new PongMessage(this));
+
+        delete msg;
     }
 
 public:
@@ -137,7 +83,7 @@ public:
         t = thread([=] { consume(); });
     }
 
-    ~Pong() {
+    virtual ~Pong() {
         t.join();
     }
 
@@ -151,6 +97,95 @@ public:
             stopQueue.push(pm);
         }
 
+        cv.notify_one();
+    }
+};
+
+class Ping : public Actor {
+    Pong* pong;
+
+    queue<StartMessage *> startQueue;
+    queue<PongMessage *> pongQueue;
+
+    int count = 0;
+    int maxTurns;
+
+        void consume()
+    {
+        unique_lock<mutex> lck(mx);
+        while (!this->tFinished) {
+            while (pongQueue.empty() && startQueue.empty()) {
+                if (tFinished)
+                    return;
+                cv.wait(lck);
+            }
+            if (!pongQueue.empty()) {
+                auto msg = pongQueue.front();
+                pongQueue.pop();
+                respond(msg);
+                goto loop;
+            }
+            if (!startQueue.empty()) {
+                auto msg = startQueue.front();
+                startQueue.pop();
+                respond(msg);
+                goto loop;
+            }
+        loop:;
+        }
+    }
+
+    void incrementAndPrint() {
+        ++count;
+        printf("ping\n");
+    }
+
+    void respond(StartMessage *msg) {
+        delete msg;
+        incrementAndPrint();
+        pong->receive(new PingMessage(this));
+    }
+
+
+    void respond(PongMessage* msg)
+    {
+        delete msg;
+        incrementAndPrint();
+        if (count > maxTurns) {
+            Println(std::string("ping stopped"));
+            pong->receive(new StopMessage(this));
+
+            Die();
+        }
+        else {
+            pong->receive(new PingMessage(this));
+        }
+    }
+
+public:
+    Ping(Pong* pong, int maxTurns=99) : Actor() {
+        this->pong = pong;
+        this->maxTurns = maxTurns;
+
+        t = thread([=] { consume(); });
+    }
+
+    virtual ~Ping() {
+        t.join();
+    }
+
+    void receive(Message* const msg) {
+       if (PongMessage* pm = dynamic_cast<PongMessage*>(msg)) {
+            unique_lock<mutex> lck(mx);
+            pongQueue.push(pm);
+            goto notify;
+        }
+        if (StartMessage* pm = dynamic_cast<StartMessage*>(msg)) {
+            unique_lock<mutex> lck(mx);
+            startQueue.push(pm);
+            goto notify;
+        }
+    notify:
         cv.notify_one();
     }
 };

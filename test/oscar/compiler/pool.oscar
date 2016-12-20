@@ -2,11 +2,13 @@ message testNow()
 
 
 actor Tester() {
-  
+
   receive = {
     | testNow() => {
         Println(10);
-    }
+      }
+    | die() => {
+      }
   }
 }
 

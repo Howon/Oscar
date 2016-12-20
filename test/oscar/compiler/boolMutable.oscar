@@ -3,13 +3,16 @@ message testNow()
 
 actor Tester() {
   mut bool b = false;
-  
+
   receive = {
     | testNow() => {
         Println(b);
-	    b = true;
-	    Println(b);
-    }
+        b = true;
+        Println(b);
+        Die();
+      }
+    | die() => {
+      }
   }
 }
 

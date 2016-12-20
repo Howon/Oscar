@@ -69,7 +69,33 @@ and sactor = {
   sa_receive   : spattern list;
 }
 
-type sprogram = smessage list * sactor list * sval_decl list * sfunc
+and vsymtab = {
+  vparent      : vsymtab option;
+  svals        : sval_decl list
+}
+
+and mvsymtab = {
+  mvparent     : mvsymtab option;
+  smvars       : smvar_decl list
+}
+
+and actor_scope = {
+  a_actor    : sactor;
+  a_scope    : scope;
+  a_messages : smessage list;
+}
+
+and scope = {
+  messages    : smessage list;
+  actors      : actor_scope list;
+  env_vtable  : vsymtab;
+  env_mvtable : mvsymtab;
+  return_t    : types option;
+  in_actor    : bool;
+  actor_init    : bool;
+}
+
+type sprogram = smessage list * actor_scope list * sval_decl list * sfunc
 
 (* ========== *)
 
@@ -178,7 +204,8 @@ and str_spattern sp =
   "| " ^ sp.sp_smid ^ "(" ^ str_formals sp.sp_smformals ^ ") => " ^
     str_sstmt sp.sp_body
 
-let str_sactor sactor =
+let str_sactor sactor_scope =
+  let sactor = sactor_scope.a_actor in
   "actor " ^ sactor.sa_name ^ "(" ^ str_formals sactor.sa_formals ^ ") {\n" ^
     str_sstmts sactor.sa_body ^ "\n\n\n\nreceive = {\n" ^ String.concat "\n"
       (List.map str_spattern sactor.sa_receive) ^ "\n}\n}"

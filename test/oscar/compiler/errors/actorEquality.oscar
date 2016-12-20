@@ -2,11 +2,13 @@ message testNow()
 
 
 actor Tester() {
-  
+
   receive = {
     | testNow() => {
         Println("Error");
-    }
+      }
+    | die() => {
+      }
   }
 }
 
@@ -15,4 +17,6 @@ def main() => unit = {
   actor<Tester> tester2 = spawn actor<Tester>();
   bool b = (tester1 == tester2);
   message<testNow>() |> tester1;
+  message<die>() |> tester1;
+  message<die>() |> tester2;
 }

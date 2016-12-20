@@ -2,15 +2,18 @@ message testNow()
 
 
 actor Tester() {
-  
+
   receive = {
     | testNow() => {
         Println("Error");
-    }
+      }
+    | die() => {
+      }
   }
 }
 
 def main() => unit = {
   pool<Tester> pool1 = spawn pool<Tester>({}, "3");
   message<testNow>() |>> pool1;
+  message<die>() |>> pool1;
 }

@@ -1,0 +1,13 @@
+message die()
+message print(msg: string)
+
+actor Printer() {
+
+  receive = {
+    | print(msg: string) => {
+        Println(msg);
+      }
+    | die() => {
+      }
+  }
+}

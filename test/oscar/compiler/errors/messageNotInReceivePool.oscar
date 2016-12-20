@@ -3,15 +3,18 @@ message testLater()
 
 
 actor Tester() {
-  
+
   receive = {
     | testNow() => {
         Println("Error");
-    }
+      }
+    | die() => {
+      }
   }
 }
 
 def main() => unit = {
   pool<Tester> pool1 = spawn pool<Tester>({}, 3);
   message<testLater>() |>> pool1;
+  message<die>() |> tester;
 }

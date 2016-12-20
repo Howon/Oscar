@@ -24,33 +24,16 @@ public:
     virtual ~Message() {}
 };
 
-static Message EMPTY_MESSAGE = Message();
+// Ping messages
+class SpawnMessage : public Message {
+public:
+    SpawnMessage() : Message("spawn") { }
+};
 
 // Ping messages
-class StartMessage : public Message {
+class DeleteMessage : public Message {
 public:
-    StartMessage(Actor *sender) : Message("start", sender) { }
-    tuple<int> get() { return make_tuple(0); }
-};
-
-class PongMessage : public Message {
-public:
-    PongMessage(Actor *sender) : Message("pong", sender) { }
-    tuple<int> get() { return make_tuple(NULL); }
-};
-
-
-// Pong messages
-class PingMessage : public Message {
-public:
-    PingMessage(Actor *sender) : Message("ping", sender) { }
-    tuple<int> get() { return make_tuple(NULL); }
-};
-
-class StopMessage : public Message {
-public:
-    StopMessage(Actor *sender) : Message("stop", sender) { }
-    tuple<int> get() { return make_tuple(NULL); }
+    DeleteMessage() : Message("delete") { }
 };
 
 #endif //__MESSAGE__
