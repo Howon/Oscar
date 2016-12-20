@@ -10,7 +10,9 @@ using namespace std;
 
 int main() {
 //    Pool<Ping, int, string> pool(1);
-    Pool pool(new Ping(), 1);
+
+//    Pong pong;
+    Pool pool(new Ping(2, new Pong()), 1);
     pool.receive(new StartMessage());
 
     return 0;

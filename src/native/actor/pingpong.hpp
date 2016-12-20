@@ -76,33 +76,8 @@ public:
         t = thread([=] { consume(); });
     }
 
-    Ping(const Ping& rhs) {
-        operator=(rhs);
-    }
-
     ~Ping() {
         t.join();
-    }
-
-    Ping& operator=(const Ping& rhs) {
-        if (&rhs == this)
-            return *this;
-
-        // todo: finish this
-//    *pong = *rhs.pong;
-//
-//    while (!startQueue.empty()) {
-//        delete startQueue.front();
-//        startQueue.pop();
-//    }
-//    startQueue = rhs.startQueue;
-
-//        queue<PongMessage *> pongQueue;
-//
-//        int currCount;
-//        int maxTurns;
-//
-        return *this;
     }
 
     void receive(Message* msg) {
@@ -162,32 +137,6 @@ class Pong : public Actor {
     }
 
 public:
-
-    Pong(const Pong& rhs) {
-        operator=(rhs);
-    }
-
-    Pong& operator=(const Pong& rhs) {
-        if (&rhs == this)
-            return *this;
-
-        // todo: finish this
-//    *pong = *rhs.pong;
-//
-//    while (!startQueue.empty()) {
-//        delete startQueue.front();
-//        startQueue.pop();
-//    }
-//    startQueue = rhs.startQueue;
-
-//        queue<PongMessage *> pongQueue;
-//
-//        int currCount;
-//        int maxTurns;
-//
-        return *this;
-    }
-
     Pong() {
         t = thread([=] { consume(); });
     }

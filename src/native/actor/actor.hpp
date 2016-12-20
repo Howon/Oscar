@@ -27,15 +27,6 @@ public:
 
     ~Actor() { }
 
-    Actor& operator=(const Actor& rhs) {
-        if (&rhs == this)
-            return *this;
-
-        tFinished = rhs.tFinished;
-
-        return *this;
-    }
-
     virtual void receive(Message* msg) = 0;
 
     // todo: implement

@@ -20,12 +20,22 @@ class Pool {
     mutex mx;
     bool tFinished;
 
+    // todo:
+    thread t;
+
     void consume() {
         unique_lock<mutex> lck(mx);
 
         while (true) {
-            while (tasks.empty())
+//        while (!this->tFinished) {
+//            if (tFinished)
+//                return;
+
+            while (!tFinished && tasks.empty())
                 cv.wait(lck);
+
+            if (tFinished && tasks.empty())
+                return;
 
             int i = (counter++) % workers.size();
             Message* msg = tasks.front();
@@ -36,12 +46,14 @@ class Pool {
     }
 
 public:
-//    Pool(T *actor, int cap = 3) : tFinished(false) {
     Pool(Actor *actor, int cap = 3) : tFinished(false) {
         counter = 0;
         for (int i = 0; i < cap; ++i) {
             workers.push_back(actor);
         }
+
+        t = thread([=] { consume(); });
+
 //                    [this] {
 //                        while (true) {
 //                            std::function<void()> task;
@@ -73,8 +85,8 @@ public:
         }
 
         cv.notify_all();
-        for (Actor* a : workers)
-            delete a;
+        for (Actor *a : workers)
+            a->t.join();
     }
 
     // todo: this is equivalent of ThreadPool::enqueue
