@@ -231,7 +231,8 @@ let consume messages =
         ) messages)) ^ "\nloop: ;\n}\n}"
 
 let make_die _ =
-  "\nvoid Die() {\nthis->tFinished = true;\nt.join();\n}\n"
+  "\nvoid Die() {\nthis->tFinished = true;\n" ^
+    "___monitor->receive(new DeleteMessage());\n}\n"
 
 let c_actor sactor_scope =
   let sactor = sactor_scope.a_actor in
@@ -242,8 +243,9 @@ let c_actor sactor_scope =
         unpack_body (c_sstmt sa_body true) ^ "\n\npublic:\n" ^ "a_" ^ sa_name ^
           " (" ^ (c_formals sa_formals) ^ ") : Actor()\n{\n" ^
             constructor_assignment sa_formals ^ "\n" ^
-              "t = thread([=] { consume(); });\n}\nvirtual ~a_" ^ sa_name ^
-              "() {\nDie();\n}\n" ^ (make_die ()) ^
+              "___monitor->receive(new SpawnMessage());\nt = thread([=] " ^
+              "{ consume(); });\n}\nvirtual ~a_" ^ sa_name ^
+              "() {\nDie();\nt.join();\n}\n" ^ (make_die ()) ^
               "virtual void receive(Message *msg) {\n" ^
               String.concat "" (List.map cast_message smessages) ^
               "notify:\ncv.notify_one();\n}\n" ^ String.concat "\n"
@@ -259,15 +261,17 @@ let main_decl (se, _) =
       SFunc_Lit sfl ->
         let sf_formals = sfl.sf_formals and sf_body = sfl.sf_body in
           "int main (" ^ c_formals sf_formals ^
-            ") " ^ (
+            ") {\n" ^ (
               let sfbody = c_sstmt sf_body false in
-              let slen = String.length sfbody - 2 in
-              String.sub sfbody 0 slen ^ "\nreturn 0;\n}"
+              "bool ___end_program = false;\n___monitor = " ^
+                "new Monitor(&___end_program);" ^ unpack_body sfbody ^
+                "\nwhile (!___monitor->is_exitable()) {cout << \"\";}" ^
+                  "\nreturn 0;\n}"
             ) ^ "\n"
     | _ -> raise (Failure "Main method not found")
 
 let c_program (smessages, sactors, sfuncs, main) =
-  actor_include ^ immut_include ^
+  actor_include ^ immut_include ^ "static Monitor *___monitor;\n\n" ^
   String.concat "\n" (List.map c_message smessages) ^ "\n\n" ^
   String.concat "\n" (List.map c_actor sactors) ^ "\n" ^
   String.concat "\n\n" (List.map c_func sfuncs) ^ "\n" ^

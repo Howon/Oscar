@@ -72,21 +72,26 @@ class Monitor : public Actor {
         actor_counter--;
 
         delete msg;
+
+        if (actor_counter.load() == 0 && spawnQueue.empty() &&
+            deleteQueue.empty())
+            *this->end = true;
     }
 
 public:
     Monitor(bool *end) {
         this->end = end;
-
+        actor_counter = 0;
         t = thread([=] { consume(); });
     }
 
     virtual ~Monitor() {
-        cout <<"done" << endl;
         *this->end = true;
 
         t.join();
     }
+
+    bool is_exitable() { return *this->end; }
 
     void receive(Message* const msg) {
         if (SpawnMessage* pm = dynamic_cast<SpawnMessage *>(msg)) {
