@@ -10,6 +10,7 @@ actor Tester() {
         Println(m1 == m2);
         m1[0] = 2.7;
         Println(m1 == m2);
+        Die();
       }
     | die() => {
       }
@@ -19,5 +20,4 @@ actor Tester() {
 def main() => unit = {
   actor<Tester> mapTester = spawn actor<Tester>();
   message<testNow>() |> mapTester;
-  message<die>() |> mapTester;
 }

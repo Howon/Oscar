@@ -8,6 +8,7 @@ actor Tester() {
     | testNow() => {
 		    set<int> s2 = setAdd(s1, 6);
 		    Println(s1 == s2);
+        Die();
       }
     | die() => {
       }
@@ -17,5 +18,4 @@ actor Tester() {
 def main() => unit = {
   actor<Tester> setTester = spawn actor<Tester>();
   message<testNow>() |> setTester;
-  message<die>() |> setTester;
 }

@@ -10,6 +10,7 @@ actor Tester() {
         Println(l1 == l2);
         list<int> l3 = (l1[0] = 0);
         Println(l1 == l2);
+        Die();
       }
     | die() => {
       }
@@ -19,5 +20,4 @@ actor Tester() {
 def main() => unit = {
   actor<Tester> listTester = spawn actor<Tester>();
   message<testNow>() |> listTester;
-  message<die>() |> listTester;
 }

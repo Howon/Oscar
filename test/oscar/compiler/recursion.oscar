@@ -14,6 +14,7 @@ actor Tester() {
   receive = {
     | testNow() => {
         Println(factorial(5));
+        Die();
       }
     | die() => {
       }
@@ -24,5 +25,4 @@ actor Tester() {
 def main() => unit = {
   actor<Tester> recursionTester = spawn actor<Tester>();
   message<testNow>() |> recursionTester;
-  message<die>() |> recursionTester;
 }

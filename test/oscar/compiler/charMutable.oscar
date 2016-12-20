@@ -9,6 +9,7 @@ actor Tester() {
         Println(c);
         c = 'b';
         Println(c);
+        Die();
       }
     | die() => {
       }
@@ -18,5 +19,4 @@ actor Tester() {
 def main() => unit = {
   actor<Tester> charTester = spawn actor<Tester>();
   message<testNow>() |> charTester;
-  message<die>() |> charTester;
 }
