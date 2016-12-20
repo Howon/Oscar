@@ -22,10 +22,6 @@ public:
         name(name), sender(sender) {}
 
     virtual ~Message() {}
-
-    void setSender(Actor* sender) {
-        this->sender = sender;
-    }
 };
 
 static Message EMPTY_MESSAGE = Message();
@@ -33,13 +29,13 @@ static Message EMPTY_MESSAGE = Message();
 // Ping messages
 class StartMessage : public Message {
 public:
-    StartMessage(Actor *sender) : Message("start", sender) { }
+    StartMessage(Actor *sender=NULL) : Message("start", sender) { }
     tuple<int> get() { return make_tuple(0); }
 };
 
 class PongMessage : public Message {
 public:
-    PongMessage(Actor *sender) : Message("pong", sender) { }
+    PongMessage(Actor *sender=NULL) : Message("pong", sender) { }
     tuple<int> get() { return make_tuple(NULL); }
 };
 
@@ -47,13 +43,13 @@ public:
 // Pong messages
 class PingMessage : public Message {
 public:
-    PingMessage(Actor *sender) : Message("ping", sender) { }
+    PingMessage(Actor *sender=NULL) : Message("ping", sender) { }
     tuple<int> get() { return make_tuple(NULL); }
 };
 
 class StopMessage : public Message {
 public:
-    StopMessage(Actor *sender) : Message("stop", sender) { }
+    StopMessage(Actor *sender=NULL) : Message("stop", sender) { }
     tuple<int> get() { return make_tuple(NULL); }
 };
 

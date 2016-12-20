@@ -68,7 +68,11 @@ public:
         this->pong = pong;
     }
 
-    Ping(int maxTurns=99) : currCount(0), maxTurns(maxTurns) {
+    void setmaxTurns(int maxTurns) {
+        this->maxTurns = maxTurns;
+    }
+
+    Ping(int maxTurns=99, Actor* pong=NULL) : currCount(0), maxTurns(maxTurns), pong(pong) {
         t = thread([=] { consume(); });
     }
 
@@ -93,10 +97,10 @@ public:
 //    }
 //    startQueue = rhs.startQueue;
 
-////        queue<PongMessage *> pongQueue;
-////
-////        int currCount;
-////        int maxTurns;
+//        queue<PongMessage *> pongQueue;
+//
+//        int currCount;
+//        int maxTurns;
 //
         return *this;
     }
@@ -158,6 +162,32 @@ class Pong : public Actor {
     }
 
 public:
+
+    Pong(const Pong& rhs) {
+        operator=(rhs);
+    }
+
+    Pong& operator=(const Pong& rhs) {
+        if (&rhs == this)
+            return *this;
+
+        // todo: finish this
+//    *pong = *rhs.pong;
+//
+//    while (!startQueue.empty()) {
+//        delete startQueue.front();
+//        startQueue.pop();
+//    }
+//    startQueue = rhs.startQueue;
+
+//        queue<PongMessage *> pongQueue;
+//
+//        int currCount;
+//        int maxTurns;
+//
+        return *this;
+    }
+
     Pong() {
         t = thread([=] { consume(); });
     }
