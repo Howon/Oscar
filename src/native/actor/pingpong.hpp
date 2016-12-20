@@ -55,7 +55,7 @@ class Ping : public Actor {
         incrementAndPrint();
         if (count > maxTurns) {
             Println(std::string("ping stopped"));
-            pong->receive(new StartMessage(this));
+            pong->receive(new StopMessage(this));
 
             Die();
         }
