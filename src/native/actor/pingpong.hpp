@@ -72,11 +72,36 @@ public:
         t = thread([=] { consume(); });
     }
 
+    Ping(const Ping& rhs) {
+        operator=(rhs);
+    }
+
     ~Ping() {
         t.join();
     }
 
-    void receive(Message* const msg) {
+    Ping& operator=(const Ping& rhs) {
+        if (&rhs == this)
+            return *this;
+
+        // todo: finish this
+//    *pong = *rhs.pong;
+//
+//    while (!startQueue.empty()) {
+//        delete startQueue.front();
+//        startQueue.pop();
+//    }
+//    startQueue = rhs.startQueue;
+
+////        queue<PongMessage *> pongQueue;
+////
+////        int currCount;
+////        int maxTurns;
+//
+        return *this;
+    }
+
+    void receive(Message* msg) {
         if (StartMessage *pm = dynamic_cast<StartMessage*>(msg)) {
             unique_lock<mutex> lck(mx);
             startQueue.push(pm);
@@ -141,7 +166,7 @@ public:
         t.join();
     }
 
-    void receive(Message* const msg) {
+    void receive(Message* msg) {
         if (PingMessage* pm = dynamic_cast<PingMessage *>(msg)) {
             unique_lock<mutex> lck(mx);
             pingQueue.push(pm);

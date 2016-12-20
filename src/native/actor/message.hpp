@@ -22,6 +22,10 @@ public:
         name(name), sender(sender) {}
 
     virtual ~Message() {}
+
+    void setSender(Actor* sender) {
+        this->sender = sender;
+    }
 };
 
 static Message EMPTY_MESSAGE = Message();

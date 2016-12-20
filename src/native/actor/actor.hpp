@@ -17,7 +17,7 @@ using namespace std;
 
 class Actor {
 public:
-    std::thread t;
+    thread t;
     condition_variable cv;
     mutex mx;
     bool tFinished;
@@ -27,7 +27,16 @@ public:
 
     ~Actor() { }
 
-    virtual void receive(Message* const msg) = 0;
+    Actor& operator=(const Actor& rhs) {
+        if (&rhs == this)
+            return *this;
+
+        tFinished = rhs.tFinished;
+
+        return *this;
+    }
+
+    virtual void receive(Message* msg) = 0;
 
     // todo: implement
 //    void send(int actorAddr, const Message& msg) { }
