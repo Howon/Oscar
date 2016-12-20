@@ -44,6 +44,7 @@ class Ping : public Actor {
     }
 
     void respond(StartMessage *msg) {
+        delete msg;
         incrementAndPrint();
         pong->receive(new PingMessage(this));
     }
@@ -51,7 +52,7 @@ class Ping : public Actor {
 
     void respond(PongMessage* msg)
     {
-
+        delete msg;
         incrementAndPrint();
         if (count > maxTurns) {
             Println(std::string("ping stopped"));
@@ -128,11 +129,13 @@ class Pong : public Actor {
     }
 
     void respond(StopMessage *msg) {
+        delete msg;
         printf("pong stopped\n\n");
         Die();
     }
 
     void respond(PingMessage *msg) {
+        delete msg;
         printf("  pong\n");
         msg->sender->receive(new PongMessage(this));
     }
