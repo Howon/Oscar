@@ -4,6 +4,33 @@
 #include "actor.hpp"
 #include "../immut/immut.hpp"
 
+// Ping messages
+class StartMessage : public Message {
+public:
+    StartMessage(Actor *sender) : Message("start", sender) { }
+    tuple<> get() { return make_tuple(); }
+};
+
+class PongMessage : public Message {
+public:
+    PongMessage(Actor *sender) : Message("pong", sender) { }
+    tuple<> get() { return make_tuple(); }
+};
+
+
+// Pong messages
+class PingMessage : public Message {
+public:
+    PingMessage(Actor *sender) : Message("ping", sender) { }
+    tuple<> get() { return make_tuple(); }
+};
+
+class StopMessage : public Message {
+public:
+    StopMessage(Actor *sender) : Message("stop", sender) { }
+    tuple<> get() { return make_tuple(); }
+};
+
 
 class Pong : public Actor {
     queue<StopMessage *> stopQueue;
