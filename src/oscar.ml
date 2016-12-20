@@ -90,7 +90,7 @@ let _ =
                 flush stderr;
                 exit 1;
           in
-          if optimize then
+          (*if optimize then
             try
               Optimizer.optimize_program sprogram
             with
@@ -98,7 +98,7 @@ let _ =
                 Printf.eprintf "%s\n" ("Error: " ^ f);
                 flush stderr;
                 exit 2;
-          else
+          else*)
             sprogram
         in
         match action with
@@ -106,6 +106,8 @@ let _ =
           | Sast  -> print_endline (Sast.str_sprogram soprogram)
           | _ ->
               let program = Codegen.c_program soprogram in
+                print_endline program;
+(*
               let file_stub = get_file_stub oscar in
               let cpp_file = file_stub ^ ".cpp" in
               let c_op = "-Wall -pedantic -fsanitize=address -std=c++1y -O2" in
@@ -123,4 +125,4 @@ let _ =
               in
               let ch = Unix.open_process_out cxx in
               Out_channel.write_all cpp_file ~data:program;
-              Out_channel.output_string ch program;
+              Out_channel.output_string ch program; *)

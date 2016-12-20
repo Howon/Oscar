@@ -17,16 +17,14 @@ oscar : library
 	mv ./src/$(TARGET) ./$(OSCAR) && \
 	cp ./src/$(STDLIB) ./$(BUILDDIR) && \
 	cp ./src/$(IMMUT)/* ./$(BUILDDIR) && \
+	cp ./src/$(ACTOR)/* ./$(BUILDDIR) && \
 	echo 'Oscar Compiler Succesfully Built'
 
 library : clean_library
 	@echo 'Building Oscar Library'
 	@mkdir /usr/local/include/oscar && \
-	cp src/native/immut/collection.hpp  /usr/local/include/oscar/ && \
-	cp src/native/immut/immut.hpp 	   	/usr/local/include/oscar/ && \
-	cp src/native/immut/list.hpp		/usr/local/include/oscar/ && \
-	cp src/native/immut/map.hpp         /usr/local/include/oscar/ && \
-	cp src/native/immut/set.hpp         /usr/local/include/oscar/ && \
+	cp src/native/immut/*.hpp  /usr/local/include/oscar/ && \
+	cp src/native/actor/*.hpp  /usr/local/include/oscar/ && \
 	echo 'Oscar Library Succesfully Built'
 
 scanner.ml : scanner.mll

@@ -6,30 +6,6 @@ exception Type_mismatch
 exception Builtin_arg_num_err of string * int * int
 exception Builtin_arg_type_err of string * (t_expr list)
 
-type vsymtab = {
-  vparent      : vsymtab option;
-  svals        : sval_decl list
-}
-
-type mvsymtab = {
-  mvparent     : mvsymtab option;
-  smvars       : smvar_decl list
-}
-
-type actor_scope = {
-  a_actor    : sactor;
-  a_scope    : scope;
-  a_messages : smessage list;
-} and scope = {
-  messages    : smessage list;
-  actors      : actor_scope list;
-  env_vtable  : vsymtab;
-  env_mvtable : mvsymtab;
-  return_t    : types option;
-  in_actor    : bool;
-  actor_init    : bool;
-}
-
 let get_list_fst l  =
   List.map (fun (x, _) -> x) l
 
@@ -180,7 +156,7 @@ let check_actor_lit (sa : sactor) (args : t_expr list) =
       sa.sa_name ^ " requires (" ^ str_types_list req_params ^
         ") but constructed with " ^ str_types_list (get_list_snd args)))
 
-let check_builtin (f : string) (tel : t_expr list) =
+let check_builtin (f : string) (tel : t_expr list) (env : scope) =
   let args_len = List.length tel in
     match f with
         "Println" ->
@@ -191,6 +167,14 @@ let check_builtin (f : string) (tel : t_expr list) =
                       raise (Builtin_arg_type_err (f, tel))
                   | _ -> (SFuncCall(f, tel), Unit_t))
             | _ -> raise (Builtin_arg_num_err (f, 1, args_len)))
+      | "Die" ->
+          (if env.in_actor then
+            if args_len > 0 then
+              raise (Builtin_arg_num_err (f, 0, args_len))
+            else
+              (SFuncCall("Die", []), Unit_t)
+          else
+            raise (Failure "Die() can only be called in actors"))
       | "AsInt" ->
           (match tel with
             [(_, tail_t)] ->
@@ -568,7 +552,7 @@ let rec check_expr (e : expr) (env : scope) =
         let arg_types = get_list_snd checked_args in
         (if validate_arg_types arg_types then
           try
-            check_builtin f checked_args
+            check_builtin f checked_args env
           with
               Builtin_arg_num_err (b, e, num) ->
                 raise (Failure ("Builtin function " ^ b ^ " called with too " ^
@@ -921,7 +905,7 @@ let check_program (p : program) (slib : program) =
   ) ([], seed_env) sl_messages in
   let (sl_sactors, sl_a_env) = List.fold_left (fun acc a ->
     let (sl_a_scope, sl_nenv) = check_actor_decl a (snd acc) in
-      (sl_a_scope.a_actor :: fst acc, sl_nenv)
+      (sl_a_scope :: fst acc, sl_nenv)
   ) ([], sl_m_env) sl_actors in
   let (sl_sfunctions, _) = List.fold_left (fun acc f ->
     let (sl_sfunc, sl_nenv) = check_vdecl f (snd acc) in
@@ -936,7 +920,7 @@ let check_program (p : program) (slib : program) =
   ) ([], seed_env) messages in
   let (sactors, a_env) = List.fold_left (fun acc a ->
     let (a_scope, nenv) = check_actor_decl a (snd acc) in
-      (a_scope.a_actor :: fst acc, nenv)
+      (a_scope :: fst acc, nenv)
   ) ([], m_env) actors in
   let (sfunctions, _) = List.fold_left (fun acc f ->
     let (sfunc, nenv) = check_vdecl f (snd acc) in

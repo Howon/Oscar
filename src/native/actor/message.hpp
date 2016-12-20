@@ -24,8 +24,6 @@ public:
     virtual ~Message() {}
 };
 
-static Message EMPTY_MESSAGE = Message();
-
 // Ping messages
 class StartMessage : public Message {
 public:

@@ -29,9 +29,7 @@ public:
 
     virtual void receive(Message* const msg) = 0;
 
-    // todo: implement
-//    void send(int actorAddr, const Message& msg) { }
-//    void broadcast(int poolAddr, const Message& msg) { }
+    void Die() { this->tFinished = true; }
 };
 
 

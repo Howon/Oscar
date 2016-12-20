@@ -2,47 +2,44 @@
 #define __PINGPONG__
 
 #include "actor.hpp"
-
-class Pong;
+#include "../immut/immut.hpp"
 
 class Ping : public Actor {
     Actor* pong;
+
     queue<StartMessage *> startQueue;
     queue<PongMessage *> pongQueue;
 
-    int currCount;
+    int count;
     int maxTurns;
 
-    void die() { this->tFinished = true; }
-
-    void consume() {
+        void consume()
+    {
         unique_lock<mutex> lck(mx);
-
         while (!this->tFinished) {
-            while (startQueue.empty() && pongQueue.empty()) {
-                // finished running, terminate thread
+            while (pongQueue.empty() && startQueue.empty()) {
                 if (tFinished)
                     return;
-
-                // else, wait for messages to arrive
                 cv.wait(lck);
             }
-
-            // process current message
+            if (!pongQueue.empty()) {
+                auto msg = pongQueue.front();
+                pongQueue.pop();
+                respond(msg);
+                goto loop;
+            }
             if (!startQueue.empty()) {
                 auto msg = startQueue.front();
                 startQueue.pop();
                 respond(msg);
-            } else if (!pongQueue.empty()) {
-                auto msg = pongQueue.front();
-                pongQueue.pop();
-                respond(msg);
+                goto loop;
             }
+        loop:;
         }
     }
 
     void incrementAndPrint() {
-        ++currCount;
+        ++count;
         printf("ping\n");
     }
 
@@ -51,16 +48,20 @@ class Ping : public Actor {
         pong->receive(new PingMessage(this));
     }
 
-    void respond(PongMessage *msg) {
+
+    void respond(PongMessage* msg)
+    {
+
         incrementAndPrint();
+        if (count > maxTurns) {
+            Println(std::string("ping stopped"));
+            pong->receive(new StartMessage(this));
 
-        if (currCount > maxTurns) {
-            printf("ping stopped\n");
-            msg->sender->receive(new StopMessage(this));
-            die();
+            Die();
         }
-
-        msg->sender->receive(new PingMessage(this));
+        else {
+            pong->receive(new PingMessage(this));
+        }
     }
 
 public:
@@ -68,7 +69,7 @@ public:
         this->pong = pong;
     }
 
-    Ping(int maxTurns=99) : currCount(0), maxTurns(maxTurns) {
+    Ping(int maxTurns=99) : count(0), maxTurns(maxTurns) {
         t = thread([=] { consume(); });
     }
 
@@ -77,14 +78,17 @@ public:
     }
 
     void receive(Message* const msg) {
-        if (StartMessage *pm = dynamic_cast<StartMessage*>(msg)) {
-            unique_lock<mutex> lck(mx);
-            startQueue.push(pm);
-        } else if (PongMessage* pm = dynamic_cast<PongMessage *>(msg)) {
+       if (PongMessage* pm = dynamic_cast<PongMessage*>(msg)) {
             unique_lock<mutex> lck(mx);
             pongQueue.push(pm);
+            goto notify;
         }
-
+        if (StartMessage* pm = dynamic_cast<StartMessage*>(msg)) {
+            unique_lock<mutex> lck(mx);
+            startQueue.push(pm);
+            goto notify;
+        }
+    notify:
         cv.notify_one();
     }
 };
@@ -93,8 +97,6 @@ public:
 class Pong : public Actor {
     queue<StopMessage *> stopQueue;
     queue<PingMessage *> pingQueue;
-
-    void die() { this->tFinished = true; }
 
     void consume() {
         unique_lock<mutex> lck(mx);
@@ -107,6 +109,7 @@ class Pong : public Actor {
 
                 // else, wait for messages to arrive
                 cv.wait(lck);
+                goto loop;
             }
 
             // process current message
@@ -118,13 +121,15 @@ class Pong : public Actor {
                 auto msg = pingQueue.front();
                 pingQueue.pop();
                 respond(msg);
+                goto loop;
             }
+            loop: ;
         }
     }
 
     void respond(StopMessage *msg) {
         printf("pong stopped\n\n");
-        die();
+        Die();
     }
 
     void respond(PingMessage *msg) {

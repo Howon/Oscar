@@ -10,8 +10,7 @@ int main() {
 
     ping.setPong(&pong);
 
-    StartMessage startMessage(&ping);
-    ping.receive(&startMessage);
+    ping.receive(new StartMessage(NULL));
 
     return 0;
 }
