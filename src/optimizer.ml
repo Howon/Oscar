@@ -484,9 +484,10 @@ let opt_actor scope sact =
   { sact with sa_body = nbody; sa_receive = nreceive }
 
 
-let optimize_program (messages, actors, functions, main) =
+let optimize_program (messages, actor_scopes, functions, main) =
   let main_scope =
     { loc = ["main"]; block_cnt = 0; if_cnt = 0; func_cnt = 0 } in
+  let actors = List.map (fun a -> a.a_actor) actor_scopes in
   let fp_actors = List.map (opt_actor main_scope) actors in
   let fp_functions = List.map (opt_funcdecl main_scope) functions in
   let (main_lit, main_typ) = main in
@@ -494,6 +495,9 @@ let optimize_program (messages, actors, functions, main) =
         SFunc_Lit(f) -> opt_func_lit main_scope f
       | _ -> raise (Failure "bad main") in
 
+  let fp_actor_scopes =
+    List.map2 (fun a a_s -> { a_s with a_actor = a }) fp_actors actor_scopes in
+
   let sp_functions = List.map option_get (List.filter option_is_some
       (List.map (snd_funcdecl main_scope) fp_functions)) in
-  (messages, fp_actors, sp_functions, (fp_main, main_typ))
+  (messages, fp_actor_scopes, sp_functions, (fp_main, main_typ))
