@@ -25,30 +25,15 @@ public:
 };
 
 // Ping messages
-class StartMessage : public Message {
+class SpawnMessage : public Message {
 public:
-    StartMessage(Actor *sender) : Message("start", sender) { }
-    tuple<> get() { return make_tuple(); }
+    SpawnMessage() : Message("spawn") { }
 };
 
-class PongMessage : public Message {
+// Ping messages
+class DeleteMessage : public Message {
 public:
-    PongMessage(Actor *sender) : Message("pong", sender) { }
-    tuple<> get() { return make_tuple(); }
-};
-
-
-// Pong messages
-class PingMessage : public Message {
-public:
-    PingMessage(Actor *sender) : Message("ping", sender) { }
-    tuple<> get() { return make_tuple(); }
-};
-
-class StopMessage : public Message {
-public:
-    StopMessage(Actor *sender) : Message("stop", sender) { }
-    tuple<> get() { return make_tuple(); }
+    DeleteMessage() : Message("delete") { }
 };
 
 #endif //__MESSAGE__
