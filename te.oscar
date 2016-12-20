@@ -1,0 +1,5 @@
+def main() => unit = {
+  actor<Printer> p = spawn actor<Printer>();
+  message<print>("Hello, World!") |> p;
+  message<die>() |> p;
+}
