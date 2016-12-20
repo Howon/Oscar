@@ -46,7 +46,7 @@ actor Ping(pong: actor<Pong>, maxTurns : int) {
 
 def main() => unit = {
   actor<Pong> pong = spawn actor<Pong>();
-  actor<Ping> ping = spawn actor<Ping>(pong, 3);
+  actor<Ping> ping = spawn actor<Ping>(pong, 99);
 
   message<startMsg>() |> ping;
 }

@@ -5,12 +5,13 @@ using namespace std;
 
 
 int main() {
-    Ping ping;
-    Pong pong;
+    auto pong = new Pong();
+    auto ping = new Ping(pong, 99);
 
-    ping.setPong(&pong);
+    ping->receive(new StartMessage(NULL));
 
-    ping.receive(new StartMessage(NULL));
+    delete pong;
+    delete ping;
 
     return 0;
 }

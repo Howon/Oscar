@@ -4,13 +4,83 @@
 #include "actor.hpp"
 #include "../immut/immut.hpp"
 
+
+class Pong : public Actor {
+    queue<StopMessage *> stopQueue;
+    queue<PingMessage *> pingQueue;
+
+    void consume() {
+        unique_lock<mutex> lck(mx);
+
+        while (!this->tFinished) {
+            while (stopQueue.empty() && pingQueue.empty()) {
+                // finished running, terminate thread
+                if (tFinished)
+                    return;
+
+                // else, wait for messages to arrive
+                cv.wait(lck);
+                goto loop;
+            }
+
+            // process current message
+            if (!stopQueue.empty()) {
+                auto msg = stopQueue.front();
+                stopQueue.pop();
+                respond(msg);
+            } else if (!pingQueue.empty()) {
+                auto msg = pingQueue.front();
+                pingQueue.pop();
+                respond(msg);
+                goto loop;
+            }
+            loop: ;
+        }
+    }
+
+    void respond(StopMessage *msg) {
+        delete msg;
+        printf("pong stopped\n\n");
+        Die();
+    }
+
+    void respond(PingMessage *msg) {
+        printf("  pong\n");
+        msg->sender->receive(new PongMessage(this));
+
+        delete msg;
+    }
+
+public:
+    Pong() {
+        t = thread([=] { consume(); });
+    }
+
+    virtual ~Pong() {
+        t.join();
+    }
+
+    void receive(Message* const msg) {
+        if (PingMessage* pm = dynamic_cast<PingMessage *>(msg)) {
+            unique_lock<mutex> lck(mx);
+            pingQueue.push(pm);
+        }
+        else if (StopMessage *pm = dynamic_cast<StopMessage*>(msg)) {
+            unique_lock<mutex> lck(mx);
+            stopQueue.push(pm);
+        }
+
+        cv.notify_one();
+    }
+};
+
 class Ping : public Actor {
-    Actor* pong;
+    Pong* pong;
 
     queue<StartMessage *> startQueue;
     queue<PongMessage *> pongQueue;
 
-    int count;
+    int count = 0;
     int maxTurns;
 
         void consume()
@@ -66,15 +136,14 @@ class Ping : public Actor {
     }
 
 public:
-    void setPong(Actor* pong) {
+    Ping(Pong* pong, int maxTurns=99) : Actor() {
         this->pong = pong;
-    }
+        this->maxTurns = maxTurns;
 
-    Ping(int maxTurns=99) : count(0), maxTurns(maxTurns) {
         t = thread([=] { consume(); });
     }
 
-    ~Ping() {
+    virtual ~Ping() {
         t.join();
     }
 
@@ -90,76 +159,6 @@ public:
             goto notify;
         }
     notify:
-        cv.notify_one();
-    }
-};
-
-
-class Pong : public Actor {
-    queue<StopMessage *> stopQueue;
-    queue<PingMessage *> pingQueue;
-
-    void consume() {
-        unique_lock<mutex> lck(mx);
-
-        while (!this->tFinished) {
-            while (stopQueue.empty() && pingQueue.empty()) {
-                // finished running, terminate thread
-                if (tFinished)
-                    return;
-
-                // else, wait for messages to arrive
-                cv.wait(lck);
-                goto loop;
-            }
-
-            // process current message
-            if (!stopQueue.empty()) {
-                auto msg = stopQueue.front();
-                stopQueue.pop();
-                respond(msg);
-            } else if (!pingQueue.empty()) {
-                auto msg = pingQueue.front();
-                pingQueue.pop();
-                respond(msg);
-                goto loop;
-            }
-            loop: ;
-        }
-    }
-
-    void respond(StopMessage *msg) {
-        delete msg;
-        printf("pong stopped\n\n");
-        Die();
-    }
-
-    void respond(PingMessage *msg) {
-        printf("  pong\n");
-        msg->sender->receive(new PongMessage(this));
-
-        delete msg;
-    }
-
-public:
-    Pong() {
-        t = thread([=] { consume(); });
-    }
-
-    ~Pong() {
-        t.join();
-    }
-
-    void receive(Message* const msg) {
-        if (PingMessage* pm = dynamic_cast<PingMessage *>(msg)) {
-            unique_lock<mutex> lck(mx);
-            pingQueue.push(pm);
-        }
-        else if (StopMessage *pm = dynamic_cast<StopMessage*>(msg)) {
-            unique_lock<mutex> lck(mx);
-            stopQueue.push(pm);
-        }
-
         cv.notify_one();
     }
 };

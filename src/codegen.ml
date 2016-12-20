@@ -1,6 +1,10 @@
 open Ast
 open Sast
 
+open Hashtbl
+
+let ap_decls = Hashtbl.create 50
+
 let std = "std::"
 let immut = "immut::"
 let mes = "m_"
@@ -86,6 +90,11 @@ and c_sstmt sstmt (a : bool) =
     | SVdecl sv            -> if a then
                                 c_func sv
                               else
+                                let () = (match sv.sv_type with
+                                  Actor_t _ | Pool_t _ ->
+                                    Hashtbl.replace ap_decls sv.sv_name true
+                                | _ ->  ()
+                                ) in
                                 "auto " ^ sv.sv_name ^ "=" ^
                                   c_texpr sv.sv_init a ^ ";"
     | SIf (se, s1, s2)     -> c_if se s1 s2 a
@@ -206,22 +215,25 @@ let c_actor sactor_scope =
         unpack_body (c_sstmt sa_body true) ^ "\n\npublic:\n" ^ "a_" ^ sa_name ^
           " (" ^ (c_formals sa_formals) ^ ") : Actor() \n{\n" ^
             constructor_assignment sa_formals ^ "\n" ^
-              "t = thread([=] { consume(); });\n}\n~a_" ^ sa_name ^ "() {\n" ^
-                "t.join();\n}\nvirtual void receive(Message *msg) {\n" ^
+              "t = thread([=] { consume(); });\n}\nvirtual ~a_" ^ sa_name ^
+                "() {\nt.join();\n}\nvirtual void receive(Message *msg) {\n" ^
                   String.concat "" (List.map cast_message smessages) ^
                     "notify:\ncv.notify_one();\n}\n" ^ String.concat "\n"
                       (List.map c_pattern sa_receive) ^ consume smessages ^
                       "};\n"
 
-and main_decl (se, _) =
+let delete_actors s =
+  Hashtbl.fold (fun k _ acc -> ("delete " ^ k ^ ";\n") ^ acc) ap_decls s
+
+let main_decl (se, _) =
   match se with
       SFunc_Lit sfl ->
         let sf_formals = sfl.sf_formals and sf_body = sfl.sf_body in
           "int main (" ^ c_formals sf_formals ^
             ") \n" ^ (
               let sfbody = c_sstmt sf_body false in
-                let slen = String.length sfbody - 2 in
-                  String.sub sfbody 0 slen ^ "\nreturn 0;\n}"
+              let slen = String.length sfbody - 2 in
+              String.sub sfbody 0 slen ^ (delete_actors "\nreturn 0;\n}")
             ) ^ "\n"
     | _ -> raise (Failure "Main method not found")
 

@@ -28,13 +28,13 @@ public:
 class StartMessage : public Message {
 public:
     StartMessage(Actor *sender) : Message("start", sender) { }
-    tuple<int> get() { return make_tuple(0); }
+    tuple<> get() { return make_tuple(); }
 };
 
 class PongMessage : public Message {
 public:
     PongMessage(Actor *sender) : Message("pong", sender) { }
-    tuple<int> get() { return make_tuple(NULL); }
+    tuple<> get() { return make_tuple(); }
 };
 
 
@@ -42,13 +42,13 @@ public:
 class PingMessage : public Message {
 public:
     PingMessage(Actor *sender) : Message("ping", sender) { }
-    tuple<int> get() { return make_tuple(NULL); }
+    tuple<> get() { return make_tuple(); }
 };
 
 class StopMessage : public Message {
 public:
     StopMessage(Actor *sender) : Message("stop", sender) { }
-    tuple<int> get() { return make_tuple(NULL); }
+    tuple<> get() { return make_tuple(); }
 };
 
 #endif //__MESSAGE__
