@@ -3,7 +3,8 @@ open Sast
 
 open Hashtbl
 
-let ap_decls = Hashtbl.create 50
+let a_decls = Hashtbl.create 50
+let p_decls = Hashtbl.create 50
 
 let std = "std::"
 let immut = "immut::"
@@ -91,8 +92,10 @@ and c_sstmt sstmt (a : bool) =
                                 c_func sv
                               else
                                 let () = (match sv.sv_type with
-                                  Actor_t _ | Pool_t _ ->
-                                    Hashtbl.replace ap_decls sv.sv_name true
+                                  Actor_t _ ->
+                                    Hashtbl.replace a_decls sv.sv_name true
+                                | Pool_t _ ->
+                                    Hashtbl.replace p_decls sv.sv_name true
                                 | _ ->  ()
                                 ) in
                                 "auto " ^ sv.sv_name ^ "=" ^
@@ -100,7 +103,8 @@ and c_sstmt sstmt (a : bool) =
     | SIf (se, s1, s2)     -> c_if se s1 s2 a
     | SActor_send (se, act)  ->
         (match fst act with
-            SId "sender"  -> "msg->sender->receive(" ^ c_texpr se a ^ ");\n"
+            SId "sender"  ->
+              "theMsgThatWasReceived->sender->receive(" ^ c_texpr se a ^ ");\n"
           | _             ->
               c_texpr act a ^ "->receive(" ^ c_texpr se a ^ ");\n")
     | SPool_send (se, p)  ->
@@ -130,7 +134,7 @@ and c_func vd =
         SFunc_Lit sfl ->
           let { sf_formals; sf_return_t; sf_body } = sfl in
             c_type sf_return_t ^ " " ^ sv_name ^ "(" ^ c_formals sf_formals ^
-              ") \n" ^ c_sstmt sf_body false ^ "\n"
+              ")\n" ^ c_sstmt sf_body false ^ "\n"
       | _ ->
           raise (Failure ("Top level function declaration failed: " ^
             sv_name ^ " is not a function"))
@@ -144,7 +148,7 @@ and c_if te s1 s2 a =
         String.sub cond 1 (cond_len - 2)
       else
         cond
-      ) ^ ") \n" ^ c_sstmt s1 a ^ (match s2 with
+      ) ^ ")\n" ^ c_sstmt s1 a ^ (match s2 with
           SExpr (SNoexpr, _)  -> "\n"
         | _  -> " else " ^ c_sstmt s2 a ^ "\n"
       )
@@ -186,20 +190,24 @@ let cast_message message =
 
 let unpack_body body = String.sub body 1 (String.length body - 2)
 
+(* we give this theMsgThatWasReceived a name so long to avoid conflict *)
 let c_pattern sp =
   let { sp_smid = sp_smid; sp_smformals = sp_smformals; sp_body = _ } = sp in
-    "void respond(m_" ^ sp_smid ^ " *msg)\n{\n" ^ String.concat ";\n"
+    "void respond(m_" ^ sp_smid ^ " *theMsgThatWasReceived) {\n"
+    ^ String.concat ";\n"
       (List.mapi (fun i f ->
-        "auto " ^ fst f ^ " = get<" ^ string_of_int i ^ ">(msg->get())"
+        "auto " ^ fst f ^ " = get<" ^ string_of_int i ^
+        ">(theMsgThatWasReceived->get())"
       ) sp_smformals) ^ (if List.length sp_smformals > 0 then ";\n" else "") ^ (
         let actor_body = c_sstmt sp.sp_body true in
-          unpack_body actor_body) ^ "delete msg;\n}\n"
+          unpack_body actor_body) ^ "delete theMsgThatWasReceived;\n" ^
+      (if sp_smid = "die" then "Die();\n" else "") ^ "}\n"
 
 let consume messages =
     "void consume() {\nunique_lock<mutex> lck(mx);\nwhile (!this->tFinished)" ^
       "{\nwhile (" ^ (String.concat "&&" (List.map (fun m ->
            m.sm_name ^ "Queue.empty()"
-         ) messages)) ^ "){\nif (tFinished)\nreturn;\ncv.wait(lck);\n}" ^
+         ) messages)) ^ "){\nif (tFinished)\nreturn;\ncv.wait(lck);\n}\n" ^
         (String.concat "\n" (List.map (fun m ->
           "if (!" ^ m.sm_name ^ "Queue.empty()) {\n" ^
             "auto msg = " ^ m.sm_name ^ "Queue.front();\n" ^
@@ -213,27 +221,29 @@ let c_actor sactor_scope =
     "class a_" ^ sactor.sa_name ^ " : public Actor {\nprivate:\n" ^
       declare_fields sa_formals ^ declare_queues smessages ^
         unpack_body (c_sstmt sa_body true) ^ "\n\npublic:\n" ^ "a_" ^ sa_name ^
-          " (" ^ (c_formals sa_formals) ^ ") : Actor() \n{\n" ^
+          " (" ^ (c_formals sa_formals) ^ ") : Actor()\n{\n" ^
             constructor_assignment sa_formals ^ "\n" ^
               "t = thread([=] { consume(); });\n}\nvirtual ~a_" ^ sa_name ^
-                "() {\nt.join();\n}\nvirtual void receive(Message *msg) {\n" ^
-                  String.concat "" (List.map cast_message smessages) ^
-                    "notify:\ncv.notify_one();\n}\n" ^ String.concat "\n"
-                      (List.map c_pattern sa_receive) ^ consume smessages ^
-                      "};\n"
+              "() {\nt.join();\nDie();\n}\nvirtual void receive(Message *msg) {\n" ^
+              String.concat "" (List.map cast_message smessages) ^
+              "notify:\ncv.notify_one();\n}\n" ^ String.concat "\n"
+              (List.map c_pattern sa_receive) ^ consume smessages ^ "};\n"
 
-let delete_actors s =
-  Hashtbl.fold (fun k _ acc -> ("delete " ^ k ^ ";\n") ^ acc) ap_decls s
+let die_pools_actors s=
+  let f_kill k _ acc = k ^ "->receive(new m_die(NULL));\n" ^
+    "delete " ^ k ^";\n" ^ acc in
+  let die_pools = Hashtbl.fold f_kill p_decls s in
+  Hashtbl.fold f_kill a_decls die_pools
 
 let main_decl (se, _) =
   match se with
       SFunc_Lit sfl ->
         let sf_formals = sfl.sf_formals and sf_body = sfl.sf_body in
           "int main (" ^ c_formals sf_formals ^
-            ") \n" ^ (
+            ") " ^ (
               let sfbody = c_sstmt sf_body false in
               let slen = String.length sfbody - 2 in
-              String.sub sfbody 0 slen ^ (delete_actors "\nreturn 0;\n}")
+              String.sub sfbody 0 slen ^ (die_pools_actors "\nreturn 0;\n}")
             ) ^ "\n"
     | _ -> raise (Failure "Main method not found")
 

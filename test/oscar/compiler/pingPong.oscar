@@ -14,6 +14,8 @@ actor Pong() {
         Println("pong stopped");
         Die();
       }
+    | die() => {
+      }
   }
 }
 
@@ -40,6 +42,8 @@ actor Ping(pong: actor<Pong>, maxTurns : int) {
         } else {
             message<pingMsg>() |> pong;
         }
+      }
+    | die() => {
       }
   }
 }
