@@ -15,22 +15,18 @@ using namespace std;
 class Pool {
     vector<Actor *> workers;
     queue<Message *> tasks;
-    atomic<int> counter;
+
     condition_variable cv;
     mutex mx;
-    bool tFinished;
-
-    // todo:
     thread t;
+
+    atomic<int> counter;
+    bool tFinished;
 
     void consume() {
         unique_lock<mutex> lck(mx);
 
         while (true) {
-//        while (!this->tFinished) {
-//            if (tFinished)
-//                return;
-
             while (!tFinished && tasks.empty())
                 cv.wait(lck);
 
@@ -46,36 +42,12 @@ class Pool {
     }
 
 public:
-    Pool(Actor *actor, int cap = 3) : tFinished(false) {
-        counter = 0;
-        for (int i = 0; i < cap; ++i) {
+    Pool(Actor *actor, int cap) : tFinished(false), counter(0) {
+        for (int i = 0; i < cap; ++i)
+            // todo: might need to copy ... but it's a parent class
             workers.push_back(actor);
-        }
 
         t = thread([=] { consume(); });
-
-//                    [this] {
-//                        while (true) {
-//                            std::function<void()> task;
-//
-//                            {
-//                                std::unique_lock<std::mutex> lock(mx);
-//                                cv.wait(lock,
-//                                        [this] { return tFinished || !tasks.empty(); }
-//                                );
-//                                if (tFinished && tasks.empty())
-//                                    return;
-//
-//                                // todo: compilation breaks here b/c Message is incompatible with function<void()>
-//                                task = tasks.front();
-//                                tasks.pop();
-//                            }
-//
-//                            task();
-//                        }
-//                    }
-//            );
-//        }
     }
 
     ~Pool() {
@@ -89,8 +61,6 @@ public:
             a->t.join();
     }
 
-    // todo: this is equivalent of ThreadPool::enqueue
-    // todo: needs love!!!
     void receive(Message* msg) {
         {
             unique_lock<mutex> lck(mx);
