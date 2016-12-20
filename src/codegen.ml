@@ -263,8 +263,7 @@ let main_decl (se, _) =
           "int main (" ^ c_formals sf_formals ^
             ") {\n" ^ (
               let sfbody = c_sstmt sf_body false in
-              "bool ___end_program = false;\n___monitor = " ^
-                "new Monitor(&___end_program);" ^ unpack_body sfbody ^
+              "\n___monitor = " ^ "new Monitor();" ^ unpack_body sfbody ^
                 "\nwhile (!___monitor->is_exitable()) {cout << \"\";}" ^
                   "\nreturn 0;\n}"
             ) ^ "\n"
