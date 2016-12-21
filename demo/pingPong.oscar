@@ -10,7 +10,8 @@ actor Pong(printer: actor<Printer>) {
         message<pongMsg>() |> sender;
       }
     | stopMsg() => {
-        Println("pong stopped");
+        message<print>("pong stopped") |> printer;
+        message<die>() |> printer;
         Die();
       }
     | die() => {
@@ -23,7 +24,7 @@ actor Ping(printer: actor<Printer>, pong: actor<Pong>, maxTurns : int) {
 
   def incrementAndPrint() => unit = {
     count = count + 1;
-    Println("ping");
+    message<print>("ping") |> printer;
   }
 
   receive = {
@@ -52,6 +53,4 @@ def main() => unit = {
   actor<Pong> pong = spawn actor<Pong>(printer);
   actor<Ping> ping = spawn actor<Ping>(printer, pong, 99);
   message<startMsg>() |> ping;
-
-  message<die>() |> printer;
 }
