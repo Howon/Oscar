@@ -89,6 +89,7 @@ public:
 
     virtual ~Monitor() {
         this->end = true;
+        Die();
 
         t.join();
     }

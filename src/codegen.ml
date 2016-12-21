@@ -112,7 +112,7 @@ and c_sstmt sstmt (a : bool) =
         ) in
         (match a_name with
             "sender"  ->
-              "theMsgThatWasReceived->sender->receive(" ^ c_texpr se a ^ ");\n"
+              "___msgRcvd->sender->receive(" ^ c_texpr se a ^ ");\n"
           | _             ->
               c_texpr act a ^ "->receive(" ^ c_texpr se a ^ ");\n")
     | SPool_send (se, p)  ->
@@ -206,17 +206,17 @@ let cast_message message =
 
 let unpack_body body = String.sub body 1 (String.length body - 2)
 
-(* we give this theMsgThatWasReceived a name so long to avoid conflict *)
+(* we give this ___msgRcvd a name so long to avoid conflict *)
 let c_pattern sp =
   let { sp_smid = sp_smid; sp_smformals = sp_smformals; sp_body = _ } = sp in
-    "void respond(m_" ^ sp_smid ^ " *theMsgThatWasReceived) {\n"
+    "void respond(m_" ^ sp_smid ^ " *___msgRcvd) {\n"
     ^ String.concat ";\n"
       (List.mapi (fun i f ->
         "auto " ^ fst f ^ " = get<" ^ string_of_int i ^
-        ">(theMsgThatWasReceived->get())"
+        ">(___msgRcvd->get())"
       ) sp_smformals) ^ (if List.length sp_smformals > 0 then ";\n" else "") ^ (
         let actor_body = c_sstmt sp.sp_body true in
-          unpack_body actor_body) ^ "delete theMsgThatWasReceived;\n" ^
+          unpack_body actor_body) ^ "delete ___msgRcvd;\n" ^
       (if sp_smid = "die" then "Die();\n" else "") ^ "}\n"
 
 let consume messages =
@@ -263,10 +263,9 @@ let main_decl (se, _) =
           "int main (" ^ c_formals sf_formals ^
             ") {\n" ^ (
               let sfbody = c_sstmt sf_body false in
-              "bool ___end_program = false;\n___monitor = " ^
-                "new Monitor(&___end_program);" ^ unpack_body sfbody ^
+              "___monitor = new Monitor();\n" ^ unpack_body sfbody ^
                 "\nwhile (!___monitor->is_exitable()) {cout << \"\";}" ^
-                  "\nreturn 0;\n}"
+                  "\ndelete ___monitor;\nreturn 0;\n}"
             ) ^ "\n"
     | _ -> raise (Failure "Main method not found")
 
