@@ -76,9 +76,6 @@ class Monitor : public Actor {
         actor_counter--;
 
         delete msg;
-        std::cout << spawnQueue.empty();
-        std::cout << actor_counter.load();
-        std::cout << deleteQueue.empty() << std::endl;
         if (actor_counter.load() == 0 && spawnQueue.empty() &&
             deleteQueue.empty())
             Die();

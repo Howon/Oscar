@@ -232,7 +232,7 @@ let consume messages =
 
 let make_die _ =
   "\nvoid Die() {\nthis->tFinished = true;\n" ^
-    "___monitor->receive(new DeleteMessage());\ncv.notify_one();\nt.join();\n}\n"
+    "___monitor->receive(new DeleteMessage());\ncv.notify_one();\n}\n"
 
 let c_actor sactor_scope =
   let sactor = sactor_scope.a_actor in
@@ -245,7 +245,7 @@ let c_actor sactor_scope =
             constructor_assignment sa_formals ^ "\n" ^
               "___monitor->receive(new SpawnMessage());\nt = thread([=] " ^
               "{ consume(); });\n}\nvirtual ~a_" ^ sa_name ^
-              "() {}\n" ^ (make_die ()) ^
+              "() { t.join(); }\n" ^ (make_die ()) ^
               "virtual void receive(Message *msg) {\n" ^
               String.concat "" (List.map cast_message smessages) ^
               "notify:\ncv.notify_one();\n}\n" ^ String.concat "\n"
