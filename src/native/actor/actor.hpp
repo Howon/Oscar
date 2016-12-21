@@ -91,6 +91,7 @@ public:
     }
 
     virtual ~Monitor() {
+        cv.notify_one();
         Die();
 
         t.join();
