@@ -1,6 +1,7 @@
 #ifndef __ACTOR__
 #define __ACTOR__
 
+#include <unistd.h>
 #include "iostream"
 #include <cstdio>
 #include <queue>
