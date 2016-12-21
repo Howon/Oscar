@@ -220,15 +220,26 @@ let c_pattern sp =
       (if sp_smid = "die" then "Die();\n" else "") ^ "}\n"
 
 let consume messages =
-    "void consume() {\nunique_lock<mutex> lck(mx);\nwhile (!this->tFinished)" ^
-      "{\nwhile (" ^ (String.concat "&&" (List.map (fun m ->
+    "void consume() {\n" ^
+    "unique_lock<mutex> lck(mx);\nwhile (!this->tFinished) {\n" ^
+    "while (" ^ (String.concat "&&" (List.map (fun m ->
            m.sm_name ^ "Queue.empty()"
-         ) messages)) ^ "){\nif (tFinished)\nreturn;\ncv.wait(lck);\n}\n" ^
+         ) messages)) ^ "){\n" ^
+    "if (tFinished)\n" ^
+    "return;\n" ^
+    "cv.wait(lck);\n" ^
+    "}\n" ^
         (String.concat "\n" (List.map (fun m ->
           "if (!" ^ m.sm_name ^ "Queue.empty()) {\n" ^
             "auto msg = " ^ m.sm_name ^ "Queue.front();\n" ^
-              m.sm_name ^ "Queue.pop();\nrespond(msg);\ngoto loop;\n}"
-        ) messages)) ^ "\nloop: ;\n}\n}"
+              m.sm_name ^ "Queue.pop();\n" ^
+                "respond(msg);\n" ^
+                "goto loop;\n" ^
+                "}"
+        ) messages)) ^ "\n" ^
+    "loop: ;\n" ^
+    "}\n" ^
+    "}"
 
 let make_die _ =
   "\nvoid Die() {\nthis->tFinished = true;\n" ^
@@ -240,15 +251,22 @@ let c_actor sactor_scope =
   let { sa_name; sa_formals; sa_body; sa_receive } = sactor in
     "class a_" ^ sactor.sa_name ^ " : public Actor {\nprivate:\n" ^
       declare_fields sa_formals ^ declare_queues smessages ^
-        unpack_body (c_sstmt sa_body true) ^ "\n\npublic:\n" ^ "a_" ^ sa_name ^
-          " (" ^ (c_formals sa_formals) ^ ") : Actor()\n{\n" ^
+        unpack_body (c_sstmt sa_body true) ^ "\n\n" ^
+        "public:\n" ^ "a_" ^ sa_name ^
+          " (" ^ (c_formals sa_formals) ^ ")" ^
+        ": Actor()\n" ^
+        "{\n" ^
             constructor_assignment sa_formals ^ "\n" ^
-              "___monitor->receive(new SpawnMessage());\nt = thread([=] " ^
-              "{ consume(); });\n}\nvirtual ~a_" ^ sa_name ^
-              "() { t.join(); }\n" ^ (make_die ()) ^
+              "___monitor->receive(new SpawnMessage());\n" ^
+              "t = thread([=] { consume(); });\n" ^
+              "}\nvirtual ~a_" ^ sa_name ^ "() { t.join(); }\n" ^
+              (make_die ()) ^
               "virtual void receive(Message *msg) {\n" ^
               String.concat "" (List.map cast_message smessages) ^
-              "notify:\ncv.notify_one();\n}\n" ^ String.concat "\n"
+              "notify:\n" ^
+              "cv.notify_one();\n" ^
+              "}\n" ^
+              String.concat "\n"
               (List.map c_pattern sa_receive) ^ consume smessages ^ "};\n"
 
 let die_pools_actors s=
@@ -264,6 +282,7 @@ let main_decl (se, _) =
             ") {\n" ^ (
               let sfbody = c_sstmt sf_body false in
               "___monitor = new Monitor();\n" ^ unpack_body sfbody ^
+                "\nusleep(1000);" ^
                 "\nwhile (!___monitor->is_exitable()) {cout << \"\";}" ^
                   "\ndelete ___monitor;\nreturn 0;\n}"
             ) ^ "\n"
