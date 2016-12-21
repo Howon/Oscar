@@ -40,6 +40,8 @@ class Monitor : public Actor {
     queue<SpawnMessage *> spawnQueue;
     queue<DeleteMessage *> deleteQueue;
 
+    void Die() { this->tFinished = true; this->end = true; }
+
     void consume() {
         unique_lock<mutex> lck(mx);
 
@@ -60,6 +62,7 @@ class Monitor : public Actor {
                 respond(msg);
             }
         }
+        this->end = true;
     }
 
     void respond(SpawnMessage *msg) {
@@ -73,10 +76,12 @@ class Monitor : public Actor {
         actor_counter--;
 
         delete msg;
-
+        std::cout << spawnQueue.empty();
+        std::cout << actor_counter.load();
+        std::cout << deleteQueue.empty() << std::endl;
         if (actor_counter.load() == 0 && spawnQueue.empty() &&
             deleteQueue.empty())
-            this->end = true;
+            Die();
     }
 
 public:
@@ -88,7 +93,6 @@ public:
     }
 
     virtual ~Monitor() {
-        this->end = true;
         Die();
 
         t.join();
