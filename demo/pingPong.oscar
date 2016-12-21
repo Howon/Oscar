@@ -6,7 +6,7 @@ message pongMsg()
 actor Pong(printer: actor<Printer>) {
   receive = {
     | pingMsg() => {
-        message<print>("  pong") |> printer;
+      	Println("  pong");
         message<pongMsg>() |> sender;
       }
     | stopMsg() => {
@@ -35,7 +35,7 @@ actor Ping(printer: actor<Printer>, pong: actor<Pong>, maxTurns : int) {
         incrementAndPrint();
 
         if (count > maxTurns) {
-            message<print>("ping stopped") |> printer;
+            Println("ping stopped");
             message<stopMsg>() |> pong;
             Die();
         } else {

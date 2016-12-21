@@ -372,9 +372,8 @@ loop: ;
 
 
 int main () {
-bool end_program = false;
-monitor = new Monitor(&end_program);
-cout << end_program << endl;
+monitor = new Monitor();
+cout << monitor->is_exitable() << endl;
 
 auto pong=new a_Pong();
 
@@ -382,9 +381,9 @@ auto ping=new a_Ping(pong, 3);
 
 ping->receive(new m_startMsg(NULL));
 
-while (!end_program) { }
+while (!monitor->is_exitable()) { }
 
-cout << end_program << endl;
+cout << monitor->is_exitable() << endl;
 
 return 0;
 }
